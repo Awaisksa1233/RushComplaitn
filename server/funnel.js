@@ -493,6 +493,7 @@ export function validateFlowDraft(input, live) {
   if (typeof input.approveFirstBatch !== 'boolean') bad('approveFirstBatch must be true or false');
   out.approveFirstBatch = input.approveFirstBatch;
 
+  if (input.maxReminders !== undefined && input.maxReminders !== null) out.maxReminders = int(input.maxReminders, 'Max reminders', 1, 10);
   const trigger = validateTrigger(input.trigger, live);
   if (trigger) out.trigger = trigger;
   out.exitWhen = validateExit(input.exitWhen);
@@ -518,6 +519,8 @@ export function validateFlowDraft(input, live) {
     delete step.waitHours;
     delete step.condition;
     delete step.holdoutPct;
+    delete step.deadline;
+    delete step.reminder;
 
     if (s.kind === 'wait') step.waitHours = int(s.waitHours, `${label} wait (hours)`, 0, 24 * 365);
     if (s.kind === 'send_template') {
@@ -533,11 +536,24 @@ export function validateFlowDraft(input, live) {
         step.templateId = templateId(s.templateId, `${label} template`);
       }
       if (s.holdoutPct !== undefined) step.holdoutPct = int(s.holdoutPct, `${label} hold-back`, 0, 100);
+      if (s.reminder !== undefined && typeof s.reminder !== 'boolean') bad(`${label}: reminder must be true or false`);
+      if (s.reminder) step.reminder = true;
+      if (s.deadline !== undefined && s.deadline !== null) {
+        if (!isObj(s.deadline)) bad(`${label} deadline is invalid`);
+        const onExpire = s.deadline.onExpire;
+        if (typeof onExpire !== 'string' || onExpire.length > 24) bad(`${label}: choose what happens when the deadline passes`);
+        step.deadline = { afterHours: int(s.deadline.afterHours, `${label} deadline (hours)`, 1, 24 * 365), onExpire };
+      }
     }
     if (s.kind === 'condition') step.condition = validateCondition(s.condition, prior?.condition, label);
     return step;
   });
 
+  // A deadline hands over to 'exit', 'next' or a step that exists in this flow (never itself).
+  for (const st of out.steps) {
+    const to = st.deadline?.onExpire;
+    if (to !== undefined && to !== 'exit' && to !== 'next' && (!ids.has(to) || to === st.id)) bad(`"${st.name.en}": the deadline hands over to a step that does not exist`);
+  }
   // Every condition must point at a step that exists in this flow, and never at itself.
   for (const st of out.steps) {
     if (!st.condition) continue;
@@ -1022,11 +1038,13 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
       if (draft.status === 'running' && found.doc.status !== 'running' && req.body?.confirmStart !== true) {
         return res.status(409).json({ success: false, code: 'confirm_start', error: 'Publishing will start this flow and begin sending WhatsApp messages. Confirm to continue.' });
       }
-      const { name, description, status, window, volume, reentry, approveFirstBatch, steps, trigger, exitWhen } = draft;
+      const { name, description, status, window, volume, reentry, approveFirstBatch, steps, trigger, exitWhen, maxReminders } = draft;
       const $set = { name, description, status, window, volume, reentry, approveFirstBatch, steps, exitWhen, hasDraft: false, publishedAt: new Date() };
       const $unset = { draft: '', draftUpdatedAt: '' };
       if (trigger) $set.trigger = trigger;
       else $unset.trigger = '';
+      if (maxReminders !== undefined) $set.maxReminders = maxReminders;
+      else $unset.maxReminders = '';
       await found.fdb.collection('funnel_flows').updateOne({ _id: found.doc._id }, { $set, $unset });
       res.json({ success: true, data: { id: req.params.id, hasDraft: false } });
     } catch (err) {

@@ -47,6 +47,10 @@ export interface FlowStep {
   templateId?: string;
   variants?: { key: 'A' | 'B' | 'C'; templateId: string; weight: number }[];
   holdoutPct?: number;
+  /** Marks a follow-up message; counted against the flow's maxReminders. */
+  reminder?: boolean;
+  /** How long the customer has to act after this message before they move on. Needs the funnel runtime to enforce it. */
+  deadline?: { afterHours: number; onExpire: string };
   waitHours?: number;
   condition?: { check: { type: string; [k: string]: unknown }; yes: string | null; no: string | null };
   paused: boolean;
@@ -79,6 +83,7 @@ export interface FlowConfig {
   draft?: FlowDraft;
   trigger?: FlowTrigger;
   exitWhen?: ExitRule[];
+  maxReminders?: number;
   reentry?: 'once' | 'per_cycle';
 }
 
@@ -93,6 +98,8 @@ export interface FlowDraft {
   approveFirstBatch: boolean;
   trigger?: FlowTrigger;
   exitWhen: ExitRule[];
+  /** Most reminders one customer gets per run. */
+  maxReminders?: number;
   steps: FlowStep[];
 }
 

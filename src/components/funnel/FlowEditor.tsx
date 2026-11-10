@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp, Plus, Save, Trash2, X } from 'lucide-react';
 import { discardFlowDraft, saveFlowDraft, type ExitRule, type FlowConfig, type FlowDraft, type FlowStep, type FlowTrigger } from './funnelApi';
 import { isApprovedTemplate } from './funnelGraph';
 import { TemplateSelector } from './TemplateSelector';
+import { FlowTimeline } from './FlowTimeline';
 
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const STAGES: Record<string, string> = {
@@ -57,6 +58,7 @@ export const baseOf = (f: FlowConfig): FlowDraft => {
     approveFirstBatch: f.approveFirstBatch,
     trigger: f.trigger,
     exitWhen: f.exitWhen ?? [],
+    maxReminders: f.maxReminders,
     steps
   };
 };
@@ -75,7 +77,14 @@ function Field({ label, children, hint }: { label: string; children: React.React
   );
 }
 
-/** Hours stored, shown as hours or days. */
+const PRESETS = [
+  { label: '1 day', hours: 24 },
+  { label: '48 hours', hours: 48 },
+  { label: '3 days', hours: 72 },
+  { label: '7 days', hours: 168 }
+];
+
+/** Hours stored, shown as hours or days, with one-click presets. */
 function Duration({ hours, onChange, label }: { hours: number; onChange: (h: number) => void; label: string }) {
   const [unit, setUnit] = useState<'hours' | 'days'>(Number.isFinite(hours) && hours >= 24 && hours % 24 === 0 ? 'days' : 'hours');
   const shown = Number.isFinite(hours) ? (unit === 'days' ? hours / 24 : hours) : NaN;
@@ -87,6 +96,21 @@ function Duration({ hours, onChange, label }: { hours: number; onChange: (h: num
           <option value="hours">hours</option>
           <option value="days">days</option>
         </select>
+      </div>
+      <div className="flex flex-wrap gap-1 mt-1.5">
+        {PRESETS.map((p) => (
+          <button
+            key={p.hours}
+            type="button"
+            onClick={() => {
+              setUnit(p.hours % 24 === 0 ? 'days' : 'hours');
+              onChange(p.hours);
+            }}
+            className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold ${hours === p.hours ? 'border-black bg-black text-white' : 'border-[#e5e5e5] bg-white text-slate-600 hover:text-black'}`}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
     </Field>
   );
@@ -107,7 +131,7 @@ const rebalance = (n: number) => {
   return Array.from({ length: n }, (_, i) => (i === 0 ? 100 - base * (n - 1) : base));
 };
 
-function StepEditor({ step, index, all, onChange, onMove, onDelete, last }: { step: FlowStep; index: number; all: FlowStep[]; onChange: (patch: Partial<FlowStep>) => void; onMove: (dir: -1 | 1) => void; onDelete: () => void; last: boolean }) {
+function StepEditor({ step, index, all, onChange, onMove, onDelete, last, delayStep, onSetDelay, onAddDelay }: { step: FlowStep; index: number; all: FlowStep[]; onChange: (patch: Partial<FlowStep>) => void; onMove: (dir: -1 | 1) => void; onDelete: () => void; last: boolean; delayStep?: FlowStep; onSetDelay: (h: number) => void; onAddDelay: () => void }) {
   const ab = !!step.variants?.length;
   const others = all.filter((s) => s.id !== step.id);
   const sum = step.variants?.reduce((a, v) => a + (Number.isFinite(v.weight) ? v.weight : 0), 0) ?? 100;
@@ -187,6 +211,47 @@ function StepEditor({ step, index, all, onChange, onMove, onDelete, last }: { st
           </>
         )}
       </div>
+
+      {step.kind === 'send_template' && (
+        <div className="rounded-lg border border-[#f2f2f2] p-2.5 space-y-2.5">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <label className="inline-flex items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={!!step.reminder} onChange={(e) => onChange({ reminder: e.target.checked || undefined })} /> This is a reminder
+            </label>
+            <label className="inline-flex items-center gap-1.5 text-xs">
+              <input type="checkbox" checked={!!step.deadline} onChange={(e) => onChange({ deadline: e.target.checked ? { afterHours: 48, onExpire: 'exit' } : undefined })} /> Customer has a deadline to act
+            </label>
+          </div>
+          {step.reminder && (
+            <div className="max-w-xs">
+              {delayStep ? (
+                <Duration label="Send after (from the step before)" hours={delayStep.waitHours ?? 0} onChange={onSetDelay} />
+              ) : (
+                <button type="button" onClick={onAddDelay} className="inline-flex items-center gap-1 rounded-lg border border-[#e5e5e5] px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-black">
+                  <Plus className="w-3 h-3" /> Add a delay before this reminder
+                </button>
+              )}
+            </div>
+          )}
+          {step.deadline && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Duration label="Deadline after this message" hours={step.deadline.afterHours} onChange={(h) => onChange({ deadline: { ...step.deadline!, afterHours: h } })} />
+              <Field label="If they have not acted by then">
+                <select className={input} value={step.deadline.onExpire} onChange={(e) => onChange({ deadline: { ...step.deadline!, onExpire: e.target.value } })}>
+                  <option value="exit">Leave the flow</option>
+                  <option value="next">Move on to the next step</option>
+                  {others.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Go to {all.indexOf(s) + 1}. {s.name.en}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <p className="sm:col-span-2 text-[11px] text-slate-500">Saved with the flow. It takes effect once the funnel runtime enforces deadlines; delays before messages already work.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {step.kind === 'send_template' && ab && (
         <div className="space-y-2 rounded-lg bg-[#fafafa] p-2.5">
@@ -386,6 +451,7 @@ export function diffFlow(live: FlowConfig, d: FlowDraft): string[] {
   if (live.approveFirstBatch !== d.approveFirstBatch) out.push(`First batch needs approval: ${live.approveFirstBatch ? 'yes' : 'no'} → ${d.approveFirstBatch ? 'yes' : 'no'}`);
   if (!same(live.trigger ?? null, d.trigger ?? null)) out.push('Who enters the flow changed');
   if (!same(live.exitWhen ?? [], d.exitWhen)) out.push('Stop rules changed');
+  if ((live.maxReminders ?? null) !== (d.maxReminders ?? null)) out.push(`Most reminders per customer: ${live.maxReminders ?? 'no cap'} → ${d.maxReminders ?? 'no cap'}`);
   const liveById = new Map(live.steps.map((s) => [s.id, s]));
   const draftIds = new Set(d.steps.map((s) => s.id));
   for (const s of (live.steps || [])) if (!draftIds.has(s.id)) out.push(`Removed step "${s.name?.en ?? s.id}"`);
@@ -404,13 +470,15 @@ export function diffFlow(live: FlowConfig, d: FlowDraft): string[] {
     else if (!same(p.variants, s.variants) || p.templateId !== s.templateId) bits.push('templates or weights changed');
     if ((p.holdoutPct ?? 0) !== (s.holdoutPct ?? 0)) bits.push(`hold-back ${p.holdoutPct ?? 0}% → ${s.holdoutPct ?? 0}%`);
     if (!same(p.condition, s.condition)) bits.push('condition changed');
+    if (!same(p.deadline ?? null, s.deadline ?? null)) bits.push(s.deadline ? `deadline ${p.deadline ? `${dur(p.deadline.afterHours)} → ` : ''}${dur(s.deadline.afterHours)}, then ${s.deadline.onExpire === 'exit' ? 'leaves the flow' : s.deadline.onExpire === 'next' ? 'moves on' : 'goes to another step'}` : 'deadline removed');
+    if (!!p.reminder !== !!s.reminder) bits.push(s.reminder ? 'marked as a reminder' : 'no longer a reminder');
     if (bits.length) out.push(`Step “${s.name.en}”: ${bits.join(', ')}`);
   });
   const order = (ids: string[]) => ids.filter((id) => draftIds.has(id) && liveById.has(id)).join();
   return out;
 }
 
-export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClose: () => void; onSaved: () => void }) {
+export function FlowEditor({ flow, onClose, onSaved, freeWashExpiryDay }: { flow: FlowConfig; onClose: () => void; onSaved: () => void; freeWashExpiryDay: number }) {
   const [d, setD] = useState<FlowDraft>(() => structuredClone(baseOf(flow)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -431,7 +499,14 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
         steps: cur.steps
           .filter((_, j) => j !== i)
           .map((s) => (s.condition ? { ...s, condition: { ...s.condition, yes: s.condition.yes === gone ? null : s.condition.yes, no: s.condition.no === gone ? null : s.condition.no } } : s))
+          .map((s) => (s.deadline?.onExpire === gone ? { ...s, deadline: { ...s.deadline, onExpire: 'exit' } } : s))
       };
+    });
+  const addDelay = (i: number) =>
+    setD((cur) => {
+      const steps = [...cur.steps];
+      steps.splice(i, 0, { id: newId(), kind: 'wait', name: { en: 'Wait' }, waitHours: 48, paused: false });
+      return { ...cur, steps };
     });
   const toggleDay = (day: number) =>
     setD((cur) => ({ ...cur, window: { ...cur.window, days: cur.window.days.includes(day) ? cur.window.days.filter((x) => x !== day) : [...cur.window.days, day].sort() } }));
@@ -513,6 +588,16 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
       </section>
 
       <section>
+        <h4 className="text-xs font-bold text-black mb-2">Timing</h4>
+        <div className="max-w-xs mb-3">
+          <Field label="Most reminders per customer (blank = no cap)">
+            <input className={input} type="number" min={1} max={10} value={d.maxReminders ?? ''} onChange={(e) => setD({ ...d, maxReminders: e.target.value.trim() === '' ? undefined : Number(e.target.value) })} />
+          </Field>
+        </div>
+        <FlowTimeline flow={d} freeWashExpiryDay={freeWashExpiryDay} />
+      </section>
+
+      <section>
         <h4 className="text-xs font-bold text-black mb-2">Who enters</h4>
         <TriggerEditor value={d.trigger} onChange={(trigger) => setD({ ...d, trigger })} flowId={flow.id} />
       </section>
@@ -526,7 +611,7 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
         <h4 className="text-xs font-bold text-black mb-2">Steps</h4>
         <ol className="space-y-2">
           {d.steps.map((s, i) => (
-            <StepEditor key={s.id} step={s} index={i} all={d.steps} last={i === d.steps.length - 1} onChange={(patch) => setStep(i, patch)} onMove={(dir) => move(i, dir)} onDelete={() => remove(i)} />
+            <StepEditor key={s.id} step={s} index={i} all={d.steps} last={i === d.steps.length - 1} onChange={(patch) => setStep(i, patch)} onMove={(dir) => move(i, dir)} onDelete={() => remove(i)} delayStep={d.steps[i - 1]?.kind === 'wait' ? d.steps[i - 1] : undefined} onSetDelay={(h) => setStep(i - 1, { waitHours: h })} onAddDelay={() => addDelay(i)} />
           ))}
         </ol>
         <div className="flex flex-wrap items-center gap-2 mt-3">

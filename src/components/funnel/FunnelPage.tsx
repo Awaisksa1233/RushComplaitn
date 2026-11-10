@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, Pencil, RefreshCw, X } from 'lucide-react';
 import { fetchDefinition, fetchFlows, fetchFunnelGraph, fetchFunnelTrends, type CohortStage, type FlowsResponse, type FunnelDefinition, type FunnelGraphStats, type FunnelTrends, type StageId } from './funnelApi';
 import { DefinitionEditor } from './DefinitionEditor';
-import { MF_NODES, MF_NODE_FLOW, WHY_TEXT, isApprovedTemplate } from './funnelGraph';
+import { MF_NODES, MF_NODE_FLOW, WHY_TEXT, deriveWhen, isApprovedTemplate } from './funnelGraph';
+import { delayBefore } from './flowTiming';
 import { MembershipFlowChart, stepStateOf } from './MembershipFlowChart';
 import { FunnelTrendChart, STAGE_META } from './FunnelTrendChart';
 import { FlowsPanel } from './FlowsPanel';
@@ -88,7 +89,7 @@ function StepDetail({ nodeId, stats, flows, onClose }: { nodeId: string; stats: 
         <div>
           {node.stage && <div className="text-[11px] text-slate-500">Stage {node.stage}</div>}
           <div className="text-sm font-bold text-black">{node.title}</div>
-          {node.when && <div className="text-xs text-slate-500">{node.when}</div>}
+          {deriveWhen(node, flows?.flows ?? null) && <div className="text-xs text-slate-500">{deriveWhen(node, flows?.flows ?? null)}</div>}
         </div>
         <button onClick={onClose} aria-label="Close" className="p-1 text-slate-400 hover:text-black">
           <X className="w-4 h-4" />
@@ -192,6 +193,13 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
     [stats]
   );
 
+  // The free-wash arrows are counted with the definition's reminder day. If the live reminder flow waits a different time, say so.
+  const flowReminderDay = useMemo(() => {
+    const flow = flows?.flows.find((f) => f.id === MF_NODE_FLOW.s1remind.flowId);
+    const step = flow?.steps.find((s) => s.id === MF_NODE_FLOW.s1remind.stepId);
+    return flow && step ? delayBefore(flow.steps, step.id) / 24 : null;
+  }, [flows]);
+
   const templateNames = useMemo(() => Array.from(new Set(MF_NODES.flatMap((n) => n.variants?.map((v) => v.template) ?? []))), []);
   const approved = templateNames.filter(isApprovedTemplate).length;
 
@@ -288,6 +296,15 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
               {stats && !stats.sources.funnelDb && ' The funnel database could not be read, so messages sent and offers are shown as dashes.'}
             </p>
 
+            {flowReminderDay !== null && flowReminderDay !== reminderDay && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex items-start gap-2 text-xs text-amber-800">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>
+                  The free-wash reminder flow sends on day {Math.round(flowReminderDay * 10) / 10}, but the numbers below are counted with day {reminderDay}. Update the funnel definition so they match.
+                </span>
+              </div>
+            )}
+
             {editingDef && definition && (
               <DefinitionEditor
                 definition={definition}
@@ -344,7 +361,7 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
                   <StepDetail nodeId={selectedId} stats={stats} flows={flows} onClose={() => setSelectedId(null)} />
                 </div>
               )}
-              <MembershipFlowChart stats={stats} flows={flows?.flows ?? null} selectedId={selectedId} onSelect={(id) => id && setSelectedId(id)} />
+              <MembershipFlowChart stats={stats} flows={flows?.flows ?? null} reminderDay={reminderDay} expiryDay={expiryDay} selectedId={selectedId} onSelect={(id) => id && setSelectedId(id)} />
             </div>
           </>
         )}
@@ -358,7 +375,7 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
           </Card>
         )}
 
-        {tab === 'flows' && (flows ? <FlowsPanel data={flows} onChanged={() => void load(false)} /> : <div className="h-72 rounded-2xl bg-white border border-[#e5e5e5] animate-pulse" />)}
+        {tab === 'flows' && (flows ? <FlowsPanel data={flows} onChanged={() => void load(false)} freeWashExpiryDay={expiryDay} /> : <div className="h-72 rounded-2xl bg-white border border-[#e5e5e5] animate-pulse" />)}
       </main>
     </>
   );

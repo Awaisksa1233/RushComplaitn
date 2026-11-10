@@ -4,6 +4,9 @@
  * It holds no numbers: counts come from GET /api/funnel/graph and anything not measured shows a dash.
  */
 
+import type { FlowConfig } from './funnelApi';
+import { delayBefore } from './flowTiming';
+
 export type MfSide = 'top' | 'bottom' | 'left' | 'right';
 export type MfTone = 'success' | 'neutral' | 'danger';
 
@@ -158,6 +161,40 @@ export const MF_NODE_FLOW: Record<string, { flowId: string; stepId: string }> = 
   s3nudge: { flowId: 'mf-usage', stepId: 'u1' },
   s3follow: { flowId: 'mf-usage', stepId: 'u4' }
 };
+
+/** What a chart step's timing is counted from, and any condition that applies. Only steps listed here get derived timing text. */
+const WHEN_CONTEXT: Record<string, { after: string; cond?: string }> = {
+  s1issue: { after: 'sign-up' },
+  s1remind: { after: 'sign-up', cond: 'if not redeemed' },
+  offers: { after: 'the free wash is redeemed' },
+  remB: { after: 'the offer', cond: 'if the offer is not redeemed' },
+  remC: { after: 'the offer', cond: 'if the offer is not redeemed' },
+  msoffer: { after: 'the offer is redeemed' },
+  msremind: { after: 'the membership offer' },
+  s3follow: { after: 'the nudge' }
+};
+
+const hoursPhrase = (h: number) => (h >= 24 && h % 24 === 0 ? `${h / 24} day${h === 24 ? '' : 's'}` : `${h} hour${h === 1 ? '' : 's'}`);
+
+/** The timing line of a chart step, written from its live flow so it can never disagree with what the flow does. Falls back to the fixed text. */
+export function deriveWhen(node: MfNode, flows: FlowConfig[] | null): string | undefined {
+  const ctx = WHEN_CONTEXT[node.id];
+  const ref = MF_NODE_FLOW[node.id];
+  const flow = ref && flows?.find((f) => f.id === ref.flowId);
+  const step = flow?.steps.find((s) => s.id === ref.stepId);
+  if (!ctx || !flow || !step || step.kind !== 'send_template') return node.when;
+  const h = delayBefore(flow.steps, step.id);
+  const time = h <= 0 ? `Right after ${ctx.after}` : `${hoursPhrase(h)} after ${ctx.after}`;
+  return ctx.cond ? `${time}, ${ctx.cond}` : time;
+}
+
+/** Arrow labels that carry a day count follow the funnel definition, because the numbers on those arrows are counted with the same days. */
+export function edgeLabel(e: MfEdge, reminderDay: number, expiryDay: number): string {
+  if (e.id === 'e2') return `Not redeemed by day ${reminderDay}`;
+  if (e.id === 'e3') return `Redeemed within ${reminderDay} days`;
+  if (e.id === 'e4') return `Not redeemed by day ${expiryDay}`;
+  return e.label;
+}
 
 /** Why a number is a dash. Keys are returned by the API in `why`. */
 export const WHY_TEXT: Record<string, string> = {

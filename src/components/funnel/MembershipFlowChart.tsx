@@ -3,7 +3,7 @@ import { Background, Controls, Handle, MarkerType, Position, ReactFlow, type Edg
 import '@xyflow/react/dist/style.css';
 import { MessageCircle } from 'lucide-react';
 import type { FlowConfig, FunnelGraphStats } from './funnelApi';
-import { MF_EDGES, MF_NODES, MF_NODE_FLOW, WHY_TEXT, isApprovedTemplate, type MfNode, type MfSide, type MfTone } from './funnelGraph';
+import { MF_EDGES, MF_NODES, MF_NODE_FLOW, WHY_TEXT, deriveWhen, edgeLabel, isApprovedTemplate, type MfNode, type MfSide, type MfTone } from './funnelGraph';
 
 const POS: Record<MfSide, Position> = { top: Position.Top, bottom: Position.Bottom, left: Position.Left, right: Position.Right };
 const SIDES: MfSide[] = ['top', 'bottom', 'left', 'right'];
@@ -29,6 +29,7 @@ interface NodeData extends Record<string, unknown> {
   node: MfNode;
   count: number | null;
   note?: string;
+  when?: string;
   variants?: VariantView[];
   state: StepState;
   selected: boolean;
@@ -69,7 +70,7 @@ function StepNode({ data }: NodeProps<Node<NodeData>>) {
         <div className="min-w-0">
           {node.stage && <div className="text-[11px] text-slate-500">Stage {node.stage}</div>}
           <div className="text-sm font-semibold leading-tight text-black">{node.title}</div>
-          {node.when && <div className="text-xs text-slate-500 mt-0.5">{node.when}</div>}
+          {data.when && <div className="text-xs text-slate-500 mt-0.5">{data.when}</div>}
         </div>
         <span className={`shrink-0 rounded-full border px-1.5 py-0.5 text-[10px] font-semibold whitespace-nowrap ${STATE_CLASS[stepState]}`}>{STATE_LABEL[stepState]}</span>
       </div>
@@ -149,9 +150,12 @@ export interface MembershipFlowChartProps {
   flows: FlowConfig[] | null;
   onSelect?: (nodeId: string) => void;
   selectedId?: string | null;
+  /** Days from the funnel definition: the numbers on the free-wash arrows are counted with these. */
+  reminderDay?: number;
+  expiryDay?: number;
 }
 
-export function MembershipFlowChart({ stats, flows, onSelect, selectedId }: MembershipFlowChartProps) {
+export function MembershipFlowChart({ stats, flows, onSelect, selectedId, reminderDay = 5, expiryDay = 7 }: MembershipFlowChartProps) {
   const nodes = useMemo<Node<NodeData>[]>(
     () =>
       MF_NODES.map((n) => {
@@ -166,6 +170,7 @@ export function MembershipFlowChart({ stats, flows, onSelect, selectedId }: Memb
           data: {
             node: n,
             count,
+            when: deriveWhen(n, flows),
             note: whyKey ? WHY_TEXT[whyKey] : count === null ? 'Not measured yet' : undefined,
             state: n.kind === 'step' ? stepStateOf(n.id, flows) : 'none',
             selected: selectedId === n.id,
@@ -201,7 +206,7 @@ export function MembershipFlowChart({ stats, flows, onSelect, selectedId }: Memb
           target: e.to,
           targetHandle: `t-${e.toSide}`,
           type: 'smoothstep',
-          label: !e.label ? undefined : `${e.label} · ${fmt(count)}`,
+          label: !e.label ? undefined : `${edgeLabel(e, reminderDay, expiryDay)} · ${fmt(count)}`,
           labelStyle: { fontSize: 11, fill: '#404040' },
           labelBgStyle: { fill: '#FFFFFF', fillOpacity: 0.95 },
           labelBgPadding: [4, 2] as [number, number],
@@ -209,7 +214,7 @@ export function MembershipFlowChart({ stats, flows, onSelect, selectedId }: Memb
           markerEnd: { type: MarkerType.ArrowClosed, color }
         };
       }),
-    [stats]
+    [stats, reminderDay, expiryDay]
   );
 
   return (

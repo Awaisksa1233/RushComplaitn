@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ChevronDown, Clock, GitBranch, Gift, MessageCircle, Pencil, ShieldAlert, Split } from 'lucide-react';
 import type { ExitRule, FlowConfig, FlowStep, FlowTrigger, FlowsResponse } from './funnelApi';
 import { FlowEditor, diffFlow } from './FlowEditor';
+import { FlowTimeline } from './FlowTimeline';
 import { publishFlowDraft } from './funnelApi';
 import { isApprovedTemplate } from './funnelGraph';
 
@@ -127,7 +128,7 @@ function PublishPanel({ flow, onDone, onCancel }: { flow: FlowConfig; onDone: ()
   );
 }
 
-function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent: FlowsResponse['sent']; editable: boolean; onChanged: () => void }) {
+function FlowCard({ flow, sent, editable, onChanged, freeWashExpiryDay }: { flow: FlowConfig; sent: FlowsResponse['sent']; editable: boolean; onChanged: () => void; freeWashExpiryDay: number }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -164,7 +165,7 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
 
       {open && publishing && <PublishPanel flow={flow} onCancel={() => setPublishing(false)} onDone={() => { setPublishing(false); onChanged(); }} />}
 
-      {open && editing && <FlowEditor flow={flow} onClose={() => setEditing(false)} onSaved={onChanged} />}
+      {open && editing && <FlowEditor flow={flow} onClose={() => setEditing(false)} onSaved={onChanged} freeWashExpiryDay={freeWashExpiryDay} />}
 
       {open && !editing && !publishing && (
         <div className="border-t border-[#f2f2f2] px-4 pt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
@@ -189,6 +190,9 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
 
       {open && !editing && !publishing && (
         <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div className="lg:col-span-12">
+            <FlowTimeline flow={flow} freeWashExpiryDay={freeWashExpiryDay} />
+          </div>
           <ol className="lg:col-span-7 space-y-0">
             {flow.steps.map((s, i) => {
               const Icon = STEP_ICON[s.kind || 'send_template'] ?? MessageCircle;
@@ -255,7 +259,7 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
   );
 }
 
-export function FlowsPanel({ data, onChanged }: { data: FlowsResponse; onChanged: () => void }) {
+export function FlowsPanel({ data, onChanged, freeWashExpiryDay }: { data: FlowsResponse; onChanged: () => void; freeWashExpiryDay: number }) {
   const groups = useMemo(() => {
     const membership = data.flows.filter((f) => f.id.startsWith('mf-'));
     const lifecycle = data.flows.filter((f) => !f.id.startsWith('mf-') && f.number <= 10);
@@ -309,7 +313,7 @@ export function FlowsPanel({ data, onChanged }: { data: FlowsResponse; onChanged
           <p className="text-xs text-slate-500 mb-3">{g.note}</p>
           <div className="space-y-3">
             {g.flows.map((f) => (
-              <FlowCard key={f.id} flow={f} sent={data.sent} editable={data.source === 'live'} onChanged={onChanged} />
+              <FlowCard key={f.id} flow={f} sent={data.sent} editable={data.source === 'live'} onChanged={onChanged} freeWashExpiryDay={freeWashExpiryDay} />
             ))}
           </div>
         </section>
