@@ -206,6 +206,14 @@ export function App() {
     return <CustomerCancelPage onBackToDashboard={() => navigate('/')} />;
   }
 
+  if (isFunnel) {
+    return (
+      <DashboardShell activeDomain="funnel" onDomainChange={handleDomainChange} onDrilldown={() => navigate('/')}>
+        <FunnelPage onBack={() => navigate('/')} />
+      </DashboardShell>
+    );
+  }
+
   return (
     <DashboardShell 
       activeDomain={activeDomain} 
