@@ -64,53 +64,53 @@ export const MF_NODES: MfNode[] = [
     ]
   },
   {
-    id: 'remB', kind: 'step', stage: 2, title: 'Offer B reminder', when: 'If the offer is not redeemed', x: -140, y: 760,
+    id: 'remB', kind: 'step', stage: 2, title: 'Offer B reminder', when: 'If the offer is not redeemed', x: -240, y: 890,
     variants: [v('Copy A', '50_sar_reminder_a'), v('Copy B', '50_sar_reminder_b')]
   },
   {
-    id: 'remC', kind: 'step', stage: 2, title: 'Offer C reminder', when: 'If the offer is not redeemed', x: 220, y: 760,
+    id: 'remC', kind: 'step', stage: 2, title: 'Offer C reminder', when: 'If the offer is not redeemed', x: 70, y: 890,
     variants: [v('Copy A', 'free_interior_wash_reminder'), v('Copy B', 'free_interior_subscription_reminder')]
   },
   {
-    id: 'remD', kind: 'step', stage: 2, title: 'Offer D reminder', when: 'If the offer is not redeemed', x: 580, y: 760,
+    id: 'remD', kind: 'step', stage: 2, title: 'Offer D reminder', when: 'If the offer is not redeemed', x: 380, y: 890,
     variants: [v('Copy A', 'free_interior_subscription_reminder'), v('Copy B', 'free_interior_subscription_reminder')]
   },
-  { id: 'exitB', kind: 'end', title: 'Exit', x: -440, y: 790, tone: 'danger' },
-  { id: 'exitC', kind: 'end', title: 'Exit', x: 220, y: 920, tone: 'danger' },
-  { id: 'exitD', kind: 'end', title: 'Exit', x: 920, y: 790, tone: 'danger' },
+  { id: 'exitB', kind: 'end', title: 'Exit', x: -460, y: 950, tone: 'danger' },
+  { id: 'exitC', kind: 'end', title: 'Exit', x: 230, y: 1140, tone: 'danger' },
+  { id: 'exitD', kind: 'end', title: 'Exit', x: 700, y: 950, tone: 'danger' },
   {
-    id: 'msoffer', kind: 'step', stage: 2, title: 'Membership offer', when: 'After the offer is redeemed', x: 0, y: 1000,
+    id: 'msoffer', kind: 'step', stage: 2, title: 'Membership offer', when: 'After the offer is redeemed', x: -90, y: 1240,
     variants: [v('First month flat discount / SAR 100 promo', 'free_interior_membership'), v('2-month lock-in / free upgraded wash add-on', '100_sar_a')]
   },
   {
-    id: 'msremind', kind: 'step', stage: 2, title: 'Offer reminder', when: '48 hours after the offer', x: 340, y: 1180,
+    id: 'msremind', kind: 'step', stage: 2, title: 'Offer reminder', when: '48 hours after the offer', x: 260, y: 1380,
     variants: [v('Angle A', 'freewash_redemption_reminder'), v('Angle B', 'redemption_reminder_b')]
   },
-  { id: 'msexit', kind: 'end', title: 'Downsell / exit', x: 840, y: 1200, tone: 'danger' },
+  { id: 'msexit', kind: 'end', title: 'Downsell / exit', x: 600, y: 1420, tone: 'danger' },
 
-  { id: 'members', kind: 'milestone', title: 'Members', x: -600, y: 1520 },
-  { id: 's3scan', kind: 'step', stage: 3, title: 'Weekly scan: rolling 7-day usage', when: 'Every week, for every active member', x: -640, y: 1640 },
+  { id: 'members', kind: 'milestone', title: 'Members', x: -560, y: 1720 },
+  { id: 's3scan', kind: 'step', stage: 3, title: 'Weekly scan: rolling 7-day usage', when: 'Every week, for every active member', x: -640, y: 1850 },
   {
-    id: 's3nudge', kind: 'step', stage: 3, title: 'Low-usage nudge', when: 'When the weekly scan finds under 2 washes', x: -640, y: 1870,
+    id: 's3nudge', kind: 'step', stage: 3, title: 'Low-usage nudge', when: 'When the weekly scan finds under 2 washes', x: -640, y: 2080,
     variants: [v('Value recap: you paid for it, do not leave SAR on the table', 'usage_nudge_a'), v('Convenience: quick lane pass recap', 'usage_nudge_b')]
   },
   {
-    id: 's3follow', kind: 'step', stage: 3, title: 'Usage follow-up reminder', when: '4 days after the nudge', x: -640, y: 2110,
+    id: 's3follow', kind: 'step', stage: 3, title: 'Usage follow-up reminder', when: '4 days after the nudge', x: -640, y: 2320,
     variants: [v('Copy A', 'usage_nudge_a'), v('Copy B', 'usage_nudge_b')]
   },
 
   {
-    id: 'rr', kind: 'step', stage: 4, title: 'Renewal reminder: savings recap', when: '7 days before every renewal (day 23)', x: -300, y: 1870,
+    id: 'rr', kind: 'step', stage: 4, title: 'Renewal reminder: savings recap', when: '7 days before every renewal (day 23)', x: -300, y: 2080,
     variants: [v('Copy A', 'renewal_reminder_a'), v('Copy B', 'renewal_reminder_a')]
   },
-  { id: 'rd', kind: 'milestone', title: 'Renewal day', x: -260, y: 2250 },
+  { id: 'rd', kind: 'milestone', title: 'Renewal day', x: -260, y: 2460 },
   {
-    id: 'pay', kind: 'step', stage: 4, title: 'Payment update message and retries', when: 'WhatsApp message, then a retry every day, up to 5 times', x: 60, y: 2330,
+    id: 'pay', kind: 'step', stage: 4, title: 'Payment update message and retries', when: 'WhatsApp message, then a retry every day, up to 5 times', x: 60, y: 2540,
     variants: [v('Copy A', 'renewal_payment_failed_ar'), v('Copy B', 'payment_failed_b')]
   },
-  { id: 'payexit', kind: 'end', title: 'Exit', x: 480, y: 2370, tone: 'danger' },
+  { id: 'payexit', kind: 'end', title: 'Exit', x: 480, y: 2580, tone: 'danger' },
   {
-    id: 'fnf', kind: 'step', stage: 4, title: 'Offer Friends & Family', when: 'After every renewal, for everyone', x: -300, y: 2540,
+    id: 'fnf', kind: 'step', stage: 4, title: 'Offer Friends & Family', when: 'After every renewal, for everyone', x: -300, y: 2750,
     variants: [v('Copy A', 'family_plan'), v('Copy B', 'family_plan')]
   }
 ];
@@ -127,7 +127,7 @@ export const MF_EDGES: MfEdge[] = [
   e('e6', 'offers', 'left', 'members', 'top', 'Plan 1: 100 SAR membership', 'success'),
   e('e7', 'offers', 'bottom', 'remB', 'top', 'Plan 2: SAR 50 wallet balance', 'neutral'),
   e('e8', 'offers', 'bottom', 'remC', 'top', 'Plan 3: Free interior next visit', 'neutral'),
-  e('e8d', 'offers', 'right', 'remD', 'top', 'Plan 4: Free interior month w/ membership', 'neutral'),
+  e('e8d', 'offers', 'bottom', 'remD', 'top', 'Plan 4: Free interior month w/ membership', 'neutral'),
   e('e9', 'remB', 'bottom', 'msoffer', 'top', 'Redeemed', 'success'),
   e('e10', 'remB', 'left', 'exitB', 'right', 'Not redeemed', 'danger'),
   e('e11', 'remC', 'bottom', 'msoffer', 'top', 'Redeemed', 'success'),

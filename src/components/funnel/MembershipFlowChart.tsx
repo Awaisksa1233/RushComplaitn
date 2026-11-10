@@ -61,7 +61,7 @@ function StepNode({ data }: NodeProps<Node<NodeData>>) {
   const stepState = (data.state as StepState) || 'none';
   return (
     <div
-      className={`${variants && variants.length > 2 ? 'w-[330px]' : 'w-[250px]'} cursor-pointer rounded-xl border bg-white p-3 text-left shadow-sm ${
+      className={`${variants && variants.length > 3 ? 'w-[390px]' : variants && variants.length > 2 ? 'w-[330px]' : 'w-[250px]'} cursor-pointer rounded-xl border bg-white p-3 text-left shadow-sm ${
         data.state === 'on' ? 'border-[#d4d4d4]' : 'border-dashed border-[#d4d4d4]'
       } ${data.selected ? 'ring-2 ring-[#c91e2f]' : 'hover:border-[#c91e2f]'}`}
     >
