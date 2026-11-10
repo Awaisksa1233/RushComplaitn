@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Save, X } from 'lucide-react';
 import { discardFlowDraft, saveFlowDraft, type FlowConfig, type FlowDraft, type FlowStep } from './funnelApi';
 import { isApprovedTemplate } from './funnelGraph';
+import { TemplateSelector } from './TemplateSelector';
 
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -149,30 +150,42 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
                 </div>
               )}
               {s.kind === 'send_template' && !s.variants?.length && (
-                <div className="sm:col-span-4">
-                  <Field label="Template id" hint={s.templateId && !isApprovedTemplate(s.templateId) ? 'Not in the approved list yet' : undefined}>
-                    <input className={input} value={s.templateId ?? ''} onChange={(e) => setStep(i, { templateId: e.target.value })} />
-                  </Field>
+                <div className="sm:col-span-12">
+                  <TemplateSelector
+                    label="WhatsApp Template"
+                    value={s.templateId ?? ''}
+                    onChange={(tid) => setStep(i, { templateId: tid })}
+                  />
                 </div>
               )}
               <label className="sm:col-span-3 inline-flex items-center gap-1.5 text-xs pb-1.5">
                 <input type="checkbox" checked={!s.paused} onChange={(e) => setStep(i, { paused: !e.target.checked })} /> Step on
               </label>
-              {s.variants?.map((v, j) => (
-                <div key={v.key} className="sm:col-span-12 grid grid-cols-12 gap-3 items-end">
-                  <span className="col-span-1 inline-flex h-6 w-6 items-center justify-center rounded bg-black text-white text-[10px] font-bold">{v.key}</span>
-                  <div className="col-span-8">
-                    <Field label="Template id" hint={!isApprovedTemplate(v.templateId) ? 'Not in the approved list yet' : undefined}>
-                      <input className={input} value={v.templateId} onChange={(e) => setStep(i, { variants: s.variants!.map((x, k) => (k === j ? { ...x, templateId: e.target.value } : x)) })} />
-                    </Field>
-                  </div>
-                  <div className="col-span-3">
-                    <Field label="Weight %">
-                      <input className={input} type="number" min={0} max={100} value={v.weight} onChange={(e) => setStep(i, { variants: s.variants!.map((x, k) => (k === j ? { ...x, weight: num(e.target.value) } : x)) })} />
-                    </Field>
-                  </div>
+              {s.variants && s.variants.length > 0 && (
+                <div className="sm:col-span-12 space-y-3 pt-1">
+                  <div className="text-xs font-semibold text-slate-700">A/B Testing Variants</div>
+                  {s.variants.map((v, j) => (
+                    <div key={v.key} className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-black text-white text-[10px] font-bold">{v.key}</span>
+                          <span className="text-xs font-bold text-black">Variant {v.key}</span>
+                        </div>
+                        <div className="w-24">
+                          <Field label="Weight %">
+                            <input className={input} type="number" min={0} max={100} value={v.weight} onChange={(e) => setStep(i, { variants: s.variants!.map((x, k) => (k === j ? { ...x, weight: num(e.target.value) } : x)) })} />
+                          </Field>
+                        </div>
+                      </div>
+                      <TemplateSelector
+                        label={`WhatsApp Template for Variant ${v.key}`}
+                        value={v.templateId}
+                        onChange={(tid) => setStep(i, { variants: s.variants!.map((x, k) => (k === j ? { ...x, templateId: tid } : x)) })}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </li>
           ))}
         </ol>
