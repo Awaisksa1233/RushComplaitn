@@ -83,7 +83,7 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
   const mine = sent.filter((s) => s.flowId === flow.id);
   const totalSent = mine.reduce((a, s) => a + s.sent, 0);
   const sentFor = (stepId: string, templateId: string) => mine.filter((s) => s.stepId === stepId && s.templateId === templateId).reduce((a, s) => a + s.sent, 0);
-  const messages = flow.steps.filter((s) => s.kind === 'send_template').length;
+  const messages = flow.steps.filter((s) => (!s.kind || s.kind === 'send_template')).length;
   const pending = flow.steps.flatMap((s) => (s.variants?.length ? s.variants.map((x) => x.templateId) : s.templateId ? [s.templateId] : [])).filter((t) => !isApprovedTemplate(t));
 
   return (
@@ -131,7 +131,7 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
         <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
           <ol className="lg:col-span-7 space-y-0">
             {flow.steps.map((s, i) => {
-              const Icon = STEP_ICON[s.kind] ?? MessageCircle;
+              const Icon = STEP_ICON[s.kind || 'send_template'] ?? MessageCircle;
               return (
                 <li key={s.id} className="relative pl-9 pb-4 last:pb-0">
                   {i < flow.steps.length - 1 && <span className="absolute left-[13px] top-7 bottom-0 w-px bg-[#e5e5e5]" aria-hidden />}

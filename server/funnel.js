@@ -733,8 +733,9 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
                 const id = f.id ?? String(_id);
                 const name = typeof f.name === 'object' && f.name ? { en: f.name.en || id, ar: f.name.ar || '' } : { en: String(f.name || id) };
                 const steps = (f.steps || []).map((s, idx) => {
+                  const kind = s?.kind || (s?.waitHours != null ? 'wait' : s?.condition ? 'condition' : 'send_template');
                   const sname = typeof s?.name === 'object' && s.name ? { en: s.name.en || s.templateId || s.id || `Step ${idx+1}`, ar: s.name.ar || '' } : { en: String(s?.name || s?.templateId || s?.id || `Step ${idx+1}`) };
-                  return { ...s, name: sname };
+                  return { ...s, id: s?.id || `s${idx+1}`, kind, name: sname };
                 });
                 return { ...f, id, name, steps, hasDraft: !!f.draft || !!f.hasDraft };
               })

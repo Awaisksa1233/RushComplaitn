@@ -15,6 +15,8 @@ function sanitizeName(n: any, fallback = ''): { en: string; ar?: string } {
 export const baseOf = (f: FlowConfig): FlowDraft => {
   const steps = (f.steps || []).map((s, idx) => ({
     ...s,
+    id: s.id || `s${idx + 1}`,
+    kind: (s.kind || (s.waitHours != null ? 'wait' : s.condition ? 'condition' : 'send_template')) as any,
     name: sanitizeName(s.name, s.templateId || s.id || `Step ${idx + 1}`)
   }));
   return f.draft ?? {
@@ -135,7 +137,7 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
           {d.steps.map((s, i) => (
             <li key={s.id} className="rounded-lg border border-[#e5e5e5] p-3 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
               <div className="sm:col-span-5">
-                <Field label={`${i + 1}. ${s.kind.replace('_', ' ')}`}>
+                <Field label={`${i + 1}. ${(s.kind || 'step').replace('_', ' ')}`}>
                   <input className={input} value={s.name?.en ?? ""} maxLength={200} onChange={(e) => setStep(i, { name: { ...s.name, en: e.target.value } })} />
                 </Field>
               </div>
