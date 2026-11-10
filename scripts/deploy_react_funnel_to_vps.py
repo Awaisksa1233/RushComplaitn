@@ -97,7 +97,7 @@ def main():
     env_content = """PORT=3001
 MONGODB_URI=mongodb://127.0.0.1:27017/rushwash
 DB_NAME=rushwash
-MONGO_FUNNEL_URI=mongodb://127.0.0.1:27017/rush_funnel
+MONGO_FUNNEL_URI=mongodb://127.0.0.1:27018/rush_funnel
 NODE_ENV=production
 """
     with sftp.file(f"{REMOTE_APP_DIR}/.env", "w") as f:
