@@ -729,7 +729,15 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
           ]);
           if (docs.length > 0) {
             const flows = docs
-              .map(({ _id, ...f }) => ({ ...f, id: f.id ?? String(_id), hasDraft: !!f.draft || !!f.hasDraft }))
+              .map(({ _id, ...f }) => {
+                const id = f.id ?? String(_id);
+                const name = typeof f.name === 'object' && f.name ? { en: f.name.en || id, ar: f.name.ar || '' } : { en: String(f.name || id) };
+                const steps = (f.steps || []).map((s, idx) => {
+                  const sname = typeof s?.name === 'object' && s.name ? { en: s.name.en || s.templateId || s.id || `Step ${idx+1}`, ar: s.name.ar || '' } : { en: String(s?.name || s?.templateId || s?.id || `Step ${idx+1}`) };
+                  return { ...s, name: sname };
+                });
+                return { ...f, id, name, steps, hasDraft: !!f.draft || !!f.hasDraft };
+              })
               .sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
             return res.json({
               success: true,

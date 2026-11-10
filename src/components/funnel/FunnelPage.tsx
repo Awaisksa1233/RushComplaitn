@@ -105,7 +105,7 @@ function StepDetail({ nodeId, stats, flows, onClose }: { nodeId: string; stats: 
             <div className="text-slate-500">Automation</div>
             {flow ? (
               <div className="text-slate-800 mt-0.5">
-                <div className="font-semibold text-black">{flow.name.en}</div>
+                <div className="font-semibold text-black">{flow.name?.en || (typeof flow.name === "string" ? flow.name : flow.id)}</div>
                 <div>{state === 'on' ? 'Running' : state === 'step_off' ? 'This step is switched off' : `Flow is ${flow.status}`}</div>
               </div>
             ) : (

@@ -6,17 +6,28 @@ import { isApprovedTemplate } from './funnelGraph';
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /** The draft if there is one, otherwise the live values: what the editor starts from. */
-export const baseOf = (f: FlowConfig): FlowDraft =>
-  f.draft ?? {
-    name: f.name,
+function sanitizeName(n: any, fallback = ''): { en: string; ar?: string } {
+  if (!n) return { en: fallback, ar: '' };
+  if (typeof n === 'string') return { en: n, ar: '' };
+  return { en: n.en || fallback, ar: n.ar || '' };
+}
+
+export const baseOf = (f: FlowConfig): FlowDraft => {
+  const steps = (f.steps || []).map((s, idx) => ({
+    ...s,
+    name: sanitizeName(s.name, s.templateId || s.id || `Step ${idx + 1}`)
+  }));
+  return f.draft ?? {
+    name: sanitizeName(f.name, f.id),
     description: f.description,
     status: f.status === 'running' ? 'running' : 'paused',
     window: f.window,
     volume: f.volume,
     reentry: f.reentry ?? 'once',
     approveFirstBatch: f.approveFirstBatch,
-    steps: f.steps
+    steps
   };
+};
 
 const input = 'w-full rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1.5 text-xs text-black focus:outline-none focus:ring-2 focus:ring-[#c91e2f]/20 focus:border-[#c91e2f]';
 
@@ -70,10 +81,10 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Field label="Name (English)">
-          <input className={input} value={d.name.en} maxLength={200} onChange={(e) => setD({ ...d, name: { ...d.name, en: e.target.value } })} />
+          <input className={input} value={d.name?.en ?? ""} maxLength={200} onChange={(e) => setD({ ...d, name: { ...d.name, en: e.target.value } })} />
         </Field>
         <Field label="Name (Arabic, optional)">
-          <input className={input} dir="rtl" value={d.name.ar ?? ''} maxLength={200} onChange={(e) => setD({ ...d, name: { ...d.name, ar: e.target.value } })} />
+          <input className={input} dir="rtl" value={d.name?.ar ?? ""} maxLength={200} onChange={(e) => setD({ ...d, name: { ...d.name, ar: e.target.value } })} />
         </Field>
         <div className="sm:col-span-2">
           <Field label="Description">
@@ -125,7 +136,7 @@ export function FlowEditor({ flow, onClose, onSaved }: { flow: FlowConfig; onClo
             <li key={s.id} className="rounded-lg border border-[#e5e5e5] p-3 grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
               <div className="sm:col-span-5">
                 <Field label={`${i + 1}. ${s.kind.replace('_', ' ')}`}>
-                  <input className={input} value={s.name.en} maxLength={200} onChange={(e) => setStep(i, { name: { ...s.name, en: e.target.value } })} />
+                  <input className={input} value={s.name?.en ?? ""} maxLength={200} onChange={(e) => setStep(i, { name: { ...s.name, en: e.target.value } })} />
                 </Field>
               </div>
               {s.kind === 'wait' && (

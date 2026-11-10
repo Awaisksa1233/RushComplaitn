@@ -92,7 +92,7 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
         <span className="shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-black text-white text-xs font-bold tabular-nums">{flow.number}</span>
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-bold text-black">{flow.name.en}</span>
+            <span className="text-sm font-bold text-black">{flow.name?.en || (typeof flow.name === "string" ? flow.name : flow.id)}</span>
             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${STATUS_CLASS[flow.status] ?? STATUS_CLASS.completed}`}>{flow.status}</span>
             {flow.hasDraft && <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Unpublished draft</span>}
             {pending.length > 0 && (
@@ -139,9 +139,9 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
                     <Icon className="w-3.5 h-3.5" />
                   </span>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`text-xs font-semibold ${s.paused ? 'text-slate-400' : 'text-black'}`}>{s.name.en}</span>
+                    <span className={`text-xs font-semibold ${s.paused ? 'text-slate-400' : 'text-black'}`}>{s.name?.en || (typeof s.name === "string" ? s.name : s.templateId || s.id || `Step ${i + 1}`)}</span>
                     {s.paused && <span className="rounded-full border border-slate-200 bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">Step off</span>}
-                    {s.kind === 'wait' && !/\d/.test(s.name.en) && <span className="text-[11px] text-slate-500">waits {waitText(s.waitHours)}</span>}
+                    {s.kind === 'wait' && !/\d/.test(s.name?.en ?? "") && <span className="text-[11px] text-slate-500">waits {waitText(s.waitHours)}</span>}
                     {s.holdoutPct ? <span className="text-[11px] text-slate-500">{s.holdoutPct}% held back</span> : null}
                   </div>
                   {s.kind === 'send_template' && (
