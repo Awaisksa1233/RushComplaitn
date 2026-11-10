@@ -45,7 +45,7 @@ export interface FlowStep {
   kind: FlowStepKind;
   name: { en: string; ar?: string };
   templateId?: string;
-  variants?: { key: 'A' | 'B' | 'C'; templateId: string; weight: number }[];
+  variants?: { key: 'A' | 'B' | 'C' | 'D'; templateId: string; weight: number }[];
   holdoutPct?: number;
   /** Marks a follow-up message; counted against the flow's maxReminders. */
   reminder?: boolean;

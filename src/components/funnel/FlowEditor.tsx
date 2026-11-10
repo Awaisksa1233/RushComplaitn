@@ -24,7 +24,7 @@ const SEGMENTS: Record<string, string> = {
   voucher_issued_unredeemed: 'Voucher issued, not redeemed',
   under_2_washes_7d: 'Under 2 washes in 7 days'
 };
-const OFFERS: Record<string, string> = { offerB: 'Offer B', offerC: 'Offer C' };
+const OFFERS: Record<string, string> = { offerB: 'Offer B', offerC: 'Offer C', offerD: 'Offer D' };
 const STEP_KIND_LABEL: Record<FlowStep['kind'], string> = {
   send_template: 'Send a message',
   wait: 'Wait',
@@ -148,10 +148,10 @@ function StepEditor({ step, index, all, onChange, onMove, onDelete, last, delayS
       { key: 'B', templateId: step.templateId ?? '', weight: w[1] }
     ]);
   };
-  const resize = (n: 2 | 3) => {
+  const resize = (n: 2 | 3 | 4) => {
     const w = rebalance(n);
     const cur = step.variants ?? [];
-    setVariants((['A', 'B', 'C'] as const).slice(0, n).map((key, i) => ({ key, templateId: cur[i]?.templateId ?? cur[0]?.templateId ?? '', weight: w[i] })));
+    setVariants((['A', 'B', 'C', 'D'] as const).slice(0, n).map((key, i) => ({ key, templateId: cur[i]?.templateId ?? cur[0]?.templateId ?? '', weight: w[i] })));
   };
 
   const target = (side: 'yes' | 'no', label: string) => (
@@ -257,7 +257,7 @@ function StepEditor({ step, index, all, onChange, onMove, onDelete, last, delayS
         <div className="space-y-2 rounded-lg bg-[#fafafa] p-2.5">
           <div className="flex items-center gap-2 text-xs text-slate-600">
             Variants
-            {([2, 3] as const).map((n) => (
+            {([2, 3, 4] as const).map((n) => (
               <button key={n} type="button" onClick={() => resize(n)} className={`rounded px-2 py-0.5 border ${step.variants!.length === n ? 'bg-black text-white border-black' : 'bg-white border-[#e5e5e5]'}`}>
                 {n}
               </button>

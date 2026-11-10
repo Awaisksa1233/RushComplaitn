@@ -32,7 +32,7 @@ const SOURCES = {
   },
   freeWashCouponReadableCodes: ['DSC-00074', 'DSC-00080', 'DSC-00655', 'DSC-00665'],
   // Offers B and C are tracked by promo code. These are still the funnel project's placeholders: they match nothing.
-  promoOffers: { offerB: ['WALLET50-PLACEHOLDER'], offerC: ['INTERIOR-PLACEHOLDER'] },
+  promoOffers: { offerB: ['WALLET50-PLACEHOLDER'], offerC: ['INTERIOR-PLACEHOLDER'], offerD: ['INTERIOR-MONTH-PLACEHOLDER'] },
   promoPlaceholderMarker: 'PLACEHOLDER',
   activeStatuses: ['active'],
   cteStatus: 'cancelled_voluntary',
@@ -318,7 +318,7 @@ function buildMembershipGraph({ events, messages, window, now, promo, promoPlace
 
   const why = { ...UNMEASURED };
   if (!offersMeasured) why.offers = 'mfWhyNoFunnelDb';
-  for (const k of ['offerB', 'offerC']) {
+  for (const k of ['offerB', 'offerC', 'offerD']) {
     if (promo[k] === null) why[k] = 'mfWhyPromoNotConfigured';
     else if (promoPlaceholder[k]) why[k] = 'mfWhyPromoPlaceholder';
   }
@@ -392,7 +392,7 @@ const templateId = (v, what) => {
 
 const STAGES = ['signed_up', 'free_wash_redeemed', 'offer_sent', 'offer_engaged', 'subscribed', 'first_full_renewal'];
 const SEGMENTS = ['renewal_due_5d', 'renewal_failed', 'inactive_7d', 'inactive_14d', 'cancelled_still_valid', 'expired_no_active', 'voucher_issued_unredeemed', 'under_2_washes_7d'];
-const OFFERS = ['offerB', 'offerC'];
+const OFFERS = ['offerB', 'offerC', 'offerD'];
 const STEP_KINDS = ['send_template', 'wait', 'condition', 'ab_split', 'grant_offer'];
 const MAX_STEPS = 40;
 const STEP_ID = /^[A-Za-z0-9_-]{1,24}$/;
@@ -525,9 +525,9 @@ export function validateFlowDraft(input, live) {
     if (s.kind === 'wait') step.waitHours = int(s.waitHours, `${label} wait (hours)`, 0, 24 * 365);
     if (s.kind === 'send_template') {
       if (Array.isArray(s.variants) && s.variants.length > 0) {
-        if (s.variants.length < 2 || s.variants.length > 3) bad(`${label}: an A/B split needs 2 or 3 variants`);
+        if (s.variants.length < 2 || s.variants.length > 4) bad(`${label}: an A/B split needs 2, 3 or 4 variants`);
         step.variants = s.variants.map((v, j) => {
-          if (!isObj(v) || v.key !== 'ABC'[j]) bad(`${label}: variants must be A, B, C in order`);
+          if (!isObj(v) || v.key !== 'ABCD'[j]) bad(`${label}: variants must be A, B, C, D in order`);
           return { key: v.key, templateId: templateId(v.templateId, `${label} template ${v.key}`), weight: int(v.weight, `${label} weight ${v.key}`, 0, 100) };
         });
         if (step.variants.reduce((a, v) => a + v.weight, 0) !== 100) bad(`${label}: A/B weights must add up to 100`);
@@ -1086,7 +1086,7 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
         codes.length === 0
           ? null
           : db.collection(SOURCES.collections.couponRedemptions).countDocuments({ couponReadableCode: { $in: codes }, redeemedAt: { $gte: window.from, $lt: window.to } });
-      const [offerB, offerC] = await Promise.all([countPromo(SOURCES.promoOffers.offerB), countPromo(SOURCES.promoOffers.offerC)]);
+      const [offerB, offerC, offerD] = await Promise.all([countPromo(SOURCES.promoOffers.offerB), countPromo(SOURCES.promoOffers.offerC), countPromo(SOURCES.promoOffers.offerD)]);
       const isPlaceholder = (codes) => codes.some((c) => c.includes(SOURCES.promoPlaceholderMarker));
 
       const all = offers ? events.concat(offers) : events;
@@ -1095,8 +1095,8 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
         messages,
         window,
         now,
-        promo: { offerB, offerC },
-        promoPlaceholder: { offerB: isPlaceholder(SOURCES.promoOffers.offerB), offerC: isPlaceholder(SOURCES.promoOffers.offerC) },
+        promo: { offerB, offerC, offerD },
+        promoPlaceholder: { offerB: isPlaceholder(SOURCES.promoOffers.offerB), offerC: isPlaceholder(SOURCES.promoOffers.offerC), offerD: isPlaceholder(SOURCES.promoOffers.offerD) },
         includeHistorical: req.query.includeHistorical === 'true',
         offersMeasured: offers !== null,
         definition: await readDefinition()

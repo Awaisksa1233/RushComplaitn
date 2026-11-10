@@ -79,7 +79,7 @@ function StepNode({ data }: NodeProps<Node<NodeData>>) {
         <span className="text-[11px] text-slate-500">Reached</span>
       </div>
       {variants && (
-        <div className={`mt-2 grid gap-1.5 ${variants.length > 2 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className={`mt-2 grid gap-1.5 ${variants.length > 2 ? (variants.length > 3 ? 'grid-cols-2' : 'grid-cols-3') : 'grid-cols-2'}`}>
           {variants.map((v: VariantView, i: number) => (
             <div key={i} className="rounded-md border border-[#e5e5e5] bg-[#fafafa] px-2 py-1.5 min-w-0">
               {v.letter && <span className="inline-flex h-4 w-4 items-center justify-center rounded bg-black text-white text-[10px] font-bold">{v.letter}</span>}

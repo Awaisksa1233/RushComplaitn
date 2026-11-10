@@ -23,7 +23,7 @@ const SEGMENT_NAME: Record<string, string> = {
   voucher_issued_unredeemed: 'Customers with an issued, unredeemed voucher',
   under_2_washes_7d: 'Active members with under 2 washes in the last 7 days'
 };
-const OFFER_NAME: Record<string, string> = { offerB: 'Offer B', offerC: 'Offer C' };
+const OFFER_NAME: Record<string, string> = { offerB: 'Offer B', offerC: 'Offer C', offerD: 'Offer D' };
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function triggerText(t?: FlowTrigger): string {

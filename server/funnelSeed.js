@@ -149,15 +149,16 @@ export const SEED_FLOWS = [
   }),
   flow({
     id: 'mf-offers', number: 13,
-    name: { en: 'Membership: offers A / B / C' },
-    description: { en: 'After the free wash is used, sends one of three offers (3-way split): A 96 SAR, B 50 SAR wallet balance, C free interior on the next visit. Stops once they subscribe.' },
+    name: { en: 'Membership: 4 Offers after Free Wash' },
+    description: { en: 'After the free wash is used, sends one of four plans (4-way split): 1. 100 SAR membership, 2. 50 SAR wallet balance, 3. Free interior on next visit, 4. Free interior for whole month with membership. Stops once they subscribe.' },
     trigger: { type: 'event', stageId: 'free_wash_redeemed', maxAgeHours: 72 },
     exitWhen: [reached('subscribed'), entitled], reentry: 'once',
     steps: [
-      send('m3', 'Offer A / B / C', null, [
-        { key: 'A', templateId: '100_sar_a', weight: 34 },
-        { key: 'B', templateId: '50_sar_a', weight: 33 },
-        { key: 'C', templateId: 'free_interior', weight: 33 }
+      send('m3', 'Offers (4 Plans)', null, [
+        { key: 'A', templateId: '100_sar_a', weight: 25 },
+        { key: 'B', templateId: '50_sar_a', weight: 25 },
+        { key: 'C', templateId: 'free_interior', weight: 25 },
+        { key: 'D', templateId: 'free_interior_membership', weight: 25 }
       ])
     ]
   }),
@@ -178,7 +179,15 @@ export const SEED_FLOWS = [
     steps: [wait('m5w', 48, 'Wait 2 days'), send('m5', 'Offer C reminder', null, ab('free_interior_wash_reminder', 'free_interior_subscription_reminder'))]
   }),
   flow({
-    id: 'mf-membership-offer', number: 16,
+    id: 'mf-reminder-d', number: 16,
+    name: { en: 'Membership: Offer D reminder' },
+    description: { en: '48 hours after Offer D (free interior for whole month with membership) was sent, reminds the customer if they have not subscribed.' },
+    trigger: { type: 'offer_sent', templateIds: ['free_interior_membership'], fromFlowId: 'mf-offers', maxAgeHours: 72 },
+    exitWhen: [reached('subscribed'), entitled], reentry: 'once',
+    steps: [wait('m5dw', 48, 'Wait 2 days'), send('m5d', 'Offer D reminder', null, ab('free_interior_subscription_reminder', 'free_interior_subscription_reminder'))]
+  }),
+  flow({
+    id: 'mf-membership-offer', number: 17,
     name: { en: 'Membership: membership offer' },
     description: { en: 'When a customer redeems Offer B or C, sends the membership offer (A/B test). Stops once they subscribe. Needs the real promo codes.' },
     trigger: { type: 'promo_redeemed', offers: ['offerB', 'offerC'], maxAgeHours: 72 },
@@ -186,7 +195,7 @@ export const SEED_FLOWS = [
     steps: [send('m6', 'Membership offer', null, ab('free_interior_membership', '100_sar_a'))]
   }),
   flow({
-    id: 'mf-membership-remind', number: 17,
+    id: 'mf-membership-remind', number: 18,
     name: { en: 'Membership: membership offer reminder' },
     description: { en: '48 hours after the membership offer was sent, reminds the customer if they have not subscribed (A/B test).' },
     trigger: { type: 'offer_sent', templateIds: ['free_interior_membership', '100_sar_a'], fromFlowId: 'mf-membership-offer', maxAgeHours: 72 },
@@ -194,7 +203,7 @@ export const SEED_FLOWS = [
     steps: [wait('m7w', 48, 'Wait 2 days'), send('m7', 'Membership reminder', null, ab('freewash_redemption_reminder', 'redemption_reminder_b'))]
   }),
   flow({
-    id: 'mf-usage', number: 18,
+    id: 'mf-usage', number: 19,
     name: { en: 'Membership: weekly usage nudge' },
     description: { en: 'Every week, active members with under 2 washes in the last 7 days get a nudge (A/B test). 4 days later, anyone who still has not washed gets one follow-up.' },
     trigger: { type: 'segment', segment: 'under_2_washes_7d' },

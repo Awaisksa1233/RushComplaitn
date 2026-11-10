@@ -55,23 +55,29 @@ export const MF_NODES: MfNode[] = [
   { id: 's1dead', kind: 'end', title: 'Stage 1 dead / exit', x: 840, y: 310, tone: 'danger' },
 
   {
-    id: 'offers', kind: 'step', stage: 2, title: 'Offers', when: 'After the free wash is redeemed', x: 0, y: 520,
+    id: 'offers', kind: 'step', stage: 2, title: 'Offers (4 Plans)', when: 'After the free wash is redeemed', x: 0, y: 520,
     variants: [
-      v('Offer A: membership', '100_sar_a'),
-      v('Offer B: SAR 50 wallet balance', '50_sar_a'),
-      v('Offer C: free interior on next visit', 'free_interior')
+      v('Plan 1: 100 SAR membership', '100_sar_a'),
+      v('Plan 2: SAR 50 wallet balance', '50_sar_a'),
+      v('Plan 3: Free interior clean next visit', 'free_interior'),
+      v('Plan 4: Free interior month w/ membership', 'free_interior_membership')
     ]
   },
   {
-    id: 'remB', kind: 'step', stage: 2, title: 'Offer B reminder', when: 'If the offer is not redeemed', x: 0, y: 760,
+    id: 'remB', kind: 'step', stage: 2, title: 'Offer B reminder', when: 'If the offer is not redeemed', x: -140, y: 760,
     variants: [v('Copy A', '50_sar_reminder_a'), v('Copy B', '50_sar_reminder_b')]
   },
   {
-    id: 'remC', kind: 'step', stage: 2, title: 'Offer C reminder', when: 'If the offer is not redeemed', x: 420, y: 760,
+    id: 'remC', kind: 'step', stage: 2, title: 'Offer C reminder', when: 'If the offer is not redeemed', x: 220, y: 760,
     variants: [v('Copy A', 'free_interior_wash_reminder'), v('Copy B', 'free_interior_subscription_reminder')]
   },
-  { id: 'exitB', kind: 'end', title: 'Exit', x: -330, y: 790, tone: 'danger' },
-  { id: 'exitC', kind: 'end', title: 'Exit', x: 840, y: 790, tone: 'danger' },
+  {
+    id: 'remD', kind: 'step', stage: 2, title: 'Offer D reminder', when: 'If the offer is not redeemed', x: 580, y: 760,
+    variants: [v('Copy A', 'free_interior_subscription_reminder'), v('Copy B', 'free_interior_subscription_reminder')]
+  },
+  { id: 'exitB', kind: 'end', title: 'Exit', x: -440, y: 790, tone: 'danger' },
+  { id: 'exitC', kind: 'end', title: 'Exit', x: 220, y: 920, tone: 'danger' },
+  { id: 'exitD', kind: 'end', title: 'Exit', x: 920, y: 790, tone: 'danger' },
   {
     id: 'msoffer', kind: 'step', stage: 2, title: 'Membership offer', when: 'After the offer is redeemed', x: 0, y: 1000,
     variants: [v('First month flat discount / SAR 100 promo', 'free_interior_membership'), v('2-month lock-in / free upgraded wash add-on', '100_sar_a')]
@@ -118,13 +124,16 @@ export const MF_EDGES: MfEdge[] = [
   e('e4', 's1remind', 'right', 's1dead', 'left', 'Not redeemed by day 7', 'danger'),
   e('e5', 's1remind', 'left', 'offers', 'top', 'Redeemed', 'success'),
 
-  e('e6', 'offers', 'left', 'members', 'top', 'Offer A: membership', 'success'),
-  e('e7', 'offers', 'bottom', 'remB', 'top', 'Offer B: SAR 50 wallet balance', 'neutral'),
-  e('e8', 'offers', 'right', 'remC', 'top', 'Offer C: free interior on next visit', 'neutral'),
+  e('e6', 'offers', 'left', 'members', 'top', 'Plan 1: 100 SAR membership', 'success'),
+  e('e7', 'offers', 'bottom', 'remB', 'top', 'Plan 2: SAR 50 wallet balance', 'neutral'),
+  e('e8', 'offers', 'bottom', 'remC', 'top', 'Plan 3: Free interior next visit', 'neutral'),
+  e('e8d', 'offers', 'right', 'remD', 'top', 'Plan 4: Free interior month w/ membership', 'neutral'),
   e('e9', 'remB', 'bottom', 'msoffer', 'top', 'Redeemed', 'success'),
   e('e10', 'remB', 'left', 'exitB', 'right', 'Not redeemed', 'danger'),
   e('e11', 'remC', 'bottom', 'msoffer', 'top', 'Redeemed', 'success'),
-  e('e12', 'remC', 'right', 'exitC', 'left', 'Not redeemed', 'danger'),
+  e('e12', 'remC', 'bottom', 'exitC', 'top', 'Not redeemed', 'danger'),
+  e('e12d_sub', 'remD', 'left', 'members', 'top', 'Subscribes', 'success'),
+  e('e12d_exit', 'remD', 'right', 'exitD', 'left', 'Not subscribed', 'danger'),
 
   e('e13', 'msoffer', 'left', 'members', 'top', 'Converts to member', 'success'),
   e('e14', 'msoffer', 'right', 'msremind', 'top', 'No conversion in 48 hours', 'neutral'),
@@ -156,6 +165,7 @@ export const MF_NODE_FLOW: Record<string, { flowId: string; stepId: string }> = 
   offers: { flowId: 'mf-offers', stepId: 'm3' },
   remB: { flowId: 'mf-reminder-b', stepId: 'm4' },
   remC: { flowId: 'mf-reminder-c', stepId: 'm5' },
+  remD: { flowId: 'mf-reminder-d', stepId: 'm5d' },
   msoffer: { flowId: 'mf-membership-offer', stepId: 'm6' },
   msremind: { flowId: 'mf-membership-remind', stepId: 'm7' },
   s3nudge: { flowId: 'mf-usage', stepId: 'u1' },
@@ -169,6 +179,7 @@ const WHEN_CONTEXT: Record<string, { after: string; cond?: string }> = {
   offers: { after: 'the free wash is redeemed' },
   remB: { after: 'the offer', cond: 'if the offer is not redeemed' },
   remC: { after: 'the offer', cond: 'if the offer is not redeemed' },
+  remD: { after: 'the offer', cond: 'if not subscribed' },
   msoffer: { after: 'the offer is redeemed' },
   msremind: { after: 'the membership offer' },
   s3follow: { after: 'the nudge' }
