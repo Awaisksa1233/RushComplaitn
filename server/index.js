@@ -5,6 +5,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { MongoClient } from 'mongodb';
+import { registerFunnelRoutes } from './funnel.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -93,6 +95,9 @@ connectMongo();
 function hasCol(name) {
   return collectionNames.includes(name);
 }
+
+// Funnel & Flows (read-only): /api/funnel/graph, /api/funnel/trends, /api/funnel/flows
+registerFunnelRoutes(app, { getSourceDb: () => (isMongoConnected ? mongoDb : null) });
 
 // 1. Health & Connection Status
 app.get('/api/health', async (req, res) => {

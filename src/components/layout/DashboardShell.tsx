@@ -10,7 +10,9 @@ import {
   Users,
   Flag,
   Sparkles,
-  FileText
+  FileText,
+  Filter,
+  ShieldAlert
 } from 'lucide-react';
 import { ActiveDomainTab } from './DashboardHeader';
 import productionData from '../../data/productionCrmData.json';
@@ -55,6 +57,7 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     { id: 'retention', label: 'Retention & Save Flows', icon: Sparkles, badge: 'Churnkey' },
     { id: 'usage', label: 'Wash Usage & Fleet', icon: Gauge, alert: true },
     { id: 'baremetrics', label: 'Baremetrics SaaS', icon: Layers, badge: 'SaaS' },
+    { id: 'funnel', label: 'Funnel & Flows', icon: Filter, badge: 'WhatsApp' },
   ];
 
   const v1SubItems: DomainItem[] = [
@@ -63,11 +66,13 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
     { id: 'team', label: 'Sales Team', icon: Users },
     { id: 'usage', label: 'Wash Usage', icon: Gauge },
     { id: 'kpi_guide', label: 'KPI Guide (.md)', icon: FileText, badge: 'Docs' },
+    { id: 'rca', label: 'RCA Master (.md)', icon: ShieldAlert, badge: 'v2.0' },
   ];
 
   const v1Domains: DomainItem[] = [
     { id: 'glance', label: 'Executive Glance', icon: LayoutDashboard, badge: 'Overview' },
     { id: 'analytics', label: 'Analytics Hub', icon: Layers, badge: 'Hub' },
+    { id: 'funnel', label: 'Funnel & Flows', icon: Filter, badge: 'WhatsApp' },
   ];
 
   const domains: DomainItem[] = isV1 ? v1Domains : classicDomains;
@@ -237,6 +242,21 @@ export const DashboardShell: React.FC<DashboardShellProps> = ({
               <span>KPI Guide (.md)</span>
             </div>
             <span className="text-[10px] font-mono text-[#888888]">In-App</span>
+          </button>
+
+          <button
+            onClick={() => {
+              onDomainChange('analytics');
+              onSelectAnalyticsSubTab?.('rca');
+            }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs text-[#cccccc] hover:bg-[#161616] hover:text-white transition-colors cursor-pointer"
+            title="Open Consolidated RCA Master Hub"
+          >
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-3.5 h-3.5 text-[#c91e2f]" />
+              <span>RCA Master (.md)</span>
+            </div>
+            <span className="text-[10px] font-mono text-[#888888]">v2.0</span>
           </button>
         </div>
 

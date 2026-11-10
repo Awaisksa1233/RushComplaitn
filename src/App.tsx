@@ -30,6 +30,7 @@ import { CancellationFlowModal } from './components/cancellation/CancellationFlo
 import { CustomerCancelPage } from './components/cancellation/CustomerCancelPage';
 import { DrilldownModal } from './components/modals/DrilldownModal';
 import { AnalyticsHub, AnalyticsSubTab } from './components/analytics/AnalyticsHub';
+import { FunnelPage } from './components/funnel/FunnelPage';
 
 export function App() {
   // Path / Route state (handles /cancel, /v1, and /)
@@ -40,6 +41,9 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         return '/cancel';
+      }
+      if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
+        return '/funnel';
       }
       if (p.startsWith('/v1') || h.startsWith('#/v1') || h === '#v1' || q === 'v1') {
         return p.startsWith('/v1') ? p : '/v1/';
@@ -56,6 +60,8 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         setCurrentPath('/cancel');
+      } else if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
+        setCurrentPath('/funnel');
       } else if (p.startsWith('/v1') || h.startsWith('#/v1') || h === '#v1' || q === 'v1') {
         setCurrentPath(p.startsWith('/v1') ? p : '/v1/');
       } else {
@@ -94,13 +100,25 @@ export function App() {
         setActiveDomain('analytics');
       }
       const sub = new URLSearchParams(window.location.search).get('sub');
-      if (sub && ['sales', 'memberships', 'team', 'usage', 'kpi_guide'].includes(sub)) {
+      if (sub && ['sales', 'memberships', 'team', 'usage', 'kpi_guide', 'rca'].includes(sub)) {
         setAnalyticsSubTab(sub as AnalyticsSubTab);
       }
     }
   }, [currentPath]);
 
+  const isFunnel = currentPath.startsWith('/funnel');
+
   const handleDomainChange = (domain: ActiveDomainTab) => {
+    // Funnel & Flows lives at its own URL (/funnel); every other domain is a tab of the dashboard at /.
+    if (domain === 'funnel') {
+      navigate('/funnel');
+      return;
+    }
+    if (isFunnel) {
+      navigate('/');
+      setActiveDomain(domain);
+      return;
+    }
     if (isV1) {
       if (domain === 'glance') {
         setActiveDomain('glance');
@@ -220,6 +238,10 @@ export function App() {
         onOpenKpiGuide={() => {
           setActiveDomain('analytics');
           setAnalyticsSubTab('kpi_guide');
+        }}
+        onOpenRca={() => {
+          setActiveDomain('analytics');
+          setAnalyticsSubTab('rca');
         }}
       />
 

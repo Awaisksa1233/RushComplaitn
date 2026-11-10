@@ -19,10 +19,11 @@ import {
   Layers,
   Users,
   ShieldCheck,
-  FileText
+  FileText,
+  Filter
 } from 'lucide-react';
 
-export type ActiveDomainTab = 'glance' | 'analytics' | 'revenue' | 'sales' | 'team' | 'memberships' | 'retention' | 'usage' | 'baremetrics';
+export type ActiveDomainTab = 'glance' | 'analytics' | 'revenue' | 'sales' | 'team' | 'memberships' | 'retention' | 'usage' | 'baremetrics' | 'funnel';
 
 interface DashboardHeaderProps {
   activeDomain: ActiveDomainTab;
@@ -41,6 +42,7 @@ interface DashboardHeaderProps {
   isV1?: boolean;
   onToggleV1?: () => void;
   onOpenKpiGuide?: () => void;
+  onOpenRca?: () => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -59,7 +61,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onOpenCancelPortal,
   isV1 = false,
   onToggleV1,
-  onOpenKpiGuide
+  onOpenKpiGuide,
+  onOpenRca
 }) => {
   const datePresets: { id: DateRangePreset; label: string }[] = [
     { id: 'today', label: 'Today' },
@@ -80,6 +83,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     ? [
         { id: 'glance', label: 'At a Glance', icon: LayoutDashboard },
         { id: 'analytics', label: 'Analytics', icon: Layers },
+        { id: 'funnel', label: 'Funnel & Flows', icon: Filter },
       ]
     : [
         { id: 'glance', label: 'At a Glance', icon: LayoutDashboard },
@@ -90,6 +94,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         { id: 'retention', label: 'Retention & Save Flows', icon: ShieldCheck },
         { id: 'usage', label: 'Wash Usage', icon: Gauge },
         { id: 'baremetrics', label: 'Baremetrics SaaS', icon: Layers },
+        { id: 'funnel', label: 'Funnel & Flows', icon: Filter },
       ];
 
   return (
@@ -230,6 +235,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               >
                 <FileText className="w-3.5 h-3.5 text-[#c91e2f]" />
                 <span>KPI Guide (.md)</span>
+              </button>
+            )}
+
+            {/* In-app RCA Master Documentation Guide Button */}
+            {onOpenRca && (
+              <button
+                onClick={onOpenRca}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-black border border-[#e5e5e5] hover:border-slate-300 rounded-lg text-xs font-semibold shadow-2xs transition-all active:scale-95 cursor-pointer"
+                title="Open Consolidated RCA Master Hub"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#c91e2f]" />
+                <span>RCA Master (.md)</span>
               </button>
             )}
           </div>
