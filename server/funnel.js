@@ -390,7 +390,75 @@ const templateId = (v, what) => {
   return v;
 };
 
-/** Validates an edited flow against the live one. Steps can be edited but not added, removed or re-typed. */
+const STAGES = ['signed_up', 'free_wash_redeemed', 'offer_sent', 'offer_engaged', 'subscribed', 'first_full_renewal'];
+const SEGMENTS = ['renewal_due_5d', 'renewal_failed', 'inactive_7d', 'inactive_14d', 'cancelled_still_valid', 'expired_no_active', 'voucher_issued_unredeemed', 'under_2_washes_7d'];
+const OFFERS = ['offerB', 'offerC'];
+const STEP_KINDS = ['send_template', 'wait', 'condition', 'ab_split', 'grant_offer'];
+const MAX_STEPS = 40;
+const STEP_ID = /^[A-Za-z0-9_-]{1,24}$/;
+const pick = (v, list, what) => {
+  if (!list.includes(v)) bad(`${what} is not an allowed value`);
+  return v;
+};
+const pickMany = (v, list, what) => {
+  if (!Array.isArray(v) || v.length === 0) bad(`Pick at least one ${what}`);
+  return [...new Set(v.map((x) => pick(x, list, what)))];
+};
+
+function validateTrigger(t, live) {
+  if (t === undefined || t === null) return undefined;
+  if (!isObj(t)) bad('Trigger is invalid');
+  const maxAge = t.maxAgeHours === undefined ? undefined : int(t.maxAgeHours, 'Entry max age (hours)', 1, 24 * 365);
+  const withAge = (o) => (maxAge === undefined ? o : { ...o, maxAgeHours: maxAge });
+  switch (t.type) {
+    case 'event':
+      return withAge({ type: 'event', stageId: pick(t.stageId, STAGES, 'Trigger stage') });
+    case 'segment':
+      // A segment the live flow already uses stays valid even if it is not in the list above.
+      return { type: 'segment', segment: t.segment === live.trigger?.segment ? t.segment : pick(t.segment, SEGMENTS, 'Trigger segment') };
+    case 'promo_redeemed':
+      return withAge({ type: 'promo_redeemed', offers: pickMany(t.offers, OFFERS, 'offer') });
+    case 'offer_sent': {
+      if (!Array.isArray(t.templateIds) || t.templateIds.length === 0) bad('Pick at least one template for the trigger');
+      const out = { type: 'offer_sent', templateIds: [...new Set(t.templateIds.map((x) => templateId(x, 'Trigger template')))] };
+      if (t.fromFlowId) out.fromFlowId = text(t.fromFlowId, 'Trigger flow', 80);
+      return withAge(out);
+    }
+    default:
+      return bad('Trigger type is not allowed');
+  }
+}
+
+function validateExit(list) {
+  if (list === undefined) return [];
+  if (!Array.isArray(list) || list.length > 10) bad('Stop rules are invalid');
+  return list.map((r) => {
+    if (!isObj(r)) bad('Stop rule is invalid');
+    if (r.type === 'stage_reached') return { type: 'stage_reached', stageId: pick(r.stageId, STAGES, 'Stop stage') };
+    if (r.type === 'has_entitled_subscription') return { type: 'has_entitled_subscription' };
+    if (r.type === 'promo_redeemed') return { type: 'promo_redeemed', offers: pickMany(r.offers, OFFERS, 'offer') };
+    return bad('Stop rule type is not allowed');
+  });
+}
+
+function validateCondition(c, base, label) {
+  if (!isObj(c) || !isObj(c.check)) bad(`${label} needs a check`);
+  let check;
+  if (c.check.type === 'days_since_last_wash') {
+    check = { ...(base?.check?.type === 'days_since_last_wash' ? base.check : {}), type: 'days_since_last_wash', moreThan: int(c.check.moreThan, `${label} days`, 0, 365) };
+  } else if (base?.check && c.check.type === base.check.type) {
+    // An existing check of another kind is kept as the funnel defined it; only its yes/no targets are editable.
+    check = base.check;
+  } else {
+    bad(`${label}: this check type cannot be created here`);
+  }
+  return { check, yes: c.yes ?? null, no: c.no ?? null };
+}
+
+/**
+ * Validates an edited flow. Steps can be added, removed and reordered; the result is a complete, self-consistent flow
+ * (unique step ids, every condition target exists). `live` supplies fields the editor cannot create (e.g. grant_offer).
+ */
 export function validateFlowDraft(input, live) {
   if (!isObj(input)) bad('Send the flow as an object');
   const out = {};
@@ -425,31 +493,59 @@ export function validateFlowDraft(input, live) {
   if (typeof input.approveFirstBatch !== 'boolean') bad('approveFirstBatch must be true or false');
   out.approveFirstBatch = input.approveFirstBatch;
 
-  if (!Array.isArray(input.steps) || input.steps.length !== live.steps.length) bad('Steps cannot be added or removed here');
+  const trigger = validateTrigger(input.trigger, live);
+  if (trigger) out.trigger = trigger;
+  out.exitWhen = validateExit(input.exitWhen);
+
+  if (!Array.isArray(input.steps) || input.steps.length === 0) bad('A flow needs at least one step');
+  if (input.steps.length > MAX_STEPS) bad(`A flow can have at most ${MAX_STEPS} steps`);
+  const ids = new Set();
+  const liveById = new Map((live.steps ?? []).map((s) => [s.id, s]));
   out.steps = input.steps.map((s, i) => {
-    const base = live.steps[i];
-    if (!isObj(s) || s.id !== base.id || s.kind !== base.kind) bad(`Step ${i + 1} does not match the flow`);
-    if (!isObj(s.name)) bad(`Step ${i + 1} needs a name`);
-    const step = { ...base, name: { ...base.name, en: text(s.name.en, `Step ${i + 1} name`) }, paused: !!s.paused };
-    if (base.kind === 'wait') step.waitHours = int(s.waitHours, `Step ${i + 1} wait (hours)`, 0, 24 * 365);
-    if (base.kind === 'send_template') {
-      if (base.variants?.length) {
-        if (!Array.isArray(s.variants) || s.variants.length !== base.variants.length) bad(`Step ${i + 1} variants do not match`);
+    const label = `Step ${i + 1}`;
+    if (!isObj(s)) bad(`${label} is invalid`);
+    if (typeof s.id !== 'string' || !STEP_ID.test(s.id)) bad(`${label} has an invalid id`);
+    if (ids.has(s.id)) bad(`${label} repeats the id "${s.id}"`);
+    ids.add(s.id);
+    pick(s.kind, STEP_KINDS, `${label} type`);
+    const prior = liveById.get(s.id);
+    if (s.kind === 'grant_offer' && prior?.kind !== 'grant_offer') bad(`${label}: grant-offer steps cannot be created here`);
+    if (!isObj(s.name)) bad(`${label} needs a name`);
+    const base = prior && prior.kind === s.kind ? prior : {};
+    const step = { ...base, id: s.id, kind: s.kind, name: { ...(base.name ?? {}), en: text(s.name.en, `${label} name`) }, paused: !!s.paused };
+    delete step.variants;
+    delete step.templateId;
+    delete step.waitHours;
+    delete step.condition;
+    delete step.holdoutPct;
+
+    if (s.kind === 'wait') step.waitHours = int(s.waitHours, `${label} wait (hours)`, 0, 24 * 365);
+    if (s.kind === 'send_template') {
+      if (Array.isArray(s.variants) && s.variants.length > 0) {
+        if (s.variants.length < 2 || s.variants.length > 3) bad(`${label}: an A/B split needs 2 or 3 variants`);
         step.variants = s.variants.map((v, j) => {
-          if (!isObj(v) || v.key !== base.variants[j].key) bad(`Step ${i + 1} variant ${j + 1} does not match`);
-          return { key: v.key, templateId: templateId(v.templateId, `Step ${i + 1} template ${v.key}`), weight: int(v.weight, `Step ${i + 1} weight ${v.key}`, 0, 100) };
+          if (!isObj(v) || v.key !== 'ABC'[j]) bad(`${label}: variants must be A, B, C in order`);
+          return { key: v.key, templateId: templateId(v.templateId, `${label} template ${v.key}`), weight: int(v.weight, `${label} weight ${v.key}`, 0, 100) };
         });
-        if (step.variants.reduce((a, v) => a + v.weight, 0) !== 100) bad(`Step ${i + 1} A/B weights must add up to 100`);
+        if (step.variants.reduce((a, v) => a + v.weight, 0) !== 100) bad(`${label}: A/B weights must add up to 100`);
         step.templateId = step.variants[0].templateId;
       } else {
-        step.templateId = templateId(s.templateId, `Step ${i + 1} template`);
+        step.templateId = templateId(s.templateId, `${label} template`);
       }
+      if (s.holdoutPct !== undefined) step.holdoutPct = int(s.holdoutPct, `${label} hold-back`, 0, 100);
     }
-    if (base.holdoutPct !== undefined || s.holdoutPct !== undefined) {
-      if (s.holdoutPct !== undefined) step.holdoutPct = int(s.holdoutPct, `Step ${i + 1} hold-back`, 0, 100);
-    }
+    if (s.kind === 'condition') step.condition = validateCondition(s.condition, prior?.condition, label);
     return step;
   });
+
+  // Every condition must point at a step that exists in this flow, and never at itself.
+  for (const st of out.steps) {
+    if (!st.condition) continue;
+    for (const side of ['yes', 'no']) {
+      const target = st.condition[side];
+      if (target !== null && (typeof target !== 'string' || !ids.has(target) || target === st.id)) bad(`"${st.name.en}": the ${side} branch points at a step that does not exist`);
+    }
+  }
   return out;
 }
 
@@ -912,6 +1008,30 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
     } catch (err) {
       if (err instanceof ValidationError) return res.status(400).json({ success: false, error: err.message });
       unavailable(res, err, 'saving the draft');
+    }
+  });
+
+  // POST /api/funnel/flows/:id/publish  -> applies the saved draft to the live flow. Starting a paused flow needs { confirmStart: true }.
+  app.post('/api/funnel/flows/:id/publish', async (req, res) => {
+    try {
+      const found = await liveFlowOrFail(res, req.params.id);
+      if (!found) return;
+      if (!found.doc.draft) return res.status(409).json({ success: false, error: 'There is no saved draft to publish.' });
+      // Re-validate: a draft is never trusted just because it was stored.
+      const draft = validateFlowDraft(found.doc.draft, found.doc);
+      if (draft.status === 'running' && found.doc.status !== 'running' && req.body?.confirmStart !== true) {
+        return res.status(409).json({ success: false, code: 'confirm_start', error: 'Publishing will start this flow and begin sending WhatsApp messages. Confirm to continue.' });
+      }
+      const { name, description, status, window, volume, reentry, approveFirstBatch, steps, trigger, exitWhen } = draft;
+      const $set = { name, description, status, window, volume, reentry, approveFirstBatch, steps, exitWhen, hasDraft: false, publishedAt: new Date() };
+      const $unset = { draft: '', draftUpdatedAt: '' };
+      if (trigger) $set.trigger = trigger;
+      else $unset.trigger = '';
+      await found.fdb.collection('funnel_flows').updateOne({ _id: found.doc._id }, { $set, $unset });
+      res.json({ success: true, data: { id: req.params.id, hasDraft: false } });
+    } catch (err) {
+      if (err instanceof ValidationError) return res.status(400).json({ success: false, error: `The draft cannot be published: ${err.message}` });
+      unavailable(res, err, 'publishing the draft');
     }
   });
 
