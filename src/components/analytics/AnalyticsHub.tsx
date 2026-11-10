@@ -4,7 +4,8 @@ import {
   UserCheck, 
   Users, 
   Gauge,
-  FileText
+  FileText,
+  ShieldAlert
 } from 'lucide-react';
 import { 
   Granularity, 
@@ -20,13 +21,15 @@ import { RetentionAndValue } from '../tables/CohortRetentionTable';
 import { WashUsageDashboard } from '../charts/WashUsageDashboard';
 import { SalesTeamPerformance } from '../sales/SalesTeamPerformance';
 import { KpiGuideView } from './KpiGuideView';
+import { RcaMasterView } from './RcaMasterView';
 
 export type AnalyticsSubTab = 
   | 'sales' 
   | 'memberships' 
   | 'team' 
   | 'usage'
-  | 'kpi_guide';
+  | 'kpi_guide'
+  | 'rca';
 
 interface AnalyticsHubProps {
   analytics: any;
@@ -61,6 +64,7 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
     { id: 'team', label: 'Sales Team', icon: Users },
     { id: 'usage', label: 'Wash Usage & Fleet', icon: Gauge },
     { id: 'kpi_guide', label: 'KPI Guide (.md)', icon: FileText, badge: 'Docs' },
+    { id: 'rca', label: 'RCA Master (.md)', icon: ShieldAlert, badge: 'RCA v2.0' },
   ];
 
   return (
@@ -182,6 +186,11 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
       {/* 5. KPI CALCULATION GUIDE (.MD) */}
       {activeSubTab === 'kpi_guide' && (
         <KpiGuideView />
+      )}
+
+      {/* 6. RCA MASTER DOCUMENTATION & AUDIT HUB */}
+      {activeSubTab === 'rca' && (
+        <RcaMasterView onNavigateToKpiGuide={() => onSubTabChange('kpi_guide')} />
       )}
     </div>
   );

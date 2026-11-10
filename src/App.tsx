@@ -207,11 +207,7 @@ export function App() {
   }
 
   if (isFunnel) {
-    return (
-      <DashboardShell activeDomain="funnel" onDomainChange={handleDomainChange} onDrilldown={() => navigate('/')}>
-        <FunnelPage onBack={() => navigate('/')} />
-      </DashboardShell>
-    );
+    return <FunnelPage onBack={() => navigate('/')} />;
   }
 
   return (

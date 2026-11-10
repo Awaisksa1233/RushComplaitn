@@ -34,9 +34,9 @@ function sanitizeMongoUri(uri) {
   return uri;
 }
 
-const rawUri = process.env.MONGODB_URI;
+const rawUri = process.env.ATLAS_URI;
 if (!rawUri) {
-  console.error('Error: MONGODB_URI is not set in .env');
+  console.error('Error: ATLAS_URI is not set in .env');
   process.exit(1);
 }
 

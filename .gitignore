@@ -26,3 +26,14 @@ database/extracted/
 database/*.wt
 database/*.bson
 
+
+# Apple Wallet certs
+*.p12
+*.pfx
+*.p8
+
+exports/apify_reviews_cache.json
+
+# Organized one-off data/backups
+data/
+archive/

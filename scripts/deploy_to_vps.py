@@ -80,18 +80,24 @@ def main():
 
     # 2. SFTP upload application code
     sftp = client.open_sftp()
-    py_files = ["__init__.py", "config.py", "models.py", "storage.py", "unifonic_client.py", "ui_templates.py", "main.py"]
-    for f in py_files:
-        loc = LOCAL_APP_DIR / f
-        if loc.exists():
-            upload_file(sftp, loc, f"{REMOTE_DIR}/unifonic_app/{f}")
+    for loc in LOCAL_APP_DIR.glob("*.py"):
+        upload_file(sftp, loc, f"{REMOTE_DIR}/unifonic_app/{loc.name}")
 
     # Also upload existing events log if present
     local_log = LOCAL_APP_DIR / "logs" / "whatsapp_events.jsonl"
     if local_log.exists():
         upload_file(sftp, local_log, f"{REMOTE_DIR}/logs/whatsapp_events.jsonl")
 
+    # Upload read-only Atlas dump script
+    dump_script = Path(__file__).resolve().parent / "vps_atlas_readonly_dump.py"
+    if dump_script.exists():
+        upload_file(sftp, dump_script, f"{REMOTE_DIR}/vps_atlas_readonly_dump.py")
+
     # 3. Create .env on VPS
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
+    atlas_uri = os.getenv("ATLAS_URI", "")
+
     env_content = f"""UNIFONIC_PUBLIC_ID={UNIFONIC_PUBLIC_ID}
 UNIFONIC_SECRET_KEY={UNIFONIC_SECRET_KEY}
 UNIFONIC_CHANNEL_ID={UNIFONIC_CHANNEL_ID}
@@ -111,6 +117,10 @@ PUBLIC_HTTPS_ALT_URL=https://test.rush.com.sa/webhook/whatsapp
 
 MONGODB_URI={MONGODB_URI}
 DB_NAME={DB_NAME}
+
+GEMINI_API_KEY={gemini_key}
+ANTHROPIC_API_KEY={anthropic_key}
+ATLAS_URI={atlas_uri}
 """
     with sftp.file(f"{REMOTE_DIR}/.env", "w") as f:
         f.write(env_content)
@@ -241,6 +251,10 @@ WantedBy=multi-user.target
 
     # 9. Verify local endpoint on VPS
     run_ssh(client, "curl -s http://127.0.0.1:8090/health")
+
+    # 10. Configure 30-minute read-only Atlas dump cron on VPS
+    cron_line = "*/30 * * * * /opt/unifonic_app/venv/bin/python /opt/unifonic_app/vps_atlas_readonly_dump.py >> /opt/unifonic_app/logs/atlas_sync.log 2>&1"
+    run_ssh(client, f"(crontab -l 2>/dev/null | grep -v 'vps_atlas_readonly_dump.py' ; echo '{cron_line}') | crontab -")
 
     client.close()
     print("\n[✔] Deployment to VPS completed successfully!")

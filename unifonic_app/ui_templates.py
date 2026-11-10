@@ -8,2629 +8,4946 @@ def login_html() -> str:
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RUSH &bull; WhatsApp Live Hub &mdash; Sign In</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Rush Wash &bull; WhatsApp Command Center &mdash; Sign in</title>
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('rw-theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+        function rwToggleTheme() {
+            var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            try { localStorage.setItem('rw-theme', t); } catch (e) {}
+        }
+    </script>
+    <link rel="stylesheet" href="/static/brand/rushwash.css">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        :root {
-            --wa-bg-deep: #0c1317;
-            --wa-panel-bg: #111b21;
-            --wa-surface: #202c33;
-            --wa-border: #222e35;
-            --wa-green: #00a884;
-            --wa-green-bright: #25d366;
-            --wa-text-primary: #e9edef;
-            --wa-text-secondary: #8696a0;
-            --rush-red: #c91e2f;
-        }
         body {
-            font-family: 'Inter', 'Cairo', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--wa-bg-deep);
-            background-image: 
-                radial-gradient(circle at 50% 0%, rgba(0, 168, 132, 0.15) 0%, transparent 60%),
-                radial-gradient(circle at 90% 90%, rgba(201, 30, 47, 0.08) 0%, transparent 50%);
-            color: var(--wa-text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 24px;
+            position: relative;
         }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: url('/static/brand/img/rush-bg-pattern.svg') center / cover no-repeat;
+            opacity: .5;
+            pointer-events: none;
+        }
+        .theme-slot { position: fixed; top: 16px; inset-inline-end: 16px; z-index: 2; }
         .login-card {
-            background: rgba(17, 27, 33, 0.95);
-            border: 1px solid var(--wa-border);
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 168, 132, 0.12);
+            position: relative;
+            z-index: 1;
             width: 100%;
             max-width: 420px;
-            padding: 40px 36px;
-            backdrop-filter: blur(16px);
-            position: relative;
-            overflow: hidden;
-        }
-        .login-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--rush-red), var(--wa-green-bright));
-        }
-        .brand-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .logo-wrap {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .brand-badge {
-            background: var(--rush-red);
-            color: white;
-            font-weight: 800;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 14px;
-            letter-spacing: 1.5px;
-            box-shadow: 0 4px 12px rgba(201, 30, 47, 0.35);
-        }
-        .wa-badge-icon {
-            width: 32px;
-            height: 32px;
-            background: #25d366;
-            border-radius: 50%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-card);
+            padding: 28px 21px 21px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+            flex-direction: column;
+            gap: 21px;
         }
-        .brand-title {
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-            margin-bottom: 6px;
-        }
-        .brand-subtitle {
-            font-size: 13.5px;
-            color: var(--wa-text-secondary);
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        .form-label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--wa-text-secondary);
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .brand-header { display: flex; flex-direction: column; gap: 7px; }
+        .brand-logo { height: 28px; width: auto; align-self: flex-start; }
+        .brand-title { font-size: 21px; line-height: 31.5px; font-weight: 500; color: var(--foreground); }
+        .brand-sub { font-size: 12.25px; line-height: 18.38px; color: var(--muted-foreground); }
+        .form-group { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+        .form-label { font-size: 14px; line-height: 21px; font-weight: 500; color: var(--foreground); }
         .form-input {
+            height: 31.5px;
+            padding: 0 10.5px;
+            font: inherit;
+            font-size: 14px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
             width: 100%;
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            padding: 13px 16px;
-            border-radius: 10px;
-            color: #ffffff;
-            font-size: 14.5px;
-            outline: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            font-family: inherit;
-        }
-        .form-input:focus {
-            border-color: var(--wa-green);
-            background: #2a3942;
-            box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.25);
-        }
-        .error-alert {
-            display: none;
-            background: rgba(241, 92, 109, 0.15);
-            border: 1px solid rgba(241, 92, 109, 0.35);
-            color: #ff8b99;
-            padding: 12px 16px;
-            border-radius: 10px;
-            font-size: 13px;
-            margin-bottom: 20px;
-            text-align: center;
         }
         .btn-submit {
             width: 100%;
-            background: linear-gradient(135deg, #00a884 0%, #008f6f 100%);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
+            height: 31.5px;
+            margin-top: 7px;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            border: 0;
+            border-radius: var(--radius-md);
+            font: inherit;
+            font-size: 14px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(0, 168, 132, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
+            transition: background .15s;
         }
-        .btn-submit:hover {
-            background: linear-gradient(135deg, #25d366 0%, #00a884 100%);
-            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
-            transform: translateY(-1px);
+        .btn-submit:hover { background: rgb(var(--primary-hover-rgb)); }
+        .btn-submit:disabled { opacity: .5; cursor: not-allowed; }
+        .alert-error {
+            display: none;
+            padding: 10.5px;
+            background: rgb(var(--destructive-rgb) / .06);
+            border: 1px solid var(--destructive);
+            border-radius: var(--radius-md);
+            color: var(--destructive);
+            font-size: 12.25px;
+            line-height: 18.38px;
         }
-        .btn-submit:active {
-            transform: translateY(0);
-        }
-        .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .footer-hint {
-            text-align: center;
-            font-size: 12px;
-            color: var(--wa-text-secondary);
-            margin-top: 26px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
+        .footer-note { font-size: 10.5px; line-height: 15.75px; color: var(--muted-foreground); text-align: center; }
     </style>
 </head>
 <body>
+    <div class="theme-slot">
+        <button type="button" onclick="rwToggleTheme()" class="rw-theme-toggle" title="Toggle theme" aria-label="Toggle light / dark theme">
+            <svg class="rw-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <svg class="rw-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+    </div>
     <div class="login-card">
         <div class="brand-header">
-            <div class="logo-wrap">
-                <span class="brand-badge">RUSH</span>
-                <div class="wa-badge-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.69 8.23-8.22 8.23zm4.52-6.17c-.25-.12-1.47-.72-1.69-.81-.23-.09-.39-.12-.56.12-.17.25-.64.81-.79.97-.14.17-.29.18-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.02-.38.11-.51.11-.11.25-.29.37-.43.12-.15.17-.25.25-.42.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.22.25-.86.84-.86 2.05s.88 2.38 1 2.55c.12.17 1.73 2.65 4.2 3.71.59.25 1.05.41 1.41.52.59.19 1.13.16 1.56.1.48-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.07-.1-.23-.17-.47-.29z"/>
-                    </svg>
-                </div>
-            </div>
-            <h1 class="brand-title">WhatsApp Live Hub</h1>
-            <p class="brand-subtitle">Sign in to manage live chats, templates & delivery reports</p>
+            <img class="brand-logo" src="/static/brand/img/rush-app-logo.svg" alt="Rush Wash">
+            <h1 class="brand-title">WhatsApp Command Center</h1>
+            <p class="brand-sub">Live chat, delivery reports and broadcasts for Rush Wash.</p>
         </div>
 
-        <div class="error-alert" id="error-box"></div>
+        <div id="error-alert" class="alert-error" role="alert"></div>
 
-        <form id="login-form" onsubmit="handleLogin(event)">
+        <form id="login-form">
             <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" class="form-input" id="username" autocomplete="username" required autofocus placeholder="Enter administrator username">
+                <label class="form-label" for="username">Username</label>
+                <input class="form-input" type="text" id="username" name="username" placeholder="admin" required autofocus>
             </div>
-
             <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" class="form-input" id="password" autocomplete="current-password" required placeholder="Enter password">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-input" type="password" id="password" name="password" placeholder="Password" required>
             </div>
-
-            <button type="submit" class="btn-submit" id="submit-btn">
-                <span>Sign In to Hub</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
-            </button>
+            <button type="submit" class="btn-submit" id="submit-btn">Sign in</button>
         </form>
 
-        <div class="footer-hint">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-            <span>RUSH Car Wash &bull; Secure WhatsApp Gateway</span>
+        <div class="footer-note">
+            Rush Wash &bull; Unifonic WhatsApp Business &bull; 2026
         </div>
     </div>
 
     <script>
-        async function handleLogin(e) {
-            e.preventDefault();
-            const btn = document.getElementById('submit-btn');
-            const errBox = document.getElementById('error-box');
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value;
+        const form = document.getElementById('login-form');
+        const errBox = document.getElementById('error-alert');
+        const submitBtn = document.getElementById('submit-btn');
 
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
             errBox.style.display = 'none';
-            btn.disabled = true;
-            btn.innerHTML = '<span>Signing in...</span>';
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Signing in...';
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
 
             try {
                 const res = await fetch('/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: user, password: pass })
+                    body: JSON.stringify({ username, password })
                 });
                 const data = await res.json();
                 if (res.ok && data.success) {
                     window.location.href = data.redirect || '/';
                 } else {
-                    errBox.innerText = data.error || 'Invalid username or password.';
+                    errBox.innerText = data.error || 'Invalid credentials. Please try again.';
                     errBox.style.display = 'block';
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>Sign In to Hub</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>';
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Sign in';
                 }
             } catch (err) {
-                errBox.innerText = 'Network connection error. Please try again.';
+                errBox.innerText = 'Connection error. Please try again.';
                 errBox.style.display = 'block';
-                btn.disabled = false;
-                btn.innerHTML = '<span>Sign In to Hub</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>';
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Sign in';
             }
-        }
+        });
     </script>
 </body>
 </html>"""
 
 
-def full_solution_ui(public_https_url: str, unifonic_public_id: str, unifonic_channel_id: str) -> str:
-    """Renders the complete modern WhatsApp Web interface for Live Chats, Delivery Reports, and Webhook stream."""
-    return f"""<!DOCTYPE html>
-<html lang="en" dir="ltr">
+def full_solution_ui(public_https_url: str = "", unifonic_public_id: str = "", unifonic_channel_id: str = "") -> str:
+    return """<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RUSH &bull; WhatsApp Live Hub & Delivery Reports</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>RushWash &bull; WhatsApp Enterprise Command Center</title>
+    <!-- Rush Wash design system -->
+    <script>
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('rw-theme') || 'light'; } catch (e) {}
+            document.documentElement.setAttribute('data-theme', t);
+            document.documentElement.classList.toggle('dark', t === 'dark');
+        })();
+        function rwVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+        window.addEventListener('rw-theme-change', function () {
+            var el = document.querySelector('[x-data]');
+            try { var d = window.Alpine && Alpine.$data(el); if (d && d.initCharts) d.initCharts(); } catch (e) {}
+        });
+        function rwToggleTheme() {
+            var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', t);
+            document.documentElement.classList.toggle('dark', t === 'dark');
+            try { localStorage.setItem('rw-theme', t); } catch (e) {}
+            window.dispatchEvent(new CustomEvent('rw-theme-change', { detail: t }));
+        }
+    </script>
+    <link rel="stylesheet" href="/static/brand/rushwash.css">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        wa: {
+                            deep: 'rgb(var(--background-rgb) / <alpha-value>)',
+                            panel: 'rgb(var(--card-rgb) / <alpha-value>)',
+                            surface: 'rgb(var(--secondary-rgb) / <alpha-value>)',
+                            border: 'rgb(var(--border-rgb) / <alpha-value>)',
+                            green: 'rgb(var(--primary-rgb) / <alpha-value>)',
+                            'green-bright': 'rgb(var(--primary-rgb) / <alpha-value>)',
+                            text: 'rgb(var(--foreground-rgb) / <alpha-value>)',
+                            muted: 'rgb(var(--muted-foreground-rgb) / <alpha-value>)',
+                            bubble: {
+                                in: 'rgb(var(--secondary-rgb) / <alpha-value>)',
+                                out: 'rgb(var(--primary-rgb) / <alpha-value>)'
+                            }
+                        },
+                        rush: {
+                            red: 'rgb(var(--primary-rgb) / <alpha-value>)',
+                            gold: '#d4af37'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['HelveticaNeueLTStd', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+                        arabic: ['Swissra', 'Cairo', 'Noto Sans Arabic', 'sans-serif'],
+                        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Dashboard Alpine Controller & State -->
+    <script>
+        function whatsappDashboard() {
+            return {
+                activeTab: 'analytics',
+                isRefreshing: false,
+                isLoadingTemplates: false,
+                isUploadingMedia: false,
+                searchQuery: '',
+                chatSearch: '',
+                dlrStatusFilter: 'ALL',
+                dlrPhoneSearch: '',
+                showNewCampaignModal: false,
+                showCreateTemplateModal: false,
+                createTemplateTab: 'form',
+                isSubmittingTemplate: false,
+                replyText: '',
+                chatAttachmentUrl: '',
+
+                // Template filtering
+                templateStatusFilter: 'ALL',
+                templateSearch: '',
+
+                // Media Vault Picker
+                showVaultPickerModal: false,
+                vaultPickerContext: '',
+                vaultSearchQuery: '',
+
+                newTemplateForm: {
+                    name: '',
+                    category: 'MARKETING',
+                    language: 'ar',
+                    status: 'IN_REVIEW',
+                    body: '',
+                    mediaUrl: '',
+                    buttonType: 'URL',
+                    buttonText: '',
+                    buttonUrl: ''
+                },
+                
+                // Date Filter state
+                datePreset: 'all',
+                dateFrom: '',
+                dateTo: '',
+                trafficType: 'all',
+
+                stats: {
+                    total_sent: 0,
+                    total_delivered: 0,
+                    total_inbound: 0,
+                    delivery_rate: 98.5,
+                    active_24h_sessions: 0,
+                    read_count: 0,
+                    delivered_count: 0,
+                    failed_count: 0,
+                    total_cost: 0.0,
+                    total_spent: 0.0,
+                    cost_per_message: 0.15,
+                    currency: 'SAR'
+                },
+
+                settingsForm: {
+                    public_id: '',
+                    secret_key: '',
+                    channel_id: '',
+                    cost_marketing: 0.15,
+                    cost_utility: 0.04,
+                    cost_auth: 0.035,
+                    cost_service: 0.00,
+                    currency: 'SAR',
+                    https_webhook_url: '',
+                    database: ''
+                },
+                isSavingSettings: false,
+
+                campaigns: [],
+                conversations: [],
+                selectedConv: null,
+                activeChatMessages: [],
+                reports: [],
+                filteredReports: [],
+                templates: [],
+                uploads: [],
+
+                templateForm: {
+                    name: '96_sar',
+                    category: 'MARKETING',
+                    language: 'ar',
+                    body: 'عرض اليوم الوطني من رش واش!\\n\\nغسيل خارجي نانو لا محدود بـ 96 ريال شهريًا لأول شهرين بدلًا من 249 ريال. العرض للمشتركين الجدد ولفترة محدودة. اشترك الآن عبر rush.com.sa أو عبر مسار المبيعات.',
+                    mediaUrl: '',
+                    buttons: [{ type: 'URL', text: 'اشترك الآن', url: 'https://rush.com.sa/' }]
+                },
+
+                newCampaign: {
+                    name: '',
+                    rawNumbers: '',
+                    template: '',
+                    templateName: '',
+                    templateLang: 'ar',
+                    mediaUrl: '',
+                    defaultVars: {}
+                },
+
+                // Ads & Attribution State (Snapchat & Meta)
+                adsData: {
+                    overview: {
+                        total_spend_sar: 0,
+                        total_impressions: 0,
+                        total_clicks_swipes: 0,
+                        blended_cpc_sar: 0,
+                        total_wa_leads: 0,
+                        blended_cost_per_lead_sar: 0,
+                        total_conversions: 0,
+                        blended_conversion_rate_pct: 0,
+                        total_revenue_sar: 0,
+                        blended_roas: 0,
+                        last_synced_at: ''
+                    },
+                    platforms: {},
+                    campaigns: [],
+                    config_status: {}
+                },
+                isSyncingAds: false,
+                adsPlatformFilter: 'ALL',
+                adsSearch: '',
+                showAdsSettingsModal: false,
+                showAdsLinkModal: false,
+                isSavingAdsSettings: false,
+                adsSettingsForm: {
+                    meta: { enabled: true, ad_account_id: '', access_token: '', status: '' },
+                    snapchat: { enabled: true, ad_account_id: '', client_id: '', client_secret: '', refresh_token: '', status: '' },
+                    whatsapp_business_phone: '966559421442'
+                },
+                adsLinkGen: {
+                    platform: 'snapchat',
+                    keyword: 'SNAP96',
+                    custom_text: 'مرحباً رش واش، أود الاستفسار عن عرض اليوم الوطني 🚗',
+                    result_url: ''
+                },
+                snapAuthCodeInput: '',
+
+                // Smart Tracking Links State (rush.com.sa short links & visitor analytics)
+                trackingLinksData: {
+                    total_links: 0,
+                    total_clicks: 0,
+                    total_unique: 0,
+                    links: []
+                },
+                isCreatingLink: false,
+                editingLinkSlug: null,
+                showCreateLinkModal: false,
+                showLinkStatsModal: false,
+                showQrModal: false,
+                activeLinkStats: null,
+                activeQrUrl: '',
+                activeQrTitle: '',
+                newLinkForm: {
+                    title: '',
+                    destination_url: 'https://rush.com.sa/en',
+                    slug: '',
+                    platform: 'snapchat',
+                    status: 'ACTIVE',
+                    utm_source: 'snapchat',
+                    utm_medium: 'cpc',
+                    utm_campaign: '',
+                    utm_content: '',
+                    utm_term: ''
+                },
+
+                trafficChartInstance: null,
+                donutChartInstance: null,
+
+                switchTab(tab) {
+                    this.activeTab = tab;
+                    if (tab === 'ads') {
+                        this.loadAdsPerformance();
+                    } else if (tab === 'links') {
+                        this.loadTrackingLinks();
+                    }
+                },
+
+                async initDashboard() {
+                    try { await this.loadSettings(); } catch(e) { console.warn('loadSettings error:', e); }
+                    try { await this.loadAllData(); } catch(e) { console.warn('loadAllData error:', e); }
+                    try { await this.loadTemplates(false); } catch(e) { console.warn('loadTemplates error:', e); }
+                    try { await this.loadUploads(); } catch(e) { console.warn('loadUploads error:', e); }
+                    try { await this.loadAdsPerformance(); } catch(e) { console.warn('loadAdsPerformance error:', e); }
+                    try { await this.loadAdsSettings(); } catch(e) { console.warn('loadAdsSettings error:', e); }
+                    try { this.initCharts(); } catch(e) { console.warn('initCharts error:', e); }
+                    try { this.startEventSource(); } catch(e) { console.warn('startEventSource error:', e); }
+                },
+
+                async loadSettings() {
+                    try {
+                        const r = await fetch('/api/settings');
+                        if (r.ok) {
+                            const data = await r.json();
+                            this.settingsForm = {
+                                public_id: data.public_id || '',
+                                secret_key: data.is_secret_set ? '••••••••••••••••' : '',
+                                channel_id: data.channel_id || '',
+                                cost_marketing: data.cost_marketing || 0.15,
+                                cost_utility: data.cost_utility || 0.04,
+                                cost_auth: data.cost_auth || 0.035,
+                                cost_service: data.cost_service || 0.00,
+                                currency: data.currency || 'SAR',
+                                https_webhook_url: data.https_webhook_url || '',
+                                database: data.database || ''
+                            };
+                            if (data.currency) this.stats.currency = data.currency;
+                            if (data.cost_marketing) this.stats.cost_per_message = data.cost_marketing;
+                        }
+                    } catch(e) {
+                        console.warn('Error loading settings:', e);
+                    }
+                },
+
+                async saveSettings() {
+                    this.isSavingSettings = true;
+                    try {
+                        const payload = {
+                            cost_marketing: parseFloat(this.settingsForm.cost_marketing),
+                            cost_utility: parseFloat(this.settingsForm.cost_utility),
+                            cost_auth: parseFloat(this.settingsForm.cost_auth),
+                            cost_service: parseFloat(this.settingsForm.cost_service || 0),
+                            currency: this.settingsForm.currency
+                        };
+                        if (this.settingsForm.public_id) payload.public_id = this.settingsForm.public_id;
+                        if (this.settingsForm.secret_key && !this.settingsForm.secret_key.includes('•')) payload.secret_key = this.settingsForm.secret_key;
+                        if (this.settingsForm.channel_id) payload.channel_id = this.settingsForm.channel_id;
+
+                        const res = await fetch('/api/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const d = await res.json();
+                        if (d.status === 'success') {
+                            alert('Pricing rates and settings saved successfully!');
+                            await this.loadAllData();
+                        } else {
+                            alert('Error saving settings: ' + (d.error || 'Failed'));
+                        }
+                    } catch (e) {
+                        alert('Failed to save settings: ' + e);
+                    } finally {
+                        this.isSavingSettings = false;
+                    }
+                },
+
+                getEstimatedCampaignCost() {
+                    const count = this.parseCampaignRecipients().length;
+                    const rate = parseFloat(this.settingsForm?.cost_marketing || this.stats?.cost_per_message || 0.15);
+                    return (count * rate).toFixed(2);
+                },
+
+                async loadAllData() {
+                    this.isRefreshing = true;
+                    try {
+                        const dateParams = new URLSearchParams();
+                        if (this.dateFrom) dateParams.append('date_from', this.dateFrom);
+                        if (this.dateTo) dateParams.append('date_to', this.dateTo);
+                        if (this.trafficType) dateParams.append('traffic_type', this.trafficType);
+                        const qs = dateParams.toString() ? '?' + dateParams.toString() : '';
+
+                        const [resStats, resConvs, resReports, resCampaigns] = await Promise.all([
+                            fetch('/api/analytics' + qs).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+                            fetch('/api/conversations').then(r => r.ok ? r.json() : { conversations: [] }).catch(() => ({ conversations: [] })),
+                            fetch('/api/reports' + (qs ? qs + '&limit=500' : '?limit=500')).then(r => r.ok ? r.json() : { reports: [] }).catch(() => ({ reports: [] })),
+                            fetch('/api/campaigns').then(r => r.ok ? r.json() : []).catch(() => [])
+                        ]);
+
+                        this.stats = resStats || {};
+                        this.conversations = (resConvs && resConvs.conversations) ? resConvs.conversations : (Array.isArray(resConvs) ? resConvs : []);
+                        this.reports = (resReports && resReports.reports) ? resReports.reports : (Array.isArray(resReports) ? resReports : []);
+                        this.filteredReports = this.reports;
+                        this.campaigns = Array.isArray(resCampaigns) ? resCampaigns : [];
+
+                        if (this.conversations.length > 0 && !this.selectedConv) {
+                            this.selectChat(this.conversations[0]);
+                        }
+                        this.updateCharts();
+                    } catch (e) {
+                        console.error('Error loading dashboard data:', e);
+                    } finally {
+                        this.isRefreshing = false;
+                    }
+                },
+
+                isSyncingDLR: false,
+
+                async loadAdsPerformance() {
+                    try {
+                        const res = await fetch('/api/ads/performance');
+                        if (res.ok) {
+                            this.adsData = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error loading ads performance:', e);
+                    }
+                },
+
+                async syncAds() {
+                    this.isSyncingAds = true;
+                    try {
+                        const res = await fetch('/api/ads/sync', { method: 'POST' });
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.data) {
+                                this.adsData = data.data;
+                            }
+                            alert('Snapchat & Meta Ads metrics synced successfully!');
+                        } else {
+                            alert('Failed to sync ads performance');
+                        }
+                    } catch (e) {
+                        alert('Sync error: ' + e);
+                    } finally {
+                        this.isSyncingAds = false;
+                    }
+                },
+
+                async loadAdsSettings() {
+                    try {
+                        const res = await fetch('/api/ads/settings');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.adsSettingsForm = {
+                                meta: {
+                                    enabled: data.meta?.enabled ?? true,
+                                    ad_account_id: data.meta?.ad_account_id || '',
+                                    access_token: data.meta?.masked_token || '',
+                                    status: data.meta?.status || 'demo_mode'
+                                },
+                                snapchat: {
+                                    enabled: data.snapchat?.enabled ?? true,
+                                    ad_account_id: data.snapchat?.ad_account_id || '',
+                                    client_id: data.snapchat?.client_id || '',
+                                    client_secret: '',
+                                    refresh_token: data.snapchat?.masked_token || '',
+                                    status: data.snapchat?.status || 'demo_mode'
+                                },
+                                whatsapp_business_phone: data.whatsapp_business_phone || '966559421442'
+                            };
+                        }
+                    } catch (e) {
+                        console.error('Error loading ads settings:', e);
+                    }
+                },
+
+                async saveAdsSettings() {
+                    this.isSavingAdsSettings = true;
+                    try {
+                        const payload = {
+                            meta: {
+                                enabled: this.adsSettingsForm.meta.enabled,
+                                ad_account_id: this.adsSettingsForm.meta.ad_account_id,
+                                access_token: this.adsSettingsForm.meta.access_token
+                            },
+                            snapchat: {
+                                enabled: this.adsSettingsForm.snapchat.enabled,
+                                ad_account_id: this.adsSettingsForm.snapchat.ad_account_id,
+                                client_id: this.adsSettingsForm.snapchat.client_id,
+                                client_secret: this.adsSettingsForm.snapchat.client_secret,
+                                refresh_token: this.adsSettingsForm.snapchat.refresh_token
+                            },
+                            whatsapp_business_phone: this.adsSettingsForm.whatsapp_business_phone
+                        };
+                        const res = await fetch('/api/ads/settings', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (res.ok) {
+                            alert('Ads integration settings saved successfully!');
+                            this.showAdsSettingsModal = false;
+                            await this.loadAdsPerformance();
+                        } else {
+                            alert('Failed to save ads settings');
+                        }
+                    } catch (e) {
+                        alert('Error saving ads settings: ' + e);
+                    } finally {
+                        this.isSavingAdsSettings = false;
+                    }
+                },
+
+                async generateTrackingLink() {
+                    try {
+                        const res = await fetch('/api/ads/tracking-link', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                platform: this.adsLinkGen.platform,
+                                keyword: this.adsLinkGen.keyword,
+                                custom_text: this.adsLinkGen.custom_text
+                            })
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.adsLinkGen.result_url = data.url;
+                        }
+                    } catch (e) {
+                        alert('Error generating link: ' + e);
+                    }
+                },
+
+                copyTrackingLink() {
+                    if (!this.adsLinkGen.result_url) return;
+                    navigator.clipboard.writeText(this.adsLinkGen.result_url);
+                    alert('Tracking wa.me link copied to clipboard! Paste it into your Snapchat / Meta Ad setup.');
+                },
+
+                filteredAdsCampaigns() {
+                    let list = this.adsData?.campaigns || [];
+                    if (this.adsPlatformFilter !== 'ALL') {
+                        list = list.filter(c => c.platform === this.adsPlatformFilter);
+                    }
+                    if (this.adsSearch && this.adsSearch.trim()) {
+                        const q = this.adsSearch.toLowerCase();
+                        list = list.filter(c => 
+                            (c.campaign_name || '').toLowerCase().includes(q) ||
+                            (c.ad_keyword || '').toLowerCase().includes(q) ||
+                            (c.platform_label || '').toLowerCase().includes(q)
+                        );
+                    }
+                    return list;
+                },
+
+                async exchangeSnapOAuthCode() {
+                    let raw = (this.snapAuthCodeInput || '').trim();
+                    if (!raw) return alert('Please paste the authorization code or redirected URL from Snapchat.');
+                    let code = raw;
+                    if (raw.includes('code=')) {
+                        try {
+                            const urlObj = new URL(raw.startsWith('http') ? raw : 'https://dummy.com/' + raw);
+                            code = urlObj.searchParams.get('code') || raw;
+                        } catch(e) {
+                            code = raw.split('code=')[1].split('&')[0];
+                        }
+                    }
+                    try {
+                        const res = await fetch('/api/ads/snap/exchange-code', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: code, redirect_uri: 'https://whatsapp.rush.com.sa/' })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert('🎉 Snapchat Connected Successfully! Tokens & Ad Account linked.');
+                            this.snapAuthCodeInput = '';
+                            await this.loadAdsSettings();
+                            await this.loadAdsPerformance();
+                        } else {
+                            alert('Error connecting Snapchat: ' + (data.error || 'Failed to exchange code'));
+                        }
+                    } catch(e) {
+                        alert('Snapchat exchange error: ' + e);
+                    }
+                },
+
+                // --- Smart Tracking Links Methods ---
+                async loadTrackingLinks() {
+                    try {
+                        const res = await fetch('/api/links');
+                        if (res.ok) {
+                            this.trackingLinksData = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error loading tracking links:', e);
+                    }
+                },
+
+                openCreateLinkModal() {
+                    this.editingLinkSlug = null;
+                    this.newLinkForm = {
+                        title: '',
+                        destination_url: 'https://rush.com.sa/en',
+                        slug: '',
+                        platform: 'snapchat',
+                        status: 'ACTIVE',
+                        utm_source: 'snapchat',
+                        utm_medium: 'cpc',
+                        utm_campaign: '',
+                        utm_content: '',
+                        utm_term: ''
+                    };
+                    this.showCreateLinkModal = true;
+                },
+
+                openEditLinkModal(link) {
+                    this.editingLinkSlug = link.slug;
+                    this.newLinkForm = {
+                        title: link.title || '',
+                        destination_url: link.base_url || link.destination_url || 'https://rush.com.sa/en',
+                        slug: link.slug || '',
+                        platform: link.platform || 'snapchat',
+                        status: link.status || 'ACTIVE',
+                        utm_source: link.utm_source || '',
+                        utm_medium: link.utm_medium || '',
+                        utm_campaign: link.utm_campaign || '',
+                        utm_content: link.utm_content || '',
+                        utm_term: link.utm_term || ''
+                    };
+                    this.showCreateLinkModal = true;
+                },
+
+                autoFillUtmFromPlatform() {
+                    const p = this.newLinkForm.platform || 'snapchat';
+                    this.newLinkForm.utm_source = p;
+                    if (['snapchat', 'meta', 'tiktok', 'google'].includes(p)) {
+                        this.newLinkForm.utm_medium = 'cpc';
+                    } else if (['whatsapp', 'sms'].includes(p)) {
+                        this.newLinkForm.utm_medium = 'direct_broadcast';
+                    } else {
+                        this.newLinkForm.utm_medium = 'social';
+                    }
+                    if (this.newLinkForm.title && !this.newLinkForm.utm_campaign) {
+                        this.newLinkForm.utm_campaign = this.newLinkForm.title.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 30);
+                    }
+                    if (this.newLinkForm.title && !this.newLinkForm.slug) {
+                        this.newLinkForm.slug = this.newLinkForm.title.toLowerCase().replace(/[^a-z0-9_]/g, '-').slice(0, 25);
+                    }
+                },
+
+                async submitTrackingLink() {
+                    if (!this.newLinkForm.title || !this.newLinkForm.title.trim()) {
+                        return alert('Please enter a campaign / link title.');
+                    }
+                    if (!this.newLinkForm.destination_url || !this.newLinkForm.destination_url.trim()) {
+                        return alert('Please enter the destination URL (e.g. https://rush.com.sa/en).');
+                    }
+
+                    this.isCreatingLink = true;
+                    try {
+                        const isEdit = !!this.editingLinkSlug;
+                        const url = isEdit ? `/api/links/${this.editingLinkSlug}` : '/api/links';
+                        const method = isEdit ? 'PUT' : 'POST';
+
+                        const res = await fetch(url, {
+                            method: method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.newLinkForm)
+                        });
+                        if (res.ok) {
+                            const data = await res.json();
+                            await this.loadTrackingLinks();
+                            this.showCreateLinkModal = false;
+                            if (isEdit) {
+                                alert(`Smart tracking link updated successfully!\nShort URL: https://whatsapp.rush.com.sa/r/${data.link.slug}`);
+                            } else {
+                                alert(`Smart tracking link created successfully!\nShort URL: https://whatsapp.rush.com.sa/r/${data.link.slug}`);
+                            }
+                        } else {
+                            const err = await res.json();
+                            alert((isEdit ? 'Error updating link: ' : 'Error creating link: ') + (err.error || 'Server error'));
+                        }
+                    } catch (e) {
+                        alert((this.editingLinkSlug ? 'Update link error: ' : 'Create link error: ') + e);
+                    } finally {
+                        this.isCreatingLink = false;
+                    }
+                },
+
+                async deleteTrackingLink(slug) {
+                    if (!confirm(`Are you sure you want to delete tracking link /r/${slug}?`)) return;
+                    try {
+                        const res = await fetch(`/api/links/${slug}`, { method: 'DELETE' });
+                        if (res.ok) {
+                            await this.loadTrackingLinks();
+                        } else {
+                            alert('Failed to delete tracking link');
+                        }
+                    } catch (e) {
+                        alert('Delete error: ' + e);
+                    }
+                },
+
+                async openLinkStatsModal(slug) {
+                    this.activeLinkStats = null;
+                    this.showLinkStatsModal = true;
+                    try {
+                        const res = await fetch(`/api/links/${slug}/stats`);
+                        if (res.ok) {
+                            this.activeLinkStats = await res.json();
+                        }
+                    } catch (e) {
+                        console.error('Error loading link stats:', e);
+                    }
+                },
+
+                async toggleLinkStatus(slug) {
+                    try {
+                        const res = await fetch(`/api/links/${slug}/toggle-status`, { method: 'POST' });
+                        if (res.ok) {
+                            await this.loadTrackingLinks();
+                        } else {
+                            alert('Failed to update status');
+                        }
+                    } catch (e) {
+                        alert('Error updating status: ' + e);
+                    }
+                },
+
+                openQrModal(url, title) {
+                    this.activeQrUrl = url;
+                    this.activeQrTitle = title;
+                    this.showQrModal = true;
+                },
+
+                copyTextToClipboard(text, msg = 'Copied to clipboard!') {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text);
+                        alert(msg);
+                    } else {
+                        prompt('Copy this text:', text);
+                    }
+                },
+
+                async loadTemplates(forceRefresh = false) {
+                    this.isLoadingTemplates = true;
+                    try {
+                        const res = await fetch(`/api/templates?refresh=${forceRefresh}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.templates = data.templates || [];
+                            if (this.templates.length > 0 && !this.templateForm.name) {
+                                this.simulateTemplateOnPhone(this.templates[0]);
+                            }
+                            if (forceRefresh) {
+                                alert(`Synced with Unifonic! Loaded ${this.templates.length} pre-approved templates.`);
+                            }
+                        } else {
+                            if (forceRefresh) {
+                                alert('Unifonic API returned HTTP status ' + res.status);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error loading templates:', e);
+                        if (forceRefresh) {
+                            alert('Error syncing from Unifonic: ' + e);
+                        }
+                    } finally {
+                        this.isLoadingTemplates = false;
+                    }
+                },
+
+                async loadUploads() {
+                    try {
+                        const res = await fetch('/api/uploads');
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.uploads = data.uploads || [];
+                        }
+                    } catch (e) {
+                        console.error('Error loading uploads:', e);
+                    }
+                },
+
+                async uploadMediaFile(event, targetContext) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    this.isUploadingMedia = true;
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const res = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.success && data.url) {
+                            if (targetContext === 'template') {
+                                this.templateForm.mediaUrl = data.url;
+                            } else if (targetContext === 'create_template') {
+                                this.newTemplateForm.mediaUrl = data.url;
+                            } else if (targetContext === 'campaign') {
+                                this.newCampaign.mediaUrl = data.url;
+                            } else if (targetContext === 'chat') {
+                                this.chatAttachmentUrl = data.url;
+                            } else if (targetContext === 'vault_picker') {
+                                if (this.vaultPickerContext === 'template') this.templateForm.mediaUrl = data.url;
+                                else if (this.vaultPickerContext === 'create_template') this.newTemplateForm.mediaUrl = data.url;
+                                else if (this.vaultPickerContext === 'campaign') this.newCampaign.mediaUrl = data.url;
+                                else if (this.vaultPickerContext === 'chat') this.chatAttachmentUrl = data.url;
+                                this.showVaultPickerModal = false;
+                            }
+                            await this.loadUploads();
+                        } else {
+                            alert('Upload error: ' + (data.error || 'Failed to upload'));
+                        }
+                    } catch (err) {
+                        alert('Upload failed: ' + err);
+                    } finally {
+                        this.isUploadingMedia = false;
+                        event.target.value = '';
+                    }
+                },
+
+                copyDirectLink(url) {
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url);
+                        alert('Direct link copied to clipboard:\\n' + url);
+                    } else {
+                        prompt('Copy this direct link:', url);
+                    }
+                },
+
+                useMediaInTemplate(url) {
+                    this.templateForm.mediaUrl = url;
+                    this.activeTab = 'templates';
+                },
+
+                useMediaInCampaign(url) {
+                    this.newCampaign.mediaUrl = url;
+                    this.showNewCampaignModal = true;
+                },
+
+                async deleteMedia(filename) {
+                    if (!confirm('Are you sure you want to delete ' + filename + ' from the VPS?')) return;
+                    try {
+                        const res = await fetch('/api/uploads/' + filename, { method: 'DELETE' });
+                        const data = await res.json();
+                        if (data.success) {
+                            await this.loadUploads();
+                        } else {
+                            alert('Delete error: ' + (data.error || 'Failed to delete'));
+                        }
+                    } catch (err) {
+                        alert('Delete failed: ' + err);
+                    }
+                },
+
+                setDatePreset(preset) {
+                    this.datePreset = preset;
+                    const now = new Date();
+                    const pad = (n) => n < 10 ? '0' + n : n;
+                    const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+                    if (preset === 'all') {
+                        this.dateFrom = '';
+                        this.dateTo = '';
+                    } else if (preset === 'today') {
+                        this.dateFrom = formatYMD(now);
+                        this.dateTo = formatYMD(now);
+                    } else if (preset === 'yesterday') {
+                        const y = new Date(now);
+                        y.setDate(y.getDate() - 1);
+                        this.dateFrom = formatYMD(y);
+                        this.dateTo = formatYMD(y);
+                    } else if (preset === 'last7') {
+                        const d7 = new Date(now);
+                        d7.setDate(d7.getDate() - 7);
+                        this.dateFrom = formatYMD(d7);
+                        this.dateTo = formatYMD(now);
+                    } else if (preset === 'last30') {
+                        const d30 = new Date(now);
+                        d30.setDate(d30.getDate() - 30);
+                        this.dateFrom = formatYMD(d30);
+                        this.dateTo = formatYMD(now);
+                    }
+
+                    this.loadAllData();
+                },
+
+                applyCustomDateFilter() {
+                    this.datePreset = 'custom';
+                    this.loadAllData();
+                },
+
+                clearDateFilter() {
+                    this.setDatePreset('all');
+                },
+
+                async refreshData() {
+                    await this.loadAllData();
+                    await this.loadTemplates(false);
+                    await this.loadUploads();
+                },
+
+                getTemplateBodyText(t) {
+                    if (!t || !t.components) return '';
+                    for (const c of t.components) {
+                        if (c.type === 'BODY' && c.text) return c.text;
+                    }
+                    return t.body || '';
+                },
+
+                getTemplateButtons(t) {
+                    if (!t || !t.components) return [];
+                    for (const c of t.components) {
+                        if (c.type === 'BUTTONS' && c.buttons) return c.buttons;
+                    }
+                    return t.buttons || [];
+                },
+
+                getTemplateMediaUrl(t) {
+                    if (!t || !t.components) return t.media_url || '';
+                    for (const c of t.components) {
+                        if (c.type === 'HEADER' && c.example && c.example.header_handle && c.example.header_handle.length > 0) {
+                            return c.example.header_handle[0];
+                        }
+                    }
+                    return t.media_url || '';
+                },
+
+                copyUnifonicConsoleDetails(t) {
+                    const name = t.name;
+                    const cat = t.category || 'MARKETING';
+                    const lang = t.language || 'ar';
+                    const body = this.getTemplateBodyText(t);
+                    const media = this.getTemplateMediaUrl(t);
+                    const btns = this.getTemplateButtons(t).map(b => `${b.text} (${b.url || 'Quick Reply'})`).join(', ');
+
+                    const text = `=== UNIFONIC CONSOLE TEMPLATE DETAILS ===
+Template Name: ${name}
+Category: ${cat}
+Language: ${lang}
+Header Media URL: ${media || 'None'}
+Message Body:
+${body}
+Buttons: ${btns || 'None'}`;
+
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(text);
+                        alert('Template details copied!\\n\\nTo submit this template to Meta via Unifonic:\\n1. Log into Unifonic Console (el.cloud.unifonic.com)\\n2. Go to Channels > WhatsApp > Templates > Create New Template\\n3. Paste these copied details and submit for Meta approval.');
+                    } else {
+                        prompt('Copy template details for Unifonic Console:', text);
+                    }
+                },
+
+                simulateTemplateOnPhone(t) {
+                    this.templateForm.name = t.name;
+                    this.templateForm.category = t.category || 'MARKETING';
+                    this.templateForm.language = t.language || 'ar';
+                    this.templateForm.body = this.getTemplateBodyText(t);
+                    this.templateForm.buttons = this.getTemplateButtons(t);
+                    this.templateForm.mediaUrl = this.getTemplateMediaUrl(t);
+                    this.activeTab = 'templates';
+                },
+
+                getDetectedCampaignVariables() {
+                    const body = this.newCampaign.template || '';
+                    const matches = body.match(/\\{\\{([a-zA-Z0-9_]+)\\}\\}/g) || [];
+                    const unique = [...new Set(matches.map(m => m.replace(/[\\{\\}]/g, '')))];
+                    return unique;
+                },
+
+                useApprovedTemplateInCampaign(t) {
+                    this.simulateTemplateOnPhone(t);
+                    this.newCampaign.name = 'Broadcast - ' + t.name;
+                    this.newCampaign.templateName = t.name;
+                    this.newCampaign.templateLang = t.language || 'ar';
+                    this.newCampaign.template = this.getTemplateBodyText(t);
+                    this.newCampaign.mediaUrl = this.getTemplateMediaUrl(t);
+                    this.newCampaign.defaultVars = {};
+                    this.showNewCampaignModal = true;
+                },
+
+                onModalTemplateSelect(tplName) {
+                    const match = this.templates.find(t => t.name === tplName);
+                    if (match) {
+                        this.newCampaign.name = 'Broadcast - ' + match.name;
+                        this.newCampaign.templateName = match.name;
+                        this.newCampaign.templateLang = match.language || 'ar';
+                        this.newCampaign.template = this.getTemplateBodyText(match);
+                        this.newCampaign.mediaUrl = this.getTemplateMediaUrl(match);
+                        this.newCampaign.defaultVars = {};
+                    }
+                },
+
+                parseCampaignRecipients() {
+                    if (!this.newCampaign.rawNumbers) return [];
+                    const lines = this.newCampaign.rawNumbers
+                        .split('\\n')
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0 && !l.startsWith('#'));
+
+                    const detectedVars = this.getDetectedCampaignVariables();
+                    const parsed = [];
+
+                    for (const line of lines) {
+                        let parts = [];
+                        if (line.includes(',')) parts = line.split(',').map(p => p.trim());
+                        else if (line.includes('\\t')) parts = line.split('\\t').map(p => p.trim());
+                        else if (line.includes('|')) parts = line.split('|').map(p => p.trim());
+                        else if (line.includes(';')) parts = line.split(';').map(p => p.trim());
+                        else parts = [line.trim()];
+
+                        const phone = parts[0];
+                        if (!phone || phone.length < 5) continue;
+
+                        // Skip header row if first column contains non-numeric header labels
+                        const cleanDigits = phone.replace(/\\D/g, '');
+                        if (cleanDigits.length < 7) continue;
+
+                        const varsList = parts.slice(1);
+                        const recipientObj = { phone: phone, vars: varsList };
+
+                        detectedVars.forEach((vKey, idx) => {
+                            if (idx < varsList.length && varsList[idx] !== '') {
+                                recipientObj[vKey] = varsList[idx];
+                            } else if (this.newCampaign.defaultVars && this.newCampaign.defaultVars[vKey]) {
+                                recipientObj[vKey] = this.newCampaign.defaultVars[vKey];
+                            } else {
+                                recipientObj[vKey] = '';
+                            }
+                        });
+
+                        parsed.push(recipientObj);
+                    }
+                    return parsed;
+                },
+
+                getCampaignRecipientPreview(rec) {
+                    let text = this.newCampaign.template || '';
+                    if (rec.vars && Array.isArray(rec.vars)) {
+                        rec.vars.forEach((v, idx) => {
+                            text = text.replace(new RegExp('\\\\{\\\\{' + (idx + 1) + '\\\\}\\\\}', 'g'), v || '');
+                        });
+                    }
+                    for (const [k, v] of Object.entries(rec)) {
+                        if (k !== 'phone' && k !== 'vars') {
+                            text = text.replace(new RegExp('\\\\{\\\\{' + k + '\\\\}\\\\}', 'g'), v || '');
+                        }
+                    }
+                    return text;
+                },
+
+                downloadCampaignCSVTemplate() {
+                    const vars = this.getDetectedCampaignVariables();
+                    const rawName = this.newCampaign.templateName || this.newCampaign.name || 'campaign';
+                    const cleanName = rawName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+                    this.generateAndDownloadCSV(cleanName, vars);
+                },
+
+                downloadTemplateCSV(t) {
+                    if (!t) return;
+                    const body = this.getTemplateBodyText(t);
+                    const matches = body.match(/\\{\\{([a-zA-Z0-9_]+)\\}\\}/g) || [];
+                    const vars = [...new Set(matches.map(m => m.replace(/[\\{\\}]/g, '')))];
+                    const rawName = t.name || 'template';
+                    const cleanName = rawName.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase();
+                    this.generateAndDownloadCSV(cleanName, vars);
+                },
+
+                generateAndDownloadCSV(name, vars) {
+                    const headers = ['phone'];
+                    const sampleRow1 = ['966569809578'];
+                    const sampleRow2 = ['966553337736'];
+                    const sampleRow3 = ['966501234567'];
+
+                    if (vars && vars.length > 0) {
+                        vars.forEach((v, idx) => {
+                            headers.push(v);
+                            if (v === '1' || idx === 0) {
+                                sampleRow1.push('FIRSTWASH-101');
+                                sampleRow2.push('FIRSTWASH-102');
+                                sampleRow3.push('FIRSTWASH-103');
+                            } else if (v === '2' || idx === 1) {
+                                sampleRow1.push('محمد');
+                                sampleRow2.push('أحمد');
+                                sampleRow3.push('سارة');
+                            } else {
+                                sampleRow1.push('قيمة_' + (idx + 1));
+                                sampleRow2.push('قيمة_' + (idx + 1));
+                                sampleRow3.push('قيمة_' + (idx + 1));
+                            }
+                        });
+                    }
+
+                    const csvRows = [
+                        headers.join(','),
+                        sampleRow1.join(','),
+                        sampleRow2.join(','),
+                        sampleRow3.join(',')
+                    ];
+
+                    const csvContent = '\\uFEFF' + csvRows.join('\\r\\n');
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `rush_template_${name}_variables.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                },
+
+                handleCampaignCSVUpload(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const content = e.target.result || '';
+                        this.newCampaign.rawNumbers = content;
+                        event.target.value = '';
+                    };
+                    reader.readAsText(file);
+                },
+
+                async selectChat(conv) {
+                    if (!conv) return;
+                    this.selectedConv = conv;
+                    try {
+                        const res = await fetch(`/api/conversations/${conv.phone}/messages`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            this.activeChatMessages = data.messages || (Array.isArray(data) ? data : []);
+                        } else {
+                            this.activeChatMessages = [];
+                        }
+                    } catch (e) {
+                        this.activeChatMessages = [];
+                    }
+                },
+
+                async sendDirectReply() {
+                    if ((!this.replyText.trim() && !this.chatAttachmentUrl) || !this.selectedConv) return;
+                    const text = this.replyText;
+                    const media_url = this.chatAttachmentUrl;
+                    this.replyText = '';
+                    this.chatAttachmentUrl = '';
+                    
+                    try {
+                        await fetch(`/api/conversations/${this.selectedConv.phone}/reply`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ text, media_url })
+                        });
+                        await this.selectChat(this.selectedConv);
+                    } catch (e) {
+                        alert('Error sending reply: ' + e);
+                    }
+                },
+
+                async launchCampaign() {
+                    if (!this.newCampaign.name) {
+                        alert('Please enter a campaign name.');
+                        return;
+                    }
+
+                    const recipients = this.parseCampaignRecipients();
+                    if (recipients.length === 0) {
+                        alert('Please paste or upload at least one valid recipient phone number.');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch('/api/campaigns', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: this.newCampaign.name,
+                                message_template: this.newCampaign.template,
+                                template_name: this.newCampaign.templateName || null,
+                                template_language: this.newCampaign.templateLang || 'ar',
+                                recipients: recipients,
+                                media_url: this.newCampaign.mediaUrl || null
+                            })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            this.showNewCampaignModal = false;
+                            this.activeTab = 'campaigns';
+                            await this.loadAllData();
+                        } else {
+                            alert('Failed to launch campaign: ' + (data.error || 'Unknown error'));
+                        }
+                    } catch (e) {
+                        alert('Failed to launch campaign: ' + e);
+                    }
+                },
+
+                filteredConversations() {
+                    if (!this.chatSearch.trim()) return this.conversations;
+                    const q = this.chatSearch.toLowerCase();
+                    return this.conversations.filter(c => 
+                        (c.phone && c.phone.includes(q)) || 
+                        (c.last_message && c.last_message.toLowerCase().includes(q))
+                    );
+                },
+
+                filterDLR() {
+                    this.filteredReports = this.reports.filter(r => {
+                        const matchStatus = this.dlrStatusFilter === 'ALL' || r.status === this.dlrStatusFilter;
+                        const matchPhone = !this.dlrPhoneSearch.trim() || (r.recipient && r.recipient.includes(this.dlrPhoneSearch.trim()));
+                        return matchStatus && matchPhone;
+                    });
+                },
+
+                exportDLRToCSV() {
+                    const params = new URLSearchParams();
+                    if (this.dateFrom) params.append('date_from', this.dateFrom);
+                    if (this.dateTo) params.append('date_to', this.dateTo);
+                    if (this.dlrStatusFilter && this.dlrStatusFilter !== 'ALL') params.append('status', this.dlrStatusFilter);
+                    if (this.dlrPhoneSearch.trim()) params.append('phone', this.dlrPhoneSearch.trim());
+                    
+                    window.location.href = '/api/reports/export?' + params.toString();
+                },
+
+                async syncUnifonicStatuses() {
+                    this.isSyncingDLR = true;
+                    try {
+                        const res = await fetch('/api/unifonic/sync', { method: 'POST' });
+                        const data = await res.json();
+                        if (data.success) {
+                            alert(`Synced with Unifonic! Queried ${data.queried_count || 0} messages, updated ${data.updated_records || 0} live carrier statuses.`);
+                            await this.loadAllData();
+                        } else {
+                            alert('Sync error: ' + (data.error || data.message || 'Failed'));
+                        }
+                    } catch (e) {
+                        alert('Sync failed: ' + e);
+                    } finally {
+                        this.isSyncingDLR = false;
+                    }
+                },
+
+                insertVariable() {
+                    this.templateForm.body += ' {{1}}';
+                },
+
+                renderPreviewBody() {
+                    return (this.templateForm.body || '')
+                        .replace(/\\{\\{1\\}\\}/g, 'محمد')
+                        .replace(/\\{\\{2\\}\\}/g, 'RUSH2026')
+                        .replace(/\\{\\{name\\}\\}/g, 'محمد');
+                },
+
+                useTemplateInCampaign() {
+                    this.newCampaign.name = 'Broadcast - ' + this.templateForm.name;
+                    this.newCampaign.templateName = this.templateForm.name;
+                    this.newCampaign.templateLang = this.templateForm.language || 'ar';
+                    this.newCampaign.template = this.templateForm.body;
+                    this.newCampaign.mediaUrl = this.templateForm.mediaUrl || '';
+                    this.newCampaign.defaultVars = {};
+                    this.showNewCampaignModal = true;
+                },
+
+                countTemplatesByStatus(st) {
+                    if (!this.templates) return 0;
+                    if (st === 'IN_REVIEW') {
+                        return this.templates.filter(t => (t.status === 'IN_REVIEW' || t.status === 'PENDING' || !t.status)).length;
+                    }
+                    return this.templates.filter(t => t.status === st).length;
+                },
+
+                filteredTemplates() {
+                    let list = this.templates || [];
+                    if (this.templateStatusFilter !== 'ALL') {
+                        if (this.templateStatusFilter === 'IN_REVIEW') {
+                            list = list.filter(t => t.status === 'IN_REVIEW' || t.status === 'PENDING' || !t.status);
+                        } else {
+                            list = list.filter(t => t.status === this.templateStatusFilter);
+                        }
+                    }
+                    if (this.templateSearch && this.templateSearch.trim()) {
+                        const q = this.templateSearch.toLowerCase().trim();
+                        list = list.filter(t => (t.name && t.name.toLowerCase().includes(q)) || (this.getTemplateBodyText(t).toLowerCase().includes(q)));
+                    }
+                    return list;
+                },
+
+                getStatusBadgeClass(st) {
+                    st = (st || 'IN_REVIEW').toUpperCase();
+                    if (st === 'APPROVED') return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+                    if (st === 'IN_REVIEW' || st === 'PENDING') return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+                    if (st === 'REJECTED') return 'bg-rose-500/15 text-rose-400 border-rose-500/30';
+                    return 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30';
+                },
+
+                getStatusIconClass(st) {
+                    st = (st || 'IN_REVIEW').toUpperCase();
+                    if (st === 'APPROVED') return 'fas fa-check-circle text-[9px]';
+                    if (st === 'IN_REVIEW' || st === 'PENDING') return 'fas fa-hourglass-half text-[9px]';
+                    if (st === 'REJECTED') return 'fas fa-times-circle text-[9px]';
+                    return 'fas fa-info-circle text-[9px]';
+                },
+
+                async changeTemplateStatus(name, newStatus) {
+                    try {
+                        const res = await fetch(`/api/templates/${encodeURIComponent(name)}/status`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: newStatus })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            const match = this.templates.find(item => item.name === name);
+                            if (match) match.status = newStatus;
+                            await this.loadTemplates(false);
+                        } else {
+                            alert('Error updating status: ' + (data.error || 'Failed'));
+                        }
+                    } catch (e) {
+                        alert('Failed to update status: ' + e);
+                    }
+                },
+
+                openVaultPicker(context) {
+                    this.vaultPickerContext = context;
+                    this.vaultSearchQuery = '';
+                    this.showVaultPickerModal = true;
+                    this.loadUploads();
+                },
+
+                selectVaultMedia(url) {
+                    if (this.vaultPickerContext === 'template') {
+                        this.templateForm.mediaUrl = url;
+                    } else if (this.vaultPickerContext === 'create_template') {
+                        this.newTemplateForm.mediaUrl = url;
+                    } else if (this.vaultPickerContext === 'campaign') {
+                        this.newCampaign.mediaUrl = url;
+                    } else if (this.vaultPickerContext === 'chat') {
+                        this.chatAttachmentUrl = url;
+                    }
+                    this.showVaultPickerModal = false;
+                },
+
+                filteredVaultUploads() {
+                    if (!this.vaultSearchQuery.trim()) return this.uploads || [];
+                    const q = this.vaultSearchQuery.toLowerCase().trim();
+                    return (this.uploads || []).filter(u => u.filename && u.filename.toLowerCase().includes(q));
+                },
+
+                openCreateTemplateModal() {
+                    this.newTemplateForm = {
+                        name: '',
+                        category: 'MARKETING',
+                        language: 'ar',
+                        status: 'IN_REVIEW',
+                        body: '',
+                        mediaUrl: '',
+                        buttonType: 'URL',
+                        buttonText: '',
+                        buttonUrl: ''
+                    };
+                    this.createTemplateTab = 'form';
+                    this.showCreateTemplateModal = true;
+                },
+
+                insertVariableInNewTemplate(v) {
+                    this.newTemplateForm.body = (this.newTemplateForm.body ? this.newTemplateForm.body + ' ' : '') + v;
+                },
+
+                getCurlCodeSnippet() {
+                    const name = this.newTemplateForm.name ? this.newTemplateForm.name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_') : 'rush_ramadan_promo';
+                    const category = this.newTemplateForm.category || 'MARKETING';
+                    const lang = this.newTemplateForm.language || 'ar';
+                    const status = this.newTemplateForm.status || 'IN_REVIEW';
+                    const body = this.newTemplateForm.body || 'أهلاً بك {{1}} في مغسلة رش! يسعدنا تقديم كود خصم خاص {{2}}...';
+                    const media = this.newTemplateForm.mediaUrl || null;
+                    const buttons = this.newTemplateForm.buttonText ? [{
+                        type: this.newTemplateForm.buttonType,
+                        text: this.newTemplateForm.buttonText,
+                        url: this.newTemplateForm.buttonUrl || undefined
+                    }] : null;
+
+                    const payload = {
+                        name: name,
+                        body: body,
+                        category: category,
+                        language: lang,
+                        status: status,
+                        media_url: media,
+                        buttons: buttons
+                    };
+
+                    return `curl -X POST "https://whatsapp.rush.com.sa/api/templates" \
+  -H "Content-Type: application/json" \
+  -d '${JSON.stringify(payload, null, 2)}'`;
+                },
+
+                copyCurlSnippet() {
+                    const code = this.getCurlCodeSnippet();
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(code);
+                        alert('cURL command copied to clipboard!');
+                    } else {
+                        prompt('Copy cURL command:', code);
+                    }
+                },
+
+                async submitCreateTemplate() {
+                    if (!this.newTemplateForm.name || !this.newTemplateForm.name.trim()) {
+                        alert('Please enter a template name.');
+                        return;
+                    }
+                    if (!this.newTemplateForm.body || !this.newTemplateForm.body.trim()) {
+                        alert('Please enter the template body.');
+                        return;
+                    }
+
+                    this.isSubmittingTemplate = true;
+                    try {
+                        const payload = {
+                            name: this.newTemplateForm.name.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+                            category: this.newTemplateForm.category,
+                            language: this.newTemplateForm.language,
+                            status: this.newTemplateForm.status || 'IN_REVIEW',
+                            body: this.newTemplateForm.body.trim(),
+                            media_url: this.newTemplateForm.mediaUrl || null,
+                            buttons: this.newTemplateForm.buttonText ? [{
+                                type: this.newTemplateForm.buttonType,
+                                text: this.newTemplateForm.buttonText,
+                                url: this.newTemplateForm.buttonUrl || undefined
+                            }] : null
+                        };
+
+                        const res = await fetch('/api/templates', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+
+                        if (data.success) {
+                            alert('Template "' + payload.name + '" created successfully with status "' + (payload.status) + '"!');
+                            this.showCreateTemplateModal = false;
+                            await this.loadTemplates(true);
+                            this.activeTab = 'templates';
+                        } else {
+                            alert('Error creating template: ' + (data.error || data.message || 'Unknown error'));
+                        }
+                    } catch (err) {
+                        alert('Failed to create template: ' + err);
+                    } finally {
+                        this.isSubmittingTemplate = false;
+                    }
+                },
+
+                initCharts() {
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js not yet loaded');
+                        return;
+                    }
+                    try {
+                        const ctxTraffic = document.getElementById('trafficChart')?.getContext('2d');
+                        if (ctxTraffic) {
+                            if (this.trafficChartInstance) this.trafficChartInstance.destroy();
+                            this.trafficChartInstance = new Chart(ctxTraffic, {
+                                type: 'bar',
+                                data: {
+                                    labels: ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
+                                    datasets: [
+                                        {
+                                            label: 'Delivered',
+                                            data: [12, 19, 45, 80, 110, 95, 70, 85, 120, 65, 40],
+                                            backgroundColor: rwVar('--chart-1'),
+                                            borderRadius: 6
+                                        },
+                                        {
+                                            label: 'Inbound Replies',
+                                            data: [3, 5, 12, 28, 42, 35, 20, 31, 48, 22, 15],
+                                            backgroundColor: rwVar('--chart-3'),
+                                            borderRadius: 6
+                                        }
+                                    ]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { labels: { color: rwVar('--muted-foreground'), font: { size: 11 } } } },
+                                    scales: {
+                                        x: { grid: { display: false }, ticks: { color: rwVar('--muted-foreground') } },
+                                        y: { grid: { color: rwVar('--border') }, ticks: { color: rwVar('--muted-foreground') } }
+                                    }
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Traffic chart error:', e);
+                    }
+
+                    try {
+                        const ctxDonut = document.getElementById('statusDonutChart')?.getContext('2d');
+                        if (ctxDonut) {
+                            if (this.donutChartInstance) this.donutChartInstance.destroy();
+                            this.donutChartInstance = new Chart(ctxDonut, {
+                                type: 'doughnut',
+                                data: {
+                                    labels: ['Read', 'Delivered', 'Failed'],
+                                    datasets: [{
+                                        data: [this.stats.read_count || 120, this.stats.delivered_count || 85, this.stats.failed_count || 3],
+                                        backgroundColor: [rwVar('--chart-3'), rwVar('--chart-2'), rwVar('--chart-1')],
+                                        borderWidth: 0
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: { legend: { display: false } },
+                                    cutout: '75%'
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Donut chart error:', e);
+                    }
+                },
+
+                updateCharts() {
+                    try {
+                        if (this.donutChartInstance) {
+                            this.donutChartInstance.data.datasets[0].data = [
+                                this.stats.read_count || 10,
+                                this.stats.delivered_count || 20,
+                                this.stats.failed_count || 1
+                            ];
+                            this.donutChartInstance.update();
+                        }
+                    } catch (e) {}
+                },
+
+                startEventSource() {
+                    if (typeof EventSource === 'undefined') return;
+                    try {
+                        const evtSource = new EventSource('/api/events/stream');
+                        evtSource.onmessage = (event) => {
+                            try {
+                                const data = JSON.parse(event.data);
+                                if (data.type === 'webhook_event') {
+                                    this.loadAllData();
+                                }
+                            } catch (e) {}
+                        };
+                    } catch (e) {}
+                },
+
+                formatDate(d) {
+                    if (!d) return '-';
+                    try { return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch(e) { return d; }
+                },
+
+                formatTime(d) {
+                    if (!d) return '';
+                    try { return new Date(d).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }); } catch(e) { return ''; }
+                }
+            };
+        }
+
+        // Expose globally and register for Alpine
+        window.whatsappDashboard = whatsappDashboard;
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('whatsappDashboard', whatsappDashboard);
+        });
+    </script>
+    <!-- Alpine.js Core (Loads after component definition is in place) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+
     <style>
-        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-        :root {{
-            --wa-bg-deep: #0c1317;
-            --wa-panel-bg: #111b21;
-            --wa-sidebar-bg: #111b21;
-            --wa-surface: #202c33;
-            --wa-surface-hover: #182229;
-            --wa-surface-active: #2a3942;
-            --wa-border: #222e35;
-            --wa-green-primary: #00a884;
-            --wa-green-bright: #25d366;
-            --wa-bubble-in: #202c33;
-            --wa-bubble-out: #005c4b;
-            --wa-text-primary: #e9edef;
-            --wa-text-secondary: #8696a0;
-            --wa-text-muted: #667781;
-            --wa-blue-ticks: #53bdeb;
-            --wa-red-alert: #f15c6d;
-            --rush-red: #c91e2f;
-        }}
-
-        body {{
-            font-family: 'Inter', 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--wa-bg-deep);
-            color: var(--wa-text-primary);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            user-select: none;
-        }}
-
-        /* Custom Modern Scrollbars */
-        ::-webkit-scrollbar {{
-            width: 6px;
-            height: 6px;
-        }}
-        ::-webkit-scrollbar-track {{
-            background: transparent;
-        }}
-        ::-webkit-scrollbar-thumb {{
-            background: rgba(134, 150, 160, 0.25);
-            border-radius: 3px;
-        }}
-        ::-webkit-scrollbar-thumb:hover {{
-            background: rgba(134, 150, 160, 0.45);
-        }}
-
-        /* Top Navigation Bar */
-        .topbar {{
-            height: 58px;
-            background: var(--wa-panel-bg);
-            border-bottom: 1px solid var(--wa-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            flex-shrink: 0;
-            z-index: 20;
-        }}
-        .brand-area {{
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }}
-        .brand-logo-group {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }}
-        .brand-pill-rush {{
-            background: var(--rush-red);
-            color: white;
-            font-weight: 800;
-            font-size: 13px;
-            padding: 4px 9px;
-            border-radius: 6px;
-            letter-spacing: 1px;
-            box-shadow: 0 2px 8px rgba(201, 30, 47, 0.4);
-        }}
-        .wa-logo-icon {{
-            width: 26px;
-            height: 26px;
-            background: var(--wa-green-bright);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 2px 10px rgba(37, 211, 102, 0.35);
-        }}
-        .brand-title-text {{
-            font-size: 15px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: -0.3px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }}
-        .brand-title-text span {{
-            color: var(--wa-green-bright);
-            font-size: 12px;
-            font-weight: 600;
-            background: rgba(37, 211, 102, 0.12);
-            padding: 1px 6px;
-            border-radius: 4px;
-        }}
-
-        .nav-tabs {{
-            display: flex;
-            gap: 4px;
-            background: #0b141a;
-            padding: 3px;
-            border-radius: 10px;
-            border: 1px solid var(--wa-border);
-        }}
-        .tab-btn {{
-            background: transparent;
-            color: var(--wa-text-secondary);
-            border: none;
-            padding: 7px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }}
-        .tab-btn:hover {{
-            color: var(--wa-text-primary);
-            background: rgba(255, 255, 255, 0.05);
-        }}
-        .tab-btn.active {{
-            background: var(--wa-surface);
-            color: var(--wa-green-bright);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }}
-        .tab-badge {{
-            background: var(--wa-green-primary);
-            color: #ffffff;
-            font-size: 11px;
-            font-weight: 700;
-            padding: 1px 6px;
-            border-radius: 10px;
-        }}
-
-        .top-meta {{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .status-pill {{
-            display: flex;
-            align-items: center;
-            gap: 7px;
-            background: rgba(0, 168, 132, 0.12);
-            border: 1px solid rgba(0, 168, 132, 0.3);
-            color: #4ade80;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }}
-        .status-dot {{
-            width: 8px;
-            height: 8px;
-            background: #22c55e;
-            border-radius: 50%;
-            box-shadow: 0 0 8px #22c55e;
-            animation: pulse-dot 2s infinite ease-in-out;
-        }}
-        @keyframes pulse-dot {{
-            0% {{ opacity: 1; transform: scale(1); }}
-            50% {{ opacity: 0.4; transform: scale(0.85); }}
-            100% {{ opacity: 1; transform: scale(1); }}
-        }}
-
-        .btn-action {{
-            background: var(--wa-surface);
-            color: var(--wa-text-primary);
-            border: 1px solid var(--wa-border);
-            padding: 7px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12.5px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.15s ease;
-            font-family: inherit;
-        }}
-        .btn-action:hover {{
-            background: var(--wa-surface-active);
-            border-color: #3b4a54;
-            color: #ffffff;
-        }}
-        .btn-action-primary {{
-            background: var(--wa-green-primary);
-            color: white;
-            border-color: #008f6f;
-        }}
-        .btn-action-primary:hover {{
-            background: var(--wa-green-bright);
-            color: #0b141a;
-            border-color: var(--wa-green-bright);
-        }}
-        .btn-action-logout {{
-            color: #f87171;
-            border-color: rgba(248, 113, 113, 0.3);
-            text-decoration: none;
-        }}
-        .btn-action-logout:hover {{
-            background: rgba(248, 113, 113, 0.15);
-            color: #ff9999;
-        }}
-
-        /* Tab Content Views */
-        .tab-content {{
-            display: none;
-            flex: 1;
-            overflow: hidden;
-            height: calc(100vh - 58px);
-        }}
-        .tab-content.active {{
-            display: flex;
-        }}
-
-        /* ========================================================================= */
-        /* 1. CHATS TAB — AUTHENTIC WHATSAPP WEB EXPERIENCE                          */
-        /* ========================================================================= */
-        .chat-layout {{
-            display: flex;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }}
-
-        /* Sidebar */
-        .sidebar {{
-            width: 380px;
-            min-width: 330px;
-            max-width: 420px;
-            background: var(--wa-sidebar-bg);
-            border-right: 1px solid var(--wa-border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
-            overflow: hidden;
-        }}
-        .sidebar-header {{
-            padding: 12px 16px;
-            background: var(--wa-panel-bg);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            border-bottom: 1px solid var(--wa-border);
-            flex-shrink: 0;
-        }}
-        .sidebar-top-row {{
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .sidebar-title {{
-            font-size: 15px;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        .sidebar-title-count {{
-            background: var(--wa-surface);
-            color: var(--wa-text-secondary);
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 12px;
-        }}
-        .sidebar-filter-pills {{
-            display: flex;
-            gap: 4px;
-        }}
-        .filter-pill-btn {{
-            background: var(--wa-surface);
-            border: 1px solid transparent;
-            color: var(--wa-text-secondary);
-            padding: 4px 10px;
-            border-radius: 14px;
-            font-size: 11.5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }}
-        .filter-pill-btn:hover {{
-            background: var(--wa-surface-active);
-            color: var(--wa-text-primary);
-        }}
-        .filter-pill-btn.active {{
-            background: rgba(0, 168, 132, 0.2);
-            color: var(--wa-green-bright);
-            border-color: rgba(0, 168, 132, 0.4);
-        }}
-
-        .sidebar-search-box {{
-            display: flex;
-            align-items: center;
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            border-radius: 8px;
-            padding: 6px 12px;
-            color: var(--wa-text-secondary);
-            transition: border-color 0.2s;
-        }}
-        .sidebar-search-box:focus-within {{
-            border-color: var(--wa-green-primary);
-            background: #2a3942;
-        }}
-        .sidebar-search-box input {{
-            background: transparent;
-            border: none;
-            outline: none;
-            color: var(--wa-text-primary);
-            font-size: 13.5px;
-            width: 100%;
-            margin-left: 8px;
-            font-family: inherit;
-        }}
-        .sidebar-search-box input::placeholder {{
-            color: var(--wa-text-muted);
-        }}
-        .search-clear-btn {{
-            background: transparent;
-            border: none;
-            color: var(--wa-text-muted);
-            cursor: pointer;
-            display: none;
-            font-size: 14px;
-        }}
-
-        .conv-list {{
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            background: var(--wa-sidebar-bg);
-        }}
-        .conv-item {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(34, 46, 53, 0.6);
-            cursor: pointer;
-            transition: background 0.12s ease;
-            position: relative;
-        }}
-        .conv-item:hover {{
-            background: var(--wa-surface-hover);
-        }}
-        .conv-item.active {{
-            background: var(--wa-surface-active);
-        }}
-        .conv-item.active::before {{
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background: var(--wa-green-bright);
-        }}
-        [dir="rtl"] .conv-item.active::before {{
-            left: auto;
-            right: 0;
-        }}
-        [dir="rtl"] .sidebar {{
-            border-right: none;
-            border-left: 1px solid var(--wa-border);
-        }}
-
-        .avatar-wrap {{
-            position: relative;
-            flex-shrink: 0;
-        }}
-        .avatar {{
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 14px;
-            color: #ffffff;
-            background: linear-gradient(135deg, #00a884, #005c4b);
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }}
-        .avatar-online-dot {{
-            width: 11px;
-            height: 11px;
-            background: #25d366;
-            border: 2px solid var(--wa-sidebar-bg);
-            border-radius: 50%;
-            position: absolute;
-            bottom: 0;
-            right: 0;
-        }}
-
-        .conv-details {{
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-        }}
-        .conv-top {{
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 3px;
-        }}
-        .conv-phone {{
-            font-size: 14.5px;
-            font-weight: 600;
-            color: var(--wa-text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            direction: ltr;
-            unicode-bidi: isolate;
-        }}
-        .conv-time {{
-            font-size: 11.5px;
-            color: var(--wa-text-muted);
-            flex-shrink: 0;
-            margin-left: 8px;
-        }}
-        [dir="rtl"] .conv-time {{
-            margin-left: 0;
-            margin-right: 8px;
-        }}
-        .conv-bottom {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }}
-        .conv-preview {{
-            font-size: 13px;
-            color: var(--wa-text-secondary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }}
-        .conv-preview-text {{
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            direction: auto;
-            unicode-bidi: plaintext;
-        }}
-        .badge-unread {{
-            background: var(--wa-green-bright);
-            color: #111b21;
-            font-size: 11px;
-            font-weight: 800;
-            min-width: 19px;
-            height: 19px;
-            line-height: 19px;
-            text-align: center;
-            padding: 0 6px;
-            border-radius: 10px;
-            flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(37, 211, 102, 0.4);
-        }}
-
-        /* Chat Panel (Right / Main) */
-        .chat-panel {{
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background-color: var(--wa-bg-deep);
-            background-image: 
-                radial-gradient(circle at 10% 20%, rgba(32, 44, 51, 0.4) 0%, transparent 20%),
-                radial-gradient(circle at 90% 80%, rgba(32, 44, 51, 0.3) 0%, transparent 25%);
+        [x-cloak] { display: none !important; }
+        .phone-mockup {
+            width: 320px;
+            height: 580px;
+            border: 10px solid var(--foreground);
+            border-radius: 36px;
+            box-shadow: var(--shadow-card);
             position: relative;
             overflow: hidden;
-        }}
-
-        /* WhatsApp Doodle Wallpaper Pattern Background */
-        .chat-panel::before {{
-            content: '';
-            position: absolute;
-            inset: 0;
-            opacity: 0.04;
-            pointer-events: none;
-            background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 15h10v10H30zM75 15h10v10H75zM15 45h10v10H15zM45 45h10v10H45zM95 45h10v10H95zM30 75h10v10H30zM75 75h10v10H75zM15 105h10v10H15zM60 105h10v10H60zM105 105h10v10H105z' fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E");
-        }}
-
-        .chat-header {{
-            height: 60px;
-            background: var(--wa-panel-bg);
-            border-bottom: 1px solid var(--wa-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            flex-shrink: 0;
-            z-index: 10;
-        }}
-        .chat-header-user {{
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }}
-        .chat-header-title {{
-            font-size: 15px;
-            font-weight: 700;
-            color: #ffffff;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        .chat-header-subtitle {{
-            font-size: 12px;
-            color: var(--wa-green-bright);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }}
-        .chat-header-actions {{
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-
-        /* Messages Canvas */
-        .messages-area {{
-            flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 20px 24px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            z-index: 5;
-        }}
-        .date-divider {{
-            display: flex;
-            justify-content: center;
-            margin: 12px 0;
-        }}
-        .date-divider-pill {{
-            background: #182229;
-            color: var(--wa-text-secondary);
-            font-size: 11.5px;
-            font-weight: 600;
-            padding: 4px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }}
-
-        .bubble-row {{
-            display: flex;
-            width: 100%;
-        }}
-        .bubble-row.inbound {{
-            justify-content: flex-start;
-        }}
-        .bubble-row.outbound {{
-            justify-content: flex-end;
-        }}
-
-        .bubble {{
-            max-width: 65%;
-            min-width: 120px;
-            padding: 8px 12px 6px 12px;
-            border-radius: 12px;
-            font-size: 14.5px;
-            line-height: 1.55;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-            position: relative;
-            word-break: break-word;
-            transition: transform 0.1s ease;
-        }}
-        .bubble.inbound {{
-            background: var(--wa-bubble-in);
-            color: var(--wa-text-primary);
-            border-top-left-radius: 2px;
-            border: 1px solid rgba(255, 255, 255, 0.03);
-        }}
-        .bubble.outbound {{
-            background: var(--wa-bubble-out);
-            color: #ffffff;
-            border-top-right-radius: 2px;
-        }}
-        [dir="rtl"] .bubble.inbound {{
-            border-top-left-radius: 12px;
-            border-top-right-radius: 2px;
-        }}
-        [dir="rtl"] .bubble.outbound {{
-            border-top-right-radius: 12px;
-            border-top-left-radius: 2px;
-        }}
-
-        .bubble-text {{
-            direction: auto;
-            unicode-bidi: plaintext;
-            text-align: start;
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-size: 14px;
-            line-height: 1.5;
-            color: #ffffff;
-        }}
-        .bubble-meta {{
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 4px;
-            margin-top: 4px;
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-            direction: ltr;
-            unicode-bidi: isolate;
-        }}
-        .status-ticks {{
-            display: inline-flex;
-            align-items: center;
-        }}
-        .ticks-read {{
-            color: var(--wa-blue-ticks);
-        }}
-        .ticks-delivered {{
-            color: rgba(255, 255, 255, 0.6);
-        }}
-        .ticks-sent {{
-            color: rgba(255, 255, 255, 0.5);
-        }}
-
-        /* Composer Area */
-        .composer-area {{
-            background: var(--wa-panel-bg);
-            border-top: 1px solid var(--wa-border);
-            padding: 10px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex-shrink: 0;
-            z-index: 10;
-        }}
-        .chips-row {{
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            padding-bottom: 2px;
-        }}
-        .chip-template {{
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            color: var(--wa-text-secondary);
-            padding: 5px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s ease;
-        }}
-        .chip-template:hover {{
-            background: var(--wa-surface-active);
-            color: #ffffff;
-            border-color: var(--wa-green-primary);
-        }}
-
-        .composer-input-row {{
-            display: flex;
-            align-items: flex-end;
-            gap: 10px;
-        }}
-        .composer-input-wrapper {{
-            flex: 1;
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: flex-end;
-            transition: border-color 0.2s;
-        }}
-        .composer-input-wrapper:focus-within {{
-            border-color: var(--wa-green-primary);
-        }}
-        .message-input {{
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #ffffff;
-            font-size: 14.5px;
-            line-height: 1.45;
-            resize: none;
-            max-height: 120px;
-            min-height: 24px;
-            font-family: inherit;
-            direction: auto;
-            unicode-bidi: plaintext;
-        }}
-        .message-input::placeholder {{
-            color: var(--wa-text-muted);
-        }}
-        .send-btn-circle {{
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--wa-green-primary);
-            color: white;
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            flex-shrink: 0;
-            box-shadow: 0 2px 8px rgba(0, 168, 132, 0.4);
-        }}
-        .send-btn-circle:hover {{
-            background: var(--wa-green-bright);
-            color: #0c1317;
-            transform: scale(1.05);
-        }}
-        .send-btn-circle:active {{
-            transform: scale(0.95);
-        }}
-        .send-btn-circle:disabled {{
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }}
-
-        /* Empty State */
-        .chat-empty-state {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            color: var(--wa-text-secondary);
-            text-align: center;
-            padding: 40px;
-            gap: 16px;
-        }}
-        .empty-illustration {{
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: var(--wa-surface);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--wa-green-primary);
-            margin-bottom: 8px;
-            border: 1px solid var(--wa-border);
-        }}
-
-        /* ========================================================================= */
-        /* 2. DELIVERY REPORTS (DLR) TAB & ANALYTICS                                 */
-        /* ========================================================================= */
-        .reports-layout {{
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }}
-
-        /* KPI Cards Grid */
-        .kpi-cards-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-        }}
-        .kpi-stat-card {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 14px;
-            padding: 18px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: border-color 0.2s;
-        }}
-        .kpi-stat-card:hover {{
-            border-color: #3b4a54;
-        }}
-        .kpi-stat-title {{
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--wa-text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }}
-        .kpi-stat-value {{
-            font-size: 26px;
-            font-weight: 800;
-            color: #ffffff;
-            letter-spacing: -0.5px;
-            line-height: 1.1;
-        }}
-        .kpi-stat-badge {{
-            font-size: 11.5px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }}
-
-        /* Donut & Breakdown Grid */
-        .dlr-overview-grid {{
-            display: grid;
-            grid-template-columns: 360px 1fr;
-            gap: 20px;
-        }}
-        @media (max-width: 992px) {{
-            .dlr-overview-grid {{ grid-template-columns: 1fr; }}
-        }}
-
-        .stats-box {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 14px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-        }}
-        .stats-box-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }}
-        .stats-box-title {{
-            font-size: 15px;
-            font-weight: 700;
-            color: #ffffff;
-        }}
-
-        .view-pill-group {{
-            display: flex;
-            background: var(--wa-surface);
-            padding: 3px;
-            border-radius: 8px;
-            gap: 2px;
-            border: 1px solid var(--wa-border);
-        }}
-        .view-pill {{
-            background: transparent;
-            border: none;
-            color: var(--wa-text-secondary);
-            font-size: 11.5px;
-            font-weight: 600;
-            padding: 5px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-        }}
-        .view-pill.active {{
-            background: var(--wa-green-primary);
-            color: #ffffff;
-        }}
-
-        .donut-container {{
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 10px 0;
-            position: relative;
-        }}
-        .donut-svg {{
-            width: 200px;
-            height: 200px;
-            transform: rotate(-90deg);
-        }}
-        .donut-center-info {{
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            pointer-events: none;
-        }}
-        .donut-center-sub {{
-            font-size: 12px;
-            color: var(--wa-text-secondary);
-            font-weight: 500;
-        }}
-        .donut-center-pct {{
-            font-size: 32px;
-            font-weight: 800;
-            color: #ffffff;
-            line-height: 1.1;
-        }}
-        .donut-legend {{
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 14px;
-            font-size: 12px;
-            color: var(--wa-text-secondary);
-        }}
-        .donut-legend-item {{
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }}
-        .donut-dot {{
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }}
-
-        /* Status Breakdown List */
-        .status-breakdown-list {{
-            display: flex;
-            flex-direction: column;
-            background: #0c1317;
-            border: 1px solid var(--wa-border);
-            border-radius: 10px;
-            overflow: hidden;
-        }}
-        .breakdown-row {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--wa-border);
-            font-size: 13.5px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }}
-        .breakdown-row:last-child {{
-            border-bottom: none;
-        }}
-        .breakdown-row:hover {{
-            background: var(--wa-surface-hover);
-        }}
-        .breakdown-row.active {{
-            background: var(--wa-surface-active);
-            border-left: 3px solid var(--wa-green-bright);
-        }}
-        [dir="rtl"] .breakdown-row.active {{
-            border-left: none;
-            border-right: 3px solid var(--wa-green-bright);
-        }}
-        .breakdown-left {{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }}
-        .sq-icon {{
-            width: 12px;
-            height: 12px;
-            border-radius: 3px;
-            display: inline-block;
-            flex-shrink: 0;
-        }}
-        .sq-total {{ background: #94a3b8; }}
-        .sq-submitted {{ background: #475569; }}
-        .sq-sent {{ background: #eab308; }}
-        .sq-delivered {{ background: #22c55e; }}
-        .sq-read {{ background: #38bdf8; }}
-        .sq-unconfirmed {{ background: #64748b; }}
-        .sq-failed {{ background: #f87171; }}
-
-        .breakdown-num {{
-            font-weight: 700;
-            color: #ffffff;
-            font-size: 14px;
-            direction: ltr;
-            unicode-bidi: isolate;
-        }}
-
-        /* Channel Usage Table Box */
-        .channel-stats-card {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 14px;
-            padding: 18px 20px;
-            overflow-x: auto;
-        }}
-        .channel-table {{
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            text-align: left;
-        }}
-        [dir="rtl"] .channel-table {{
-            text-align: right;
-        }}
-        .channel-table th {{
-            background: #182229;
-            color: var(--wa-text-secondary);
-            padding: 10px 14px;
-            font-size: 11px;
-            text-transform: uppercase;
-            font-weight: 600;
-            border-bottom: 1px solid var(--wa-border);
-            white-space: nowrap;
-        }}
-        .channel-table td {{
-            padding: 12px 14px;
-            border-bottom: 1px solid var(--wa-border);
-            color: var(--wa-text-primary);
-            white-space: nowrap;
-        }}
-
-        /* Toolbar */
-        .toolbar {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--wa-panel-bg);
-            padding: 12px 18px;
-            border-radius: 12px;
-            border: 1px solid var(--wa-border);
-            flex-wrap: wrap;
-            gap: 12px;
-        }}
-        .filter-group {{
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }}
-        .filter-select {{
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            color: #ffffff;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 13px;
-            outline: none;
-            font-family: inherit;
-        }}
-        .filter-select:focus {{
-            border-color: var(--wa-green-primary);
-        }}
-
-        /* DLR Data Table */
-        .table-card {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }}
-        .dlr-table {{
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-            text-align: left;
-        }}
-        .dlr-table th {{
-            background: #182229;
-            color: var(--wa-text-secondary);
-            padding: 12px 16px;
-            font-weight: 600;
-            border-bottom: 1px solid var(--wa-border);
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-        }}
-        .dlr-table td {{
-            padding: 12px 16px;
-            border-bottom: 1px solid rgba(34, 46, 53, 0.7);
-            color: var(--wa-text-primary);
-        }}
-        .dlr-table tr:hover td {{
-            background: var(--wa-surface-hover);
-        }}
-
-        .badge-status {{
-            display: inline-block;
-            padding: 3px 9px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }}
-        .badge-DELIVERED {{ background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }}
-        .badge-READ {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }}
-        .badge-SENT {{ background: rgba(234, 179, 8, 0.15); color: #facc15; border: 1px solid rgba(234, 179, 8, 0.3); }}
-        .badge-FAILED {{ background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }}
-
-        /* ========================================================================= */
-        /* 3. WEBHOOK STREAM TAB                                                     */
-        /* ========================================================================= */
-        .feed-layout {{
-            width: 100%;
-            height: 100%;
-            padding: 24px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }}
-        .event-card {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 10px;
-            padding: 16px;
-        }}
-        .event-header {{
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }}
-        .json-block {{
-            background: #090d16;
-            border: 1px solid var(--wa-border);
-            padding: 12px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #93c5fd;
-            white-space: pre-wrap;
-            word-break: break-all;
-            max-height: 220px;
-            overflow-y: auto;
-        }}
-
-        /* Modals */
-        .modal-overlay {{
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.75);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            backdrop-filter: blur(4px);
-        }}
-        .modal {{
-            background: var(--wa-panel-bg);
-            border: 1px solid var(--wa-border);
-            border-radius: 16px;
-            width: 500px;
-            max-width: 90vw;
-            padding: 24px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
-        }}
-        .modal-title {{
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: #ffffff;
-        }}
-        .form-group {{
-            margin-bottom: 16px;
-        }}
-        .form-group label {{
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--wa-text-secondary);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }}
-        .form-control {{
-            width: 100%;
-            background: var(--wa-surface);
-            border: 1px solid var(--wa-border);
-            padding: 11px 14px;
-            border-radius: 8px;
-            color: #ffffff;
-            font-size: 14px;
-            outline: none;
-            font-family: inherit;
-        }}
-        .form-control:focus {{
-            border-color: var(--wa-green-primary);
-        }}
-        .modal-actions {{
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 22px;
-        }}
-
-        /* RTL Alignment Rules */
-        [dir="rtl"] body {{
-            direction: rtl;
-            text-align: right;
-        }}
-        [dir="rtl"] .dlr-table th, [dir="rtl"] .dlr-table td {{
-            text-align: right;
-        }}
-        [dir="rtl"] .sidebar-search-box input {{
-            margin-left: 0;
-            margin-right: 8px;
-        }}
-        [dir="rtl"] .modal-actions {{
-            justify-content: flex-start;
-        }}
-        .phone-isolate {{
-            direction: ltr;
-            unicode-bidi: isolate;
-            display: inline-block;
-        }}
+            background: var(--background);
+        }
     </style>
 </head>
-<body dir="ltr">
+<body class="bg-wa-deep text-wa-text font-sans antialiased min-h-screen flex flex-col" x-data="whatsappDashboard()" x-init="initDashboard()">
 
-    <!-- Top Navigation Bar -->
-    <header class="topbar">
-        <div class="brand-area">
-            <div class="brand-logo-group">
-                <span class="brand-pill-rush">RUSH</span>
-                <div class="wa-logo-icon">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm0 18.15c-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24 2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.01 4.54-3.69 8.23-8.22 8.23z"/>
-                    </svg>
+    <!-- Top Executive Header -->
+    <header class="bg-wa-panel border-b border-wa-border px-6 py-3.5 flex items-center justify-between sticky top-0 z-30">
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
+                <img src="/static/brand/img/rush-app-logo.svg" alt="Rush Wash" class="h-6 w-auto max-w-none shrink-0">
+                <div class="w-7 h-7 rounded-full bg-wa-green text-white flex items-center justify-center text-xs">
+                    <i class="fab fa-whatsapp"></i>
                 </div>
-                <span class="brand-title-text">WhatsApp Live <span>PRO</span></span>
             </div>
-
-            <div class="nav-tabs">
-                <button class="tab-btn active" id="tab-chats" onclick="switchTab('chats')">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <span>Chats</span>
-                    <span class="tab-badge" id="tab-unread-count">0</span>
-                </button>
-                <button class="tab-btn" id="tab-reports" onclick="switchTab('reports')">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-                    <span>Delivery Reports</span>
-                </button>
-                <button class="tab-btn" id="tab-feed" onclick="switchTab('feed')">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    <span>Webhook Stream</span>
-                </button>
+            <div>
+                <h1 class="text-sm font-bold text-white flex items-center gap-2">
+                    WhatsApp Enterprise Command Center
+                    <span class="text-[10px] bg-wa-green/20 text-wa-green-bright border border-wa-green/30 px-2 py-0.5 rounded-full font-semibold">Official WABA</span>
+                </h1>
+                <p class="text-[11px] text-wa-muted flex items-center gap-2">
+                    <span>Account: <strong>RushWash KSA</strong></span>
+                    <span class="text-wa-border">&bull;</span>
+                    <span>Media Hosting &amp; Multi-Agent Operations</span>
+                </p>
             </div>
         </div>
 
-        <div class="top-meta">
-            <div class="status-pill" title="Live Server-Sent Events (SSE) stream is active">
-                <span class="status-dot"></span>
-                <span id="sse-status-text">Connected</span>
+        <div class="flex items-center gap-3">
+            <!-- Dedicated Lifecycle Funnel Shortcut -->
+            <a 
+                href="/funnel" 
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-red-600/20 transition-all transform hover:-translate-y-0.5"
+                title="Customer Lifecycle Funnel & Cadence Studio"
+            >
+                <i class="fas fa-filter text-xs text-yellow-300"></i>
+                <span>Lifecycle Funnel</span>
+            </a>
+
+            <!-- 10K Growth Plan Shortcut -->
+            <a 
+                href="/ops/growth" 
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-wa-surface hover:bg-wa-panel text-blue-400 hover:text-blue-300 border border-blue-500/30 rounded-xl text-xs font-semibold transition-all transform hover:-translate-y-0.5"
+                title="10K Growth Plan Dashboard"
+            >
+                <i class="fas fa-rocket text-xs"></i>
+                <span>Growth Plan</span>
+            </a>
+
+            <!-- Free First Wash Hub Shortcut -->
+            <a 
+                href="/freewash" 
+                class="flex items-center gap-1.5 px-3 py-1.5 bg-wa-surface hover:bg-wa-panel text-amber-400 hover:text-amber-300 border border-amber-500/30 rounded-xl text-xs font-semibold transition-all transform hover:-translate-y-0.5"
+                title="Free First Wash (CMP-00032/33) Redemption Hub"
+            >
+                <i class="fas fa-gift text-xs"></i>
+                <span>Free Wash</span>
+            </a>
+
+            <!-- Open Chatwoot Workspace Button -->
+            <a 
+                href="https://chatwoot.rush.com.sa" 
+                target="_blank" 
+                class="flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-blue-500/20 transition-all transform hover:-translate-y-0.5"
+            >
+                <i class="fas fa-comments text-xs"></i>
+                <span>Open Chatwoot Workspace</span>
+                <i class="fas fa-external-link-alt text-[10px] opacity-70"></i>
+            </a>
+
+            <!-- Telemetry Indicator -->
+            <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-wa-panel border border-wa-border text-xs text-wa-muted">
+                <span class="w-2 h-2 rounded-full bg-wa-green"></span>
+                <span>Bridge: <strong class="text-white">Active</strong></span>
             </div>
-            <button class="btn-action" id="dir-toggle-btn" onclick="toggleLayoutDir()" title="Switch layout direction (عربي RTL / English LTR)">
-                <span id="dir-icon">🌐</span>
-                <span id="dir-text">RTL Arabic</span>
+
+            <!-- Theme toggle -->
+            <button type="button" onclick="rwToggleTheme()" class="rw-theme-toggle" title="Toggle theme" aria-label="Toggle light / dark theme">
+                <svg class="rw-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                <svg class="rw-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
             </button>
-            <button class="btn-action" onclick="openSettingsModal()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                <span>Settings</span>
+
+            <!-- Refresh Button -->
+            <button @click="refreshData()" class="p-2 rounded-xl bg-wa-panel hover:bg-wa-surface text-wa-muted hover:text-white border border-wa-border transition-colors" title="Refresh Data">
+                <i class="fas fa-sync-alt text-xs" :class="{'fa-spin': isRefreshing}"></i>
             </button>
-            <a href="/logout" class="btn-action btn-action-logout" title="Sign out">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                <span>Logout</span>
+
+            <!-- Logout -->
+            <a href="/logout" class="p-2 rounded-xl bg-wa-panel hover:bg-red-500/10 text-wa-muted hover:text-red-400 border border-wa-border transition-colors" title="Sign Out">
+                <i class="fas fa-sign-out-alt text-xs"></i>
             </a>
         </div>
     </header>
 
-    <!-- ========================================================================= -->
-    <!-- 1. WHATSAPP CHATS TAB                                                     -->
-    <!-- ========================================================================= -->
-    <div class="tab-content active" id="content-chats">
-        <div class="chat-layout">
-            <!-- Sidebar -->
-            <aside class="sidebar">
-                <div class="sidebar-header">
-                    <div class="sidebar-top-row">
-                        <div class="sidebar-title">
-                            <span>Chats</span>
-                            <span class="sidebar-title-count" id="chat-count">0</span>
-                        </div>
-                        <div class="sidebar-filter-pills">
-                            <button class="filter-pill-btn active" id="filter-all-chats" onclick="setChatFilter('all')">All</button>
-                            <button class="filter-pill-btn" id="filter-unread-chats" onclick="setChatFilter('unread')">Unread</button>
-                            <button class="btn-action btn-action-primary" style="padding: 4px 10px; font-size: 11.5px;" onclick="openNewChatModal()">+ New Chat</button>
-                        </div>
-                    </div>
+    <!-- Mobile Horizontal Navigation Bar -->
+    <nav class="md:hidden flex items-center overflow-x-auto bg-wa-panel border-b border-wa-border px-3 py-2 gap-2 shrink-0">
+        <button 
+            @click="activeTab = 'analytics'" 
+            :class="activeTab === 'analytics' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-chart-pie"></i>
+            <span>Analytics</span>
+        </button>
+        <button 
+            @click="activeTab = 'campaigns'" 
+            :class="activeTab === 'campaigns' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-bullhorn"></i>
+            <span>Campaigns</span>
+        </button>
+        <button 
+            @click="activeTab = 'templates'" 
+            :class="activeTab === 'templates' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-layer-group"></i>
+            <span>Templates</span>
+        </button>
+        <button 
+            @click="activeTab = 'chats'" 
+            :class="activeTab === 'chats' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-comments"></i>
+            <span>Chats</span>
+        </button>
+        <button 
+            @click="activeTab = 'media'" 
+            :class="activeTab === 'media' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-photo-video"></i>
+            <span>Media Vault</span>
+        </button>
+        <button 
+            @click="activeTab = 'dlr'" 
+            :class="activeTab === 'dlr' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-receipt"></i>
+            <span>DLR Reports</span>
+        </button>
+        <button 
+            @click="activeTab = 'ads'" 
+            :class="activeTab === 'ads' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-bullseye text-wa-muted"></i>
+            <span>Snap &amp; Meta Ads</span>
+        </button>
+        <button 
+            @click="activeTab = 'links'" 
+            :class="activeTab === 'links' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-link text-wa-muted"></i>
+            <span>Smart Links</span>
+        </button>
+        <a 
+            href="/cron" 
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all text-purple-400 bg-purple-500/10 border border-purple-500/30 font-bold hover:bg-purple-500/20"
+        >
+            <i class="fas fa-calendar-check text-wa-muted"></i>
+            <span>Cron Jobs</span>
+        </a>
+        <button 
+            @click="activeTab = 'settings'" 
+            :class="activeTab === 'settings' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all"
+        >
+            <i class="fas fa-coins text-wa-muted"></i>
+            <span>Cost &amp; Settings</span>
+        </button>
+    </nav>
 
-                    <div class="sidebar-search-box">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="search-input" dir="auto" placeholder="Search phone or text..." onkeyup="filterConversations()" autocomplete="off" name="search" role="searchbox">
-                        <button class="search-clear-btn" id="search-clear" onclick="clearSearch()">&times;</button>
-                    </div>
-                </div>
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden">
 
-                <div class="conv-list" id="conversations-container"></div>
-            </aside>
+        <!-- Sidebar Navigation Tabs -->
+        <aside class="w-64 glass-panel border-r border-wa-border flex flex-col justify-between p-4 hidden md:flex shrink-0">
+            <div class="space-y-1.5">
+                <div class="text-[11px] font-semibold text-wa-muted uppercase tracking-wider px-3 mb-2">Navigation</div>
 
-            <!-- Chat Panel -->
-            <section class="chat-panel">
-                <div class="chat-header" id="chat-header" style="display: none;">
-                    <div class="chat-header-user">
-                        <div class="avatar-wrap">
-                            <div class="avatar" id="active-avatar">WA</div>
-                            <div class="avatar-online-dot"></div>
-                        </div>
-                        <div>
-                            <div class="chat-header-title">
-                                <span id="active-phone"><bdi class="phone-isolate">+966...</bdi></span>
-                            </div>
-                            <div class="chat-header-subtitle">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                                <span>WhatsApp Verified &bull; Active Customer Thread</span>
-                            </div>
-                        </div>
-                    </div>
+                <a 
+                    href="/cron" 
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left bg-wa-surface text-wa-text border border-wa-border mb-2 font-bold shadow-md shadow-purple-950/20"
+                >
+                    <i class="fas fa-calendar-check text-sm w-4 text-wa-muted"></i>
+                    <span>Cron &amp; Wave Center</span>
+                    <span class="ml-auto text-[10px] bg-wa-green/10 text-wa-green-bright px-1.5 py-0.5 rounded font-bold">Live</span>
+                </a>
 
-                    <div class="chat-header-actions">
-                        <button class="btn-action" onclick="copyActivePhone()" title="Copy Phone Number">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            <span id="copy-phone-text">Copy Phone</span>
-                        </button>
-                        <button class="btn-action" onclick="openDirectWhatsApp()" title="Open in official WhatsApp Web">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/></svg>
-                            <span>Open Web</span>
-                        </button>
-                    </div>
-                </div>
+                <button 
+                    @click="activeTab = 'analytics'" 
+                    :class="activeTab === 'analytics' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-chart-pie text-sm w-4"></i>
+                    <span>Executive Analytics</span>
+                </button>
 
-                <div class="messages-area" id="messages-container">
-                    <div class="chat-empty-state">
-                        <div class="empty-illustration">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                        </div>
-                        <h3 style="font-size: 17px; color: #ffffff;">RUSH WhatsApp Live Assistant</h3>
-                        <p style="font-size: 13.5px; max-width: 320px; line-height: 1.5;">Select a customer from the left sidebar to view messages or click <strong>+ New Chat</strong> to start a conversation.</p>
-                    </div>
-                </div>
+                <button 
+                    @click="activeTab = 'campaigns'" 
+                    :class="activeTab === 'campaigns' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-bullhorn text-sm w-4"></i>
+                    <span>Bulk Campaigns</span>
+                    <span class="ml-auto text-[10px] bg-wa-green/20 text-wa-green-bright px-1.5 py-0.5 rounded font-bold">New</span>
+                </button>
 
-                <div class="composer-area" id="composer-area" style="display: none;">
-                    <div class="chips-row">
-                        <span class="chip-template" onclick="insertTemplate('أهلاً بك عميلنا العزيز في RushWash 🚗 كيف نقدر نخدمك اليوم؟')">👋 أهلاً بك</span>
-                        <span class="chip-template" onclick="insertTemplate('تم استلام طلبك وجاري معالجته في أقرب وقت ⏱️')">⏱️ استلام الطلب</span>
-                        <span class="chip-template" onclick="insertTemplate('تقدر تتابع تفاصيل اشتراكك وغسيلك عبر تطبيق RushWash أو موقعنا rush.com.sa')">📲 رابط التطبيق</span>
-                        <span class="chip-template" onclick="insertTemplate('شكراً لتواصلك مع RushWash. نسعد دائماً بخدمتك!')">🙏 شكراً لتواصلك</span>
-                    </div>
+                <button 
+                    @click="activeTab = 'templates'" 
+                    :class="activeTab === 'templates' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-layer-group text-sm w-4"></i>
+                    <span>Template Studio</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface text-wa-muted px-1.5 py-0.5 rounded font-bold" x-text="templates.length || 6"></span>
+                </button>
 
-                    <div class="composer-input-row">
-                        <div class="composer-input-wrapper">
-                            <textarea class="message-input" id="reply-text" dir="auto" placeholder="Type a message... (Press Enter to send, Shift+Enter for newline)" rows="1" onkeydown="handleKey(event)"></textarea>
-                        </div>
-                        <button class="send-btn-circle" id="send-button" onclick="sendReply()" title="Send Message">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="22" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        </button>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
+                <button 
+                    @click="activeTab = 'chats'" 
+                    :class="activeTab === 'chats' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-comments text-sm w-4"></i>
+                    <span>Live Conversations</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface px-1.5 py-0.5 rounded text-wa-text font-bold" x-text="conversations.length"></span>
+                </button>
 
-    <!-- ========================================================================= -->
-    <!-- 2. DELIVERY REPORTS (DLR) TAB                                             -->
-    <!-- ========================================================================= -->
-    <div class="tab-content" id="content-reports">
-        <div class="reports-layout">
-            
-            <!-- Top KPI Cards -->
-            <div class="kpi-cards-grid">
-                <div class="kpi-stat-card">
-                    <div class="kpi-stat-title">
-                        <span>Total Submitted</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </div>
-                    <div class="kpi-stat-value" id="kpi-total-dispatched">444</div>
-                    <div class="kpi-stat-badge" style="color: #94a3b8;">100% Volume</div>
-                </div>
+                <button 
+                    @click="activeTab = 'ads'" 
+                    :class="activeTab === 'ads' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left group"
+                >
+                    <i class="fas fa-bullseye text-sm w-4 text-wa-muted group-hover:scale-110 transition-transform"></i>
+                    <span>Snap &amp; Meta Ads</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface text-wa-muted px-1.5 py-0.5 rounded font-bold" x-text="(adsData?.overview?.blended_roas || '3.5') + 'x ROAS'"></span>
+                </button>
 
-                <div class="kpi-stat-card">
-                    <div class="kpi-stat-title">
-                        <span>Success Sent Rate</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    </div>
-                    <div class="kpi-stat-value" style="color: #4ade80;" id="kpi-sent-rate">76.8%</div>
-                    <div class="kpi-stat-badge" style="color: #4ade80;">341 Sent / 296 Delivered</div>
-                </div>
+                <button 
+                    @click="activeTab = 'links'" 
+                    :class="activeTab === 'links' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left group"
+                >
+                    <i class="fas fa-link text-sm w-4 text-wa-muted group-hover:scale-110 transition-transform"></i>
+                    <span>Smart Tracking Links</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface text-wa-muted px-1.5 py-0.5 rounded font-bold" x-text="(trackingLinksData?.total_clicks || 0) + ' Clicks'"></span>
+                </button>
 
-                <div class="kpi-stat-card">
-                    <div class="kpi-stat-title">
-                        <span>Read Receipts Rate</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
-                    </div>
-                    <div class="kpi-stat-value" style="color: #38bdf8;" id="kpi-read-rate">28.0%</div>
-                    <div class="kpi-stat-badge" style="color: #38bdf8;">83 Confirmed Read</div>
-                </div>
+                <button 
+                    @click="activeTab = 'media'" 
+                    :class="activeTab === 'media' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-photo-video text-sm w-4"></i>
+                    <span>Media Vault (VPS Links)</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface text-wa-muted px-1.5 py-0.5 rounded font-bold" x-text="uploads.length || 0"></span>
+                </button>
 
-                <div class="kpi-stat-card">
-                    <div class="kpi-stat-title">
-                        <span>Failed / Declined</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
-                    </div>
-                    <div class="kpi-stat-value" style="color: #f87171;" id="kpi-failed-count">103</div>
-                    <div class="kpi-stat-badge" style="color: #f87171;">23.2% Undelivered</div>
-                </div>
+                <button 
+                    @click="activeTab = 'dlr'" 
+                    :class="activeTab === 'dlr' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-receipt text-sm w-4"></i>
+                    <span>DLR Delivery Reports</span>
+                </button>
 
-                <div class="kpi-stat-card">
-                    <div class="kpi-stat-title">
-                        <span>Estimated Spend</span>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                    </div>
-                    <div class="kpi-stat-value" style="color: #facc15;" id="kpi-spend-usd">$14.68</div>
-                    <div class="kpi-stat-badge" style="color: #facc15;">SAR 55.05 (~Marketing Lite)</div>
-                </div>
+                <button 
+                    @click="activeTab = 'settings'" 
+                    :class="activeTab === 'settings' ? 'bg-wa-green/10 text-wa-green-bright font-semibold border border-wa-green/20' : 'text-wa-muted hover:bg-wa-surface hover:text-wa-text border border-transparent'"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all text-left"
+                >
+                    <i class="fas fa-coins text-sm w-4 text-wa-muted"></i>
+                    <span>Pricing &amp; Settings</span>
+                    <span class="ml-auto text-[10px] bg-wa-surface text-wa-muted px-1.5 py-0.5 rounded font-bold" x-text="stats.currency || 'SAR'"></span>
+                </button>
             </div>
 
-            <!-- Middle Section: Donut + Status Breakdown -->
-            <div class="dlr-overview-grid">
-                
-                <!-- Left: Donut Chart -->
-                <div class="stats-box">
-                    <div class="stats-box-header">
-                        <span class="stats-box-title">Success Rate Analysis</span>
-                        <div class="view-pill-group">
-                            <button class="view-pill active" id="btn-view-campaign" onclick="setStatsSource('campaign')">Unifonic (444)</button>
-                            <button class="view-pill" id="btn-view-live" onclick="setStatsSource('live')">Live Webhook</button>
-                        </div>
-                    </div>
-
-                    <div class="donut-container">
-                        <svg class="donut-svg" viewBox="0 0 200 200">
-                            <!-- Outer track -->
-                            <circle cx="100" cy="100" r="82" fill="none" stroke="#182229" stroke-width="14" />
-                            <!-- Failed red background -->
-                            <circle cx="100" cy="100" r="82" fill="none" stroke="#e11d48" stroke-width="14" />
-                            <!-- Success Teal arc -->
-                            <circle id="donut-arc-success" cx="100" cy="100" r="82" fill="none" stroke="#00a884" stroke-width="14"
-                                    stroke-dasharray="515.2" stroke-dashoffset="120" stroke-linecap="round"
-                                    style="transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);" />
-                        </svg>
-                        <div class="donut-center-info">
-                            <div class="donut-center-sub">Success Rate</div>
-                            <div class="donut-center-pct" id="donut-rate-text">76.8%</div>
-                        </div>
-                    </div>
-
-                    <div class="donut-legend">
-                        <div class="donut-legend-item">
-                            <span class="donut-dot" style="background: #00a884;"></span>
-                            <span>Delivered / Sent</span>
-                        </div>
-                        <div class="donut-legend-item">
-                            <span class="donut-dot" style="background: #e11d48;"></span>
-                            <span>Failed / Rejected</span>
-                        </div>
-                    </div>
+            <!-- Server Telemetry Card -->
+            <div class="p-3.5 rounded-2xl bg-wa-panel border border-wa-border space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-wa-muted">Provider:</span>
+                    <span class="font-bold text-white">Unifonic WABA</span>
                 </div>
-
-                <!-- Right: Status Breakdown Tree -->
-                <div class="stats-box">
-                    <div class="stats-box-header">
-                        <span class="stats-box-title">Status Breakdown & Filtering</span>
-                        <span style="font-size: 11.5px; color: var(--wa-text-secondary);">Click any row to filter table</span>
-                    </div>
-
-                    <div class="status-breakdown-list">
-                        <div class="breakdown-row" onclick="applyStatusFilter('ALL', this)">
-                            <div class="breakdown-left">
-                                <span class="sq-icon sq-total"></span>
-                                <span>Total Processed</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-total">444</span>
-                        </div>
-                        <div class="breakdown-row" onclick="applyStatusFilter('ALL', this)">
-                            <div class="breakdown-left">
-                                <span class="sq-icon sq-submitted"></span>
-                                <span>Submitted to Channel</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-submitted">444</span>
-                        </div>
-                        <div class="breakdown-row" onclick="applyStatusFilter('SENT', this)">
-                            <div class="breakdown-left" style="padding-left: 14px;">
-                                <span class="sq-icon sq-sent"></span>
-                                <span>Dispatched / Sent</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-sent">341</span>
-                        </div>
-                        <div class="breakdown-row" onclick="applyStatusFilter('DELIVERED', this)">
-                            <div class="breakdown-left" style="padding-left: 28px;">
-                                <span class="sq-icon sq-delivered"></span>
-                                <span>Delivered to Handset</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-delivered">296</span>
-                        </div>
-                        <div class="breakdown-row" onclick="applyStatusFilter('READ', this)">
-                            <div class="breakdown-left" style="padding-left: 42px;">
-                                <span class="sq-icon sq-read"></span>
-                                <span>Read by Customer (Blue Ticks)</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-read">83</span>
-                        </div>
-                        <div class="breakdown-row" onclick="applyStatusFilter('FAILED', this)">
-                            <div class="breakdown-left">
-                                <span class="sq-icon sq-failed"></span>
-                                <span>Failed / Undelivered</span>
-                            </div>
-                            <span class="breakdown-num" id="bd-failed">103</span>
-                        </div>
-                    </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-wa-muted">Chatwoot:</span>
+                    <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Synced
+                    </span>
                 </div>
-
+                <div class="pt-2 border-t border-wa-border/50 text-[11px] text-wa-muted">
+                    <span>Host: <code>chatwoot.rush.com.sa</code></span>
+                </div>
             </div>
+        </aside>
 
-            <!-- Channel Usage Table -->
-            <div class="channel-stats-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                    <div style="font-size: 14.5px; font-weight: 700; color: #ffffff;">Channel Volume & Spend Overview</div>
-                    <span style="font-size: 12px; color: #4ade80; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.25); padding: 2px 10px; border-radius: 12px; font-weight: 600;">Meta Official Rate</span>
-                </div>
-                <table class="channel-table">
-                    <thead>
-                        <tr>
-                            <th>Channel</th>
-                            <th>Utility</th>
-                            <th>Marketing</th>
-                            <th>Marketing Lite</th>
-                            <th>Authentication</th>
-                            <th>Service</th>
-                            <th>Sent</th>
-                            <th>Received</th>
-                            <th>Delivered</th>
-                            <th>Spend (USD)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong style="color: var(--wa-green-bright);">WhatsApp</strong></td>
-                            <td id="ch-utility">0</td>
-                            <td id="ch-marketing">0</td>
-                            <td><strong style="color: #4ade80;" id="ch-marketing-lite">293</strong></td>
-                            <td id="ch-auth">0</td>
-                            <td id="ch-service">0</td>
-                            <td id="ch-sent" style="font-weight: 700;">343</td>
-                            <td id="ch-recv" style="color: #38bdf8; font-weight: 700;">11</td>
-                            <td id="ch-deliv" style="color: #4ade80; font-weight: 700;">294</td>
-                            <td><strong style="color: #facc15;" id="ch-spend-bi">$14.68</strong></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-6 space-y-6">
 
-            <!-- Toolbar & Search -->
-            <div class="toolbar">
-                <div class="filter-group">
-                    <label style="font-size: 13px; color: var(--wa-text-secondary); font-weight: 600;">Filter Status:</label>
-                    <select class="filter-select" id="report-status-filter" onchange="loadReports()">
-                        <option value="ALL">All Statuses</option>
-                        <option value="SENT">Sent</option>
-                        <option value="DELIVERED">Delivered</option>
-                        <option value="READ">Read</option>
-                        <option value="FAILED">Failed / Rejected</option>
-                    </select>
-
-                    <input type="text" class="filter-select" id="report-phone-filter" placeholder="Search phone number..." onkeyup="loadReports()" autocomplete="off" name="filter-phone" style="width: 200px;">
-                </div>
-
-                <div style="display: flex; gap: 8px;">
-                    <button class="btn-action btn-action-primary" onclick="syncUnifonicStatus()" id="sync-unifonic-btn" title="Run direct GET request to Unifonic to query live delivery receipts">
-                        <span>🔄 Sync from Unifonic (GET)</span>
+            <!-- GLOBAL DATE FILTER TOOLBAR (For Analytics & DLR) -->
+            <div x-show="activeTab === 'analytics' || activeTab === 'dlr'" class="glass-panel p-3.5 rounded-2xl border border-wa-border flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-semibold text-wa-muted flex items-center gap-1.5 pr-2 border-r border-wa-border">
+                        <i class="fas fa-calendar-alt text-wa-green-bright"></i>
+                        <span>Date Filter:</span>
+                    </span>
+                    
+                    <!-- Quick Presets -->
+                    <button 
+                        @click="setDatePreset('all')" 
+                        :class="datePreset === 'all' ? 'bg-wa-green text-white font-bold' : 'bg-wa-panel text-wa-muted hover:text-white border border-wa-border'" 
+                        class="px-3 py-1 rounded-xl text-xs transition-all"
+                    >
+                        All Time
                     </button>
-                    <a href="/api/reports/export" class="btn-action" download style="color: #4ade80; border-color: rgba(34, 197, 94, 0.35);">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        <span>Export CSV</span>
-                    </a>
+                    <button 
+                        @click="setDatePreset('today')" 
+                        :class="datePreset === 'today' ? 'bg-wa-green text-white font-bold' : 'bg-wa-panel text-wa-muted hover:text-white border border-wa-border'" 
+                        class="px-3 py-1 rounded-xl text-xs transition-all"
+                    >
+                        Today
+                    </button>
+                    <button 
+                        @click="setDatePreset('yesterday')" 
+                        :class="datePreset === 'yesterday' ? 'bg-wa-green text-white font-bold' : 'bg-wa-panel text-wa-muted hover:text-white border border-wa-border'" 
+                        class="px-3 py-1 rounded-xl text-xs transition-all"
+                    >
+                        Yesterday
+                    </button>
+                    <button 
+                        @click="setDatePreset('last7')" 
+                        :class="datePreset === 'last7' ? 'bg-wa-green text-white font-bold' : 'bg-wa-panel text-wa-muted hover:text-white border border-wa-border'" 
+                        class="px-3 py-1 rounded-xl text-xs transition-all"
+                    >
+                        Last 7 Days
+                    </button>
+                    <button 
+                        @click="setDatePreset('last30')" 
+                        :class="datePreset === 'last30' ? 'bg-wa-green text-white font-bold' : 'bg-wa-panel text-wa-muted hover:text-white border border-wa-border'" 
+                        class="px-3 py-1 rounded-xl text-xs transition-all"
+                    >
+                        Last 30 Days
+                    </button>
+                </div>
+
+                <!-- Custom Range Pickers -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-1.5 bg-wa-panel px-2.5 py-1 rounded-xl border border-wa-border text-xs">
+                        <span class="text-wa-muted text-[11px]">From:</span>
+                        <input 
+                            type="date" 
+                            x-model="dateFrom" 
+                            class="bg-transparent text-white text-xs outline-none focus:text-wa-green-bright"
+                        >
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-wa-panel px-2.5 py-1 rounded-xl border border-wa-border text-xs">
+                        <span class="text-wa-muted text-[11px]">To:</span>
+                        <input 
+                            type="date" 
+                            x-model="dateTo" 
+                            class="bg-transparent text-white text-xs outline-none focus:text-wa-green-bright"
+                        >
+                    </div>
+                    <button 
+                        @click="applyCustomDateFilter()" 
+                        class="px-3 py-1 bg-wa-green hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold shadow transition-all flex items-center gap-1"
+                    >
+                        <i class="fas fa-filter text-[10px]"></i> Apply
+                    </button>
+                    <template x-if="dateFrom || dateTo">
+                        <button 
+                            @click="clearDateFilter()" 
+                            class="p-1 rounded-lg text-wa-muted hover:text-rose-400 transition-colors" 
+                            title="Reset date filter"
+                        >
+                            <i class="fas fa-times-circle text-xs"></i>
+                        </button>
+                    </template>
                 </div>
             </div>
 
-            <!-- Detailed Table -->
-            <div class="table-card">
-                <table class="dlr-table">
-                    <thead>
-                        <tr>
-                            <th>Message ID</th>
-                            <th>Recipient</th>
-                            <th>Status</th>
-                            <th>Sent At</th>
-                            <th>Delivered At</th>
-                            <th>Read At</th>
-                            <th>Content / Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reports-table-body"></tbody>
-                </table>
-            </div>
-
-        </div>
-    </div>
-
-    <!-- ========================================================================= -->
-    <!-- 3. WEBHOOK STREAM TAB                                                     -->
-    <!-- ========================================================================= -->
-    <div class="tab-content" id="content-feed">
-        <div class="feed-layout">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3 style="font-size: 16px; font-weight: 700; color: #ffffff;">Live Ingestion Event Feed</h3>
-                <button class="btn-action btn-action-primary" onclick="loadRawFeed()">Refresh Feed</button>
-            </div>
-            <div id="raw-feed-container"></div>
-        </div>
-    </div>
-
-    <!-- Start New Chat Modal -->
-    <div class="modal-overlay" id="new-chat-modal">
-        <div class="modal">
-            <div class="modal-title">Start New WhatsApp Conversation</div>
-            <div class="form-group">
-                <label>Recipient Phone Number (with Country Code)</label>
-                <input type="text" class="form-control phone-isolate" id="new-phone" dir="ltr" placeholder="e.g. 966569809578" autocomplete="off" name="new-phone">
-            </div>
-            <div class="form-group">
-                <label>Initial Message (Optional)</label>
-                <textarea class="form-control" id="new-initial-msg" dir="auto" rows="3" placeholder="Type opening message..."></textarea>
-            </div>
-            <div class="modal-actions">
-                <button class="btn-action" onclick="closeNewChatModal()">Cancel</button>
-                <button class="btn-action btn-action-primary" onclick="submitNewChat()">Open Conversation</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div class="modal-overlay" id="settings-modal">
-        <div class="modal">
-            <div class="modal-title">Unifonic API & Webhook Settings</div>
-            <div style="background: rgba(0, 168, 132, 0.1); border: 1px solid rgba(0, 168, 132, 0.3); color: #4ade80; padding: 12px; border-radius: 10px; font-size: 12.5px; margin-bottom: 16px; word-break: break-all;">
-                <strong>Public Webhook URL (HTTPS):</strong><br>
-                <code>{public_https_url}</code>
-            </div>
-            <div class="form-group">
-                <label>Unifonic Public ID</label>
-                <input type="text" class="form-control" id="settings-public-id" placeholder="e.g. 92d3a815-4224-4f47-bf10-8eb91256230c" value="{unifonic_public_id}" autocomplete="off" name="settings-public-id">
-            </div>
-            <div class="form-group">
-                <label>Unifonic Channel ID</label>
-                <input type="text" class="form-control" id="settings-channel-id" placeholder="e.g. d6bb3874-a6f2-485f-bf43-7c6df97c2109" value="{unifonic_channel_id}" autocomplete="off" name="settings-channel-id">
-            </div>
-            <div class="form-group">
-                <label>Unifonic Secret Key / API Key</label>
-                <input type="password" class="form-control" id="settings-secret-key" placeholder="Paste your Unifonic Secret Key here">
-            </div>
-            <div class="modal-actions">
-                <button class="btn-action" onclick="closeSettingsModal()">Cancel</button>
-                <button class="btn-action btn-action-primary" onclick="saveSettings()">Save & Activate</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        let currentTab = 'chats';
-        let allConversations = [];
-        let activePhone = null;
-        let isSending = false;
-        let chatFilter = 'all';
-
-        const AVATAR_GRADIENTS = [
-            'linear-gradient(135deg, #00a884, #005c4b)',
-            'linear-gradient(135deg, #2563eb, #1e3a8a)',
-            'linear-gradient(135deg, #7c3aed, #4c1d95)',
-            'linear-gradient(135deg, #d97706, #78350f)',
-            'linear-gradient(135deg, #c91e2f, #881337)',
-            'linear-gradient(135deg, #0891b2, #164e63)'
-        ];
-
-        function getAvatarGradient(phone) {{
-            if (!phone) return AVATAR_GRADIENTS[0];
-            let hash = 0;
-            for (let i = 0; i < phone.length; i++) hash = phone.charCodeAt(i) + ((hash << 5) - hash);
-            return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length];
-        }}
-
-        function formatPhoneDisplay(phone) {{
-            if (!phone) return 'Unknown';
-            const digits = phone.replace(/\\D/g, '');
-            if (digits.startsWith('966') && digits.length === 12) {{
-                return `+966 ${{digits.slice(3, 5)}} ${{digits.slice(5, 8)}} ${{digits.slice(8)}}`;
-            }}
-            return '+' + digits;
-        }}
-
-        // Realtime SSE Connection
-        let sseConnected = false;
-        function initSSE() {{
-            try {{
-                const evtSource = new EventSource('/api/events/stream');
-                evtSource.onopen = () => {{
-                    sseConnected = true;
-                    const st = document.getElementById('sse-status-text');
-                    if (st) st.innerText = 'Connected';
-                }};
-                evtSource.onmessage = (e) => {{
-                    try {{
-                        const msg = JSON.parse(e.data);
-                        if (msg.type === 'connected') return;
-                        
-                        if (currentTab === 'chats') {{
-                            loadConversations(true);
-                            if (activePhone && (!msg.phone || msg.phone === activePhone)) {{
-                                loadMessages(activePhone, true);
-                            }}
-                        }} else if (currentTab === 'reports') {{
-                            loadReports(true);
-                        }} else if (currentTab === 'feed') {{
-                            loadRawFeed(true);
-                        }}
-                    }} catch (err) {{}}
-                }};
-                evtSource.onerror = () => {{
-                    sseConnected = false;
-                    const st = document.getElementById('sse-status-text');
-                    if (st) st.innerText = 'Reconnecting';
-                }};
-            }} catch (e) {{}}
-        }}
-
-        // Background poll backup every 3s
-        setInterval(() => {{
-            if (currentTab === 'chats') {{
-                loadConversations(true);
-                if (activePhone) loadMessages(activePhone, true);
-            }} else if (currentTab === 'reports') {{
-                loadReports(true);
-            }} else if (currentTab === 'feed') {{
-                loadRawFeed(true);
-            }}
-        }}, 3000);
-
-        function initLayoutDir() {{
-            const savedDir = localStorage.getItem('rush_dir') || 'rtl';
-            setLayoutDir(savedDir);
-        }}
-
-        function toggleLayoutDir() {{
-            const currentDir = document.documentElement.getAttribute('dir') || 'rtl';
-            const newDir = (currentDir === 'rtl') ? 'ltr' : 'rtl';
-            setLayoutDir(newDir);
-        }}
-
-        function setLayoutDir(dir) {{
-            document.documentElement.setAttribute('dir', dir);
-            document.body.setAttribute('dir', dir);
-            localStorage.setItem('rush_dir', dir);
-            const textEl = document.getElementById('dir-text');
-            if (textEl) {{
-                textEl.innerText = (dir === 'rtl') ? 'LTR English' : 'عربي RTL';
-            }}
-        }}
-
-        window.onload = () => {{
-            initLayoutDir();
-            initSSE();
-            loadConversations();
-            loadReports();
-        }};
-
-        function switchTab(tab) {{
-            currentTab = tab;
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
-            const btn = document.getElementById('tab-' + tab);
-            const cnt = document.getElementById('content-' + tab);
-            if (btn) btn.classList.add('active');
-            if (cnt) cnt.classList.add('active');
-
-            if (tab === 'reports') loadReports();
-            if (tab === 'feed') loadRawFeed();
-            if (tab === 'chats') loadConversations();
-        }}
-
-        // --- CONVERSATIONS & CHAT ---
-        function setChatFilter(filter) {{
-            chatFilter = filter;
-            document.getElementById('filter-all-chats').classList.toggle('active', filter === 'all');
-            document.getElementById('filter-unread-chats').classList.toggle('active', filter === 'unread');
-            filterConversations();
-        }}
-
-        async function loadConversations(isBackground = false) {{
-            try {{
-                const res = await fetch('/api/conversations?t=' + Date.now(), {{
-                    headers: {{ 'Cache-Control': 'no-cache' }}
-                }});
-                const data = await res.json();
-                allConversations = data.conversations || [];
-                
-                const countEl = document.getElementById('chat-count');
-                if (countEl) countEl.innerText = allConversations.length;
-
-                const unreadTotal = allConversations.reduce((acc, c) => acc + (c.unread_count || 0), 0);
-                const badgeEl = document.getElementById('tab-unread-count');
-                if (badgeEl) {{
-                    badgeEl.innerText = unreadTotal;
-                    badgeEl.style.display = unreadTotal > 0 ? 'inline-block' : 'none';
-                }}
-
-                filterConversations();
-            }} catch (e) {{}}
-        }}
-
-        function clearSearch() {{
-            const el = document.getElementById('search-input');
-            if (el) el.value = '';
-            document.getElementById('search-clear').style.display = 'none';
-            filterConversations();
-        }}
-
-        function filterConversations() {{
-            const searchEl = document.getElementById('search-input');
-            const q = searchEl ? searchEl.value.toLowerCase().trim() : '';
-            const clearBtn = document.getElementById('search-clear');
-            if (clearBtn) clearBtn.style.display = q ? 'block' : 'none';
-
-            let filtered = allConversations;
-            if (chatFilter === 'unread') {{
-                filtered = filtered.filter(c => c.unread_count > 0);
-            }}
-            if (q) {{
-                filtered = filtered.filter(c => 
-                    c.phone.toLowerCase().includes(q) || (c.last_message && c.last_message.toLowerCase().includes(q))
-                );
-            }}
-            renderConversations(filtered);
-        }}
-
-        function renderConversations(list) {{
-            const container = document.getElementById('conversations-container');
-            if (list.length === 0) {{
-                container.innerHTML = `
-                    <div style="padding: 36px 16px; text-align: center; color: var(--wa-text-secondary); font-size: 13px; line-height: 1.6;">
-                        No customer conversations found.<br>Click <strong>+ New Chat</strong> to begin messaging.
-                    </div>
-                `;
-                return;
-            }}
-
-            let html = '';
-            list.forEach(c => {{
-                const isActive = (c.phone === activePhone) ? 'active' : '';
-                const timeStr = c.last_timestamp ? formatTime(c.last_timestamp) : '';
-                const bgGradient = getAvatarGradient(c.phone);
-                const avatarInitials = c.phone.slice(-2);
-                const unreadBadge = c.unread_count > 0 ? `<span class="badge-unread">${{c.unread_count}}</span>` : '';
-                
-                // Status tick icon for last message
-                let statusIcon = '';
-                if (c.last_direction === 'outbound') {{
-                    const st = (c.last_status || 'SENT').toUpperCase();
-                    if (st === 'READ') {{
-                        statusIcon = '<svg class="ticks-read" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M11.07 0L5.65 5.42L3.12 2.89L2 4.01L5.65 7.66L12.19 1.12L11.07 0ZM14.88 0L9.46 5.42L8.34 4.3L7.22 5.42L9.46 7.66L16 1.12L14.88 0Z"/></svg>';
-                    }} else if (st === 'DELIVERED') {{
-                        statusIcon = '<svg class="ticks-delivered" width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M11.07 0L5.65 5.42L3.12 2.89L2 4.01L5.65 7.66L12.19 1.12L11.07 0ZM14.88 0L9.46 5.42L8.34 4.3L7.22 5.42L9.46 7.66L16 1.12L14.88 0Z"/></svg>';
-                    }} else {{
-                        statusIcon = '<svg class="ticks-sent" width="12" height="11" viewBox="0 0 12 11" fill="currentColor"><path d="M4.58 7.66L1 4.08L2.12 2.96L4.58 5.42L10.02 0L11.14 1.12L4.58 7.66Z"/></svg>';
-                    }}
-                }}
-
-                const formattedPhone = formatPhoneDisplay(c.phone);
-
-                html += `
-                    <div class="conv-item ${{isActive}}" onclick="selectConversation('${{c.phone}}')">
-                        <div class="avatar-wrap">
-                            <div class="avatar" style="background: ${{bgGradient}};">${{avatarInitials}}</div>
+            <!-- TAB 1: EXECUTIVE ANALYTICS -->
+            <div x-show="activeTab === 'analytics'" class="space-y-6">
+                <!-- Scope & Traffic Filter Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 bg-wa-panel/60 p-3 rounded-2xl border border-wa-border">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-wa-muted uppercase tracking-wider pl-1"><i class="fas fa-layer-group text-wa-green mr-1"></i> Traffic Scope:</span>
+                        <div class="inline-flex p-1 bg-wa-surface rounded-xl border border-wa-border text-xs">
+                            <button 
+                                @click="trafficType = 'campaign'; loadAllData()"
+                                :class="trafficType === 'campaign' ? 'bg-wa-green text-white font-semibold shadow' : 'text-wa-muted hover:text-white'"
+                                class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                            >
+                                <i class="fas fa-bullhorn text-[11px]"></i> Marketing Campaign (2,142)
+                            </button>
+                            <button 
+                                @click="trafficType = 'all'; loadAllData()"
+                                :class="trafficType === 'all' ? 'bg-wa-green/30 text-white font-semibold' : 'text-wa-muted hover:text-white'"
+                                class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                            >
+                                <i class="fas fa-network-wired text-[11px]"></i> All Channel Traffic (3,272)
+                            </button>
                         </div>
-                        <div class="conv-details">
-                            <div class="conv-top">
-                                <span class="conv-phone"><bdi class="phone-isolate">${{formattedPhone}}</bdi></span>
-                                <span class="conv-time">${{timeStr}}</span>
+                    </div>
+                    <div class="text-[11px] text-wa-muted flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-wa-green-bright animate-pulse"></span>
+                        <span x-text="trafficType === 'campaign' ? 'Viewing isolated Watan96 Campaign broadcast (support chats excluded)' : 'Viewing total channel volume including customer support'"></span>
+                    </div>
+                </div>
+
+                <!-- KPI Scorecard Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                    <!-- Sent Card -->
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted uppercase tracking-wider" x-text="trafficType === 'campaign' ? 'Campaign Outbound' : 'Outbound Sent'"></span>
+                            <div class="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                                <i class="fas fa-paper-plane text-xs"></i>
                             </div>
-                            <div class="conv-bottom">
-                                <div class="conv-preview">
-                                    ${{statusIcon}}
-                                    <span class="conv-preview-text" dir="auto">${{escapeHtml(c.last_message || 'No messages')}}</span>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <span class="text-2xl font-extrabold text-white" x-text="stats.total_sent || 0"></span>
+                            <span class="text-xs text-wa-muted">messages</span>
+                        </div>
+                        <div class="mt-2 text-[11px] text-blue-400 flex items-center gap-1 truncate">
+                            <i class="fas fa-bullhorn"></i> <span x-text="trafficType === 'campaign' ? 'Template: 96_sar (Watan96)' : 'Official WhatsApp API'"></span>
+                        </div>
+                    </div>
+
+                    <!-- Delivered Card -->
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Delivery Rate</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <i class="fas fa-check-double text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <span class="text-2xl font-extrabold text-emerald-400" x-text="(stats.delivery_rate || 98.5) + '%'"></span>
+                            <span class="text-xs text-wa-muted" x-text="'(' + (stats.total_delivered || 0) + ' delivered)'"></span>
+                        </div>
+                        <div class="mt-2 text-[11px] text-emerald-400 flex items-center gap-1">
+                            <i class="fas fa-bolt"></i> Real-time DLR Verified
+                        </div>
+                    </div>
+
+                    <!-- Inbound Received -->
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Inbound Replies</span>
+                            <div class="w-8 h-8 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                                <i class="fas fa-inbox text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <span class="text-2xl font-extrabold text-white" x-text="stats.total_inbound || 0"></span>
+                            <span class="text-xs text-wa-muted">customer chats</span>
+                        </div>
+                        <div class="mt-2 text-[11px] text-purple-400 flex items-center gap-1">
+                            <i class="fas fa-sync-alt"></i> Synced to Chatwoot
+                        </div>
+                    </div>
+
+                    <!-- Active 24h Sessions -->
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted uppercase tracking-wider">Active 24h Sessions</span>
+                            <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                                <i class="fas fa-clock text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-2">
+                            <span class="text-2xl font-extrabold text-cyan-400" x-text="stats.active_24h_sessions || 0"></span>
+                            <span class="text-xs text-wa-muted">open sessions</span>
+                        </div>
+                        <div class="mt-2 text-[11px] text-cyan-400 flex items-center gap-1">
+                            <i class="fas fa-comments"></i> 24h Meta Window
+                        </div>
+                    </div>
+
+                    <!-- Free Monthly Service Messages (Meta Oct 1, 2026 Tier) -->
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border relative overflow-hidden bg-gradient-to-b from-emerald-500/5 to-transparent">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Free Service Tier</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center" title="1,000 free delivered service messages per month (Oct 1, 2026 Meta Policy)">
+                                <i class="fas fa-shield-alt text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-1.5">
+                            <span class="text-2xl font-extrabold text-white" x-text="stats.service_quota?.free_tier_used || 0"></span>
+                            <span class="text-xs text-wa-muted">/ 1,000</span>
+                        </div>
+                        <!-- Progress bar -->
+                        <div class="w-full bg-wa-panel rounded-full h-1.5 mt-2.5 overflow-hidden border border-wa-border">
+                            <div 
+                                class="h-full rounded-full transition-all duration-300"
+                                :class="(stats.service_quota?.free_tier_used || 0) >= 1000 ? 'bg-rose-500' : ((stats.service_quota?.free_tier_used || 0) > 800 ? 'bg-amber-400' : 'bg-emerald-400')"
+                                :style="'width: ' + Math.min(100, (((stats.service_quota?.free_tier_used || 0) / 1000) * 100)) + '%'"
+                            ></div>
+                        </div>
+                        <div class="mt-2 text-[10px] flex items-center justify-between">
+                            <span class="text-wa-muted" x-text="(stats.service_quota?.free_tier_remaining || 1000) + ' remaining free'"></span>
+                            <span 
+                                class="px-1.5 py-0.2 rounded font-bold"
+                                :class="(stats.service_quota?.billable_service_messages || 0) > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'"
+                                x-text="(stats.service_quota?.billable_service_messages || 0) > 0 ? ((stats.service_quota.billable_service_messages) + ' regular') : 'Free Tier Active'"
+                            ></span>
+                        </div>
+                    </div>
+
+                    <!-- Unifonic Cost / Spend -->
+                    <div class="glass-panel p-5 rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/5 to-transparent relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-amber-300 uppercase tracking-wider" x-text="trafficType === 'campaign' ? 'Campaign Spend' : 'Unifonic Cost'"></span>
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                                <i class="fas fa-coins text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-baseline gap-1.5">
+                            <span class="text-2xl font-extrabold text-amber-400" x-text="stats.total_cost || '0.00'"></span>
+                            <span class="text-xs font-bold text-amber-300/80" x-text="stats.currency || 'SAR'"></span>
+                        </div>
+                        <div class="mt-2 text-[11px] text-amber-300/80 flex items-center justify-between">
+                            <span><i class="fas fa-calculator mr-1"></i> Rate: <strong class="text-white" x-text="(stats.cost_per_message || '0.15') + ' ' + (stats.currency || 'SAR')"></strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Traffic Volume Bar Chart -->
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl border border-wa-border space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-sm text-white">Traffic & Broadcast Volume</h3>
+                                <p class="text-xs text-wa-muted">Filtered throughput of inbound responses & campaign deliveries</p>
+                            </div>
+                            <span class="text-xs bg-wa-panel px-3 py-1 rounded-xl border border-wa-border text-wa-green-bright font-semibold">Live Feed</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="trafficChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Delivery Status Donut -->
+                    <div class="glass-panel p-6 rounded-2xl border border-wa-border space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-sm text-white">Delivery Quality Breakdown</h3>
+                            <span class="text-xs text-wa-muted">Selected Range</span>
+                        </div>
+                        <div class="h-56 relative flex items-center justify-center">
+                            <canvas id="statusDonutChart"></canvas>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-2 border-t border-wa-border text-center text-xs">
+                            <div>
+                                <span class="text-wa-muted block text-[10px]">Read</span>
+                                <strong class="text-sky-400" x-text="stats.read_count || 0"></strong>
+                            </div>
+                            <div>
+                                <span class="text-wa-muted block text-[10px]">Delivered</span>
+                                <strong class="text-emerald-400" x-text="stats.delivered_count || 0"></strong>
+                            </div>
+                            <div>
+                                <span class="text-wa-muted block text-[10px]">Failed</span>
+                                <strong class="text-rose-400" x-text="stats.failed_count || 0"></strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: BULK CAMPAIGN LAUNCHER -->
+            <div x-show="activeTab === 'campaigns'" class="space-y-6" x-cloak>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">WhatsApp Broadcast & Campaign Launcher</h2>
+                        <p class="text-xs text-wa-muted">Send mass WhatsApp promotions & notifications with automatic Chatwoot thread creation.</p>
+                    </div>
+                    <button 
+                        @click="showNewCampaignModal = true" 
+                        class="px-4 py-2 bg-gradient-to-r from-wa-green to-emerald-600 hover:from-emerald-500 hover:to-wa-green text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-wa-green/20 transition-all"
+                    >
+                        <i class="fas fa-plus"></i>
+                        <span>Create Broadcast Campaign</span>
+                    </button>
+                </div>
+
+                <!-- Campaign History & Progress Table -->
+                <div class="glass-panel rounded-2xl border border-wa-border overflow-hidden">
+                    <div class="p-4 border-b border-wa-border flex items-center justify-between bg-wa-panel/50">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Broadcast Campaigns</span>
+                        <span class="text-xs text-wa-muted" x-text="campaigns.length + ' campaigns recorded'"></span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-wa-panel text-wa-muted uppercase text-[10px] tracking-wider border-b border-wa-border">
+                                <tr>
+                                    <th class="py-3 px-4">Campaign Name</th>
+                                    <th class="py-3 px-4">Recipients</th>
+                                    <th class="py-3 px-4">Est. Cost</th>
+                                    <th class="py-3 px-4">Sent</th>
+                                    <th class="py-3 px-4">Failed</th>
+                                    <th class="py-3 px-4">Progress</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-wa-border">
+                                <template x-for="c in campaigns" :key="c.id">
+                                    <tr class="hover:bg-wa-surface/40 transition-colors">
+                                        <td class="py-3.5 px-4 font-semibold text-white" x-text="c.name"></td>
+                                        <td class="py-3.5 px-4 font-mono text-wa-muted" x-text="c.total_recipients"></td>
+                                        <td class="py-3.5 px-4 font-mono font-bold text-amber-300" x-text="(c.estimated_cost ? c.estimated_cost + ' ' + (c.currency || 'SAR') : ((c.total_recipients * (stats.cost_per_message || 0.15)).toFixed(2) + ' ' + (stats.currency || 'SAR')))"></td>
+                                        <td class="py-3.5 px-4 font-mono text-emerald-400 font-bold" x-text="c.sent_count"></td>
+                                        <td class="py-3.5 px-4 font-mono text-rose-400" x-text="c.failed_count"></td>
+                                        <td class="py-3.5 px-4 w-44">
+                                            <div class="flex items-center gap-2">
+                                                <div class="flex-1 bg-wa-panel rounded-full h-2 overflow-hidden border border-wa-border">
+                                                    <div class="bg-wa-green h-full rounded-full transition-all duration-300" :style="'width: ' + c.progress_pct + '%'"></div>
+                                                </div>
+                                                <span class="text-[10px] font-mono text-wa-muted" x-text="c.progress_pct + '%'"></span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3.5 px-4">
+                                            <span 
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold" 
+                                                :class="{
+                                                    'bg-emerald-500/10 text-emerald-400': c.status === 'COMPLETED',
+                                                    'bg-blue-500/10 text-blue-400 animate-pulse': c.status === 'RUNNING',
+                                                    'bg-amber-500/10 text-amber-400': c.status === 'QUEUED',
+                                                    'bg-rose-500/10 text-rose-400': c.status === 'STOPPED'
+                                                }"
+                                                x-text="c.status"
+                                            ></span>
+                                        </td>
+                                        <td class="py-3.5 px-4 text-wa-muted text-[11px]" x-text="formatDate(c.created_at)"></td>
+                                    </tr>
+                                </template>
+                                <tr x-show="campaigns.length === 0">
+                                    <td colspan="8" class="py-8 text-center text-wa-muted text-xs">
+                                        No campaigns launched yet. Click <strong>"Create Broadcast Campaign"</strong> above to launch your first blast.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: TEMPLATE STUDIO (WITH PRE-APPROVED TEMPLATES) -->
+            <div x-show="activeTab === 'templates'" class="space-y-6" x-cloak>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>WhatsApp Message Templates &amp; Studio</span>
+                            <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-0.5 rounded-full font-bold">Meta / Unifonic Sync</span>
+                        </h2>
+                        <p class="text-xs text-wa-muted">Pre-approved &amp; in-review WhatsApp templates. Ready for broadcasts, live chat, and API automation.</p>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <button 
+                            @click="openCreateTemplateModal()" 
+                            class="px-3.5 py-2 bg-gradient-to-r from-wa-green to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg flex items-center gap-2"
+                        >
+                            <i class="fas fa-plus-circle"></i>
+                            <span>Create Template via API</span>
+                        </button>
+                        <button 
+                            @click="loadTemplates(true)" 
+                            class="px-3.5 py-2 bg-wa-panel hover:bg-wa-surface text-white rounded-xl text-xs font-semibold border border-wa-border flex items-center gap-2 transition-all shadow"
+                            :disabled="isLoadingTemplates"
+                        >
+                            <i class="fas fa-sync-alt text-wa-green-bright" :class="{'fa-spin': isLoadingTemplates}"></i>
+                            <span>Sync from Unifonic</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Template Status & Search Filter Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-wa-panel/60 rounded-xl border border-wa-border">
+                    <div class="flex flex-wrap items-center gap-1.5">
+                        <button 
+                            @click="templateStatusFilter = 'ALL'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                            :class="templateStatusFilter === 'ALL' ? 'bg-wa-surface text-white font-bold border border-wa-border shadow' : 'text-wa-muted hover:text-white'"
+                        >
+                            All (<span x-text="templates.length"></span>)
+                        </button>
+                        <button 
+                            @click="templateStatusFilter = 'APPROVED'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                            :class="templateStatusFilter === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold shadow' : 'text-wa-muted hover:text-emerald-400'"
+                        >
+                            <i class="fas fa-check-circle text-[10px]"></i>
+                            <span>Approved (<span x-text="countTemplatesByStatus('APPROVED')"></span>)</span>
+                        </button>
+                        <button 
+                            @click="templateStatusFilter = 'IN_REVIEW'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                            :class="templateStatusFilter === 'IN_REVIEW' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold shadow' : 'text-wa-muted hover:text-amber-400'"
+                        >
+                            <i class="fas fa-hourglass-half text-[10px]"></i>
+                            <span>In Review / Pending (<span x-text="countTemplatesByStatus('IN_REVIEW')"></span>)</span>
+                        </button>
+                        <button 
+                            @click="templateStatusFilter = 'REJECTED'" 
+                            class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5"
+                            :class="templateStatusFilter === 'REJECTED' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold shadow' : 'text-wa-muted hover:text-rose-400'"
+                        >
+                            <i class="fas fa-times-circle text-[10px]"></i>
+                            <span>Rejected (<span x-text="countTemplatesByStatus('REJECTED')"></span>)</span>
+                        </button>
+                    </div>
+
+                    <div class="w-full sm:w-64">
+                        <input 
+                            type="text" 
+                            x-model="templateSearch" 
+                            placeholder="Search templates..." 
+                            class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-1.5 text-xs text-wa-text focus:outline-none focus:border-wa-green"
+                        >
+                    </div>
+                </div>
+
+                <!-- Template Cards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <template x-for="t in filteredTemplates()" :key="t.id || t.name">
+                        <div class="glass-panel p-5 rounded-2xl border border-wa-border flex flex-col justify-between hover:border-wa-green/50 transition-all shadow-lg group">
+                            <div class="space-y-3">
+                                <!-- Card Header with Interactive Status Switcher -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <div class="w-7 h-7 rounded-lg bg-wa-panel border border-wa-border flex items-center justify-center text-wa-green-bright text-xs shrink-0">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </div>
+                                        <span class="font-bold text-xs text-white font-mono truncate" x-text="t.name"></span>
+                                    </div>
+
+                                    <!-- Interactive Status Badge & Switcher Dropdown -->
+                                    <div class="relative shrink-0" x-data="{ showStatusDropdown: false }">
+                                        <button 
+                                            @click="showStatusDropdown = !showStatusDropdown" 
+                                            class="px-2 py-0.5 rounded text-[10px] font-extrabold border flex items-center gap-1 cursor-pointer transition-all hover:scale-105 shadow"
+                                            :class="getStatusBadgeClass(t.status)"
+                                            title="Click to change review status"
+                                        >
+                                            <i :class="getStatusIconClass(t.status)"></i>
+                                            <span x-text="t.status || 'IN_REVIEW'"></span>
+                                            <i class="fas fa-chevron-down text-[8px] opacity-60 ml-0.5"></i>
+                                        </button>
+                                        <div 
+                                            x-show="showStatusDropdown" 
+                                            @click.away="showStatusDropdown = false" 
+                                            class="absolute right-0 top-full mt-1.5 z-40 bg-wa-panel border border-wa-border rounded-xl p-1.5 shadow-2xl flex flex-col gap-1 min-w-[140px]"
+                                            x-cloak
+                                        >
+                                            <div class="px-2 py-1 text-[9px] text-wa-muted font-bold border-b border-wa-border uppercase">Update Status</div>
+                                            <button 
+                                                @click="changeTemplateStatus(t.name, 'APPROVED'); showStatusDropdown = false" 
+                                                class="px-2.5 py-1 text-[11px] text-left rounded-lg hover:bg-wa-surface text-emerald-400 font-semibold flex items-center gap-2"
+                                            >
+                                                <i class="fas fa-check-circle"></i> Approved
+                                            </button>
+                                            <button 
+                                                @click="changeTemplateStatus(t.name, 'IN_REVIEW'); showStatusDropdown = false" 
+                                                class="px-2.5 py-1 text-[11px] text-left rounded-lg hover:bg-wa-surface text-amber-400 font-semibold flex items-center gap-2"
+                                            >
+                                                <i class="fas fa-hourglass-half"></i> In Review
+                                            </button>
+                                            <button 
+                                                @click="changeTemplateStatus(t.name, 'REJECTED'); showStatusDropdown = false" 
+                                                class="px-2.5 py-1 text-[11px] text-left rounded-lg hover:bg-wa-surface text-rose-400 font-semibold flex items-center gap-2"
+                                            >
+                                                <i class="fas fa-times-circle"></i> Rejected
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                ${{unreadBadge}}
+
+                                <!-- Meta Details Badges -->
+                                <div class="flex items-center gap-2 text-[10px]">
+                                    <span class="px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-semibold uppercase" x-text="t.category || 'MARKETING'"></span>
+                                    <span class="px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold uppercase" x-text="'LANG: ' + (t.language || 'AR')"></span>
+                                    <span class="text-wa-muted font-mono" x-text="'ID: ' + (t.id ? t.id.slice(-6) : 'N/A')"></span>
+                                </div>
+
+                                <!-- Body Text Preview -->
+                                <div class="p-3 bg-wa-panel/70 rounded-xl border border-wa-border/60 text-xs text-wa-text font-arabic leading-relaxed min-h-[90px] whitespace-pre-line" dir="rtl" x-text="getTemplateBodyText(t)">
+                                </div>
+
+                                <!-- Buttons Preview if any -->
+                                <template x-if="getTemplateButtons(t).length > 0">
+                                    <div class="flex flex-wrap gap-1.5 pt-1">
+                                        <template x-for="btn in getTemplateButtons(t)" :key="btn.text">
+                                            <span class="px-2.5 py-1 rounded-lg bg-wa-surface border border-wa-border text-[11px] text-sky-400 font-semibold flex items-center gap-1.5">
+                                                <i class="fas fa-external-link-alt text-[9px]" x-show="btn.type === 'URL'"></i>
+                                                <i class="fas fa-reply text-[9px]" x-show="btn.type !== 'URL'"></i>
+                                                <span x-text="btn.text"></span>
+                                            </span>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Card Actions -->
+                            <div class="pt-4 border-t border-wa-border flex items-center gap-2 mt-4">
+                                <button 
+                                    @click="simulateTemplateOnPhone(t)" 
+                                    class="flex-1 py-1.5 bg-wa-surface hover:bg-wa-panel text-white rounded-xl text-xs font-semibold border border-wa-border transition-colors flex items-center justify-center gap-1.5"
+                                >
+                                    <i class="fas fa-mobile-alt text-wa-green-bright"></i>
+                                    <span>Simulate</span>
+                                </button>
+                                <button 
+                                    @click="useApprovedTemplateInCampaign(t)" 
+                                    class="flex-1 py-1.5 bg-wa-green hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1.5"
+                                >
+                                    <i class="fas fa-paper-plane"></i>
+                                    <span>Use in Blast</span>
+                                </button>
+                                <button 
+                                    @click="downloadTemplateCSV(t)" 
+                                    class="p-2 bg-wa-panel hover:bg-wa-surface text-wa-muted hover:text-emerald-400 rounded-xl text-xs border border-wa-border transition-colors"
+                                    title="Download CSV Template with Variables"
+                                >
+                                    <i class="fas fa-file-csv"></i>
+                                </button>
+                                <button 
+                                    @click="copyUnifonicConsoleDetails(t)" 
+                                    class="p-2 bg-wa-panel hover:bg-wa-surface text-wa-muted hover:text-sky-400 rounded-xl text-xs border border-wa-border transition-colors"
+                                    title="Copy for Unifonic Console"
+                                >
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Live Smartphone Preview & Custom Editor Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pt-6 border-t border-wa-border">
+                    <!-- Template Editor Form -->
+                    <div class="lg:col-span-7 glass-panel p-6 rounded-2xl border border-wa-border space-y-5">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Active Selected Template</label>
+                            <input 
+                                type="text" 
+                                x-model="templateForm.name" 
+                                placeholder="e.g. 96_sar" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-mono"
+                            >
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">Category</label>
+                                <select x-model="templateForm.category" class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                                    <option value="MARKETING">Marketing (Promotional Offers)</option>
+                                    <option value="UTILITY">Utility (Receipts &amp; Notifications)</option>
+                                    <option value="AUTHENTICATION">Authentication (OTPs)</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">Language</label>
+                                <select x-model="templateForm.language" class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                                    <option value="ar">Arabic (ar)</option>
+                                    <option value="en">English (en)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted flex items-center justify-between">
+                                <span>Message Body Content</span>
+                                <span class="text-[10px] text-wa-green-bright font-normal cursor-pointer" @click="insertVariable()">+ Insert Variable {{1}}</span>
+                            </label>
+                            <textarea 
+                                x-model="templateForm.body" 
+                                rows="6" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl p-3.5 text-xs text-wa-text focus:outline-none focus:border-wa-green leading-relaxed font-arabic"
+                                placeholder="اكتب نص الرسالة هنا..."
+                                dir="rtl"
+                            ></textarea>
+                        </div>
+
+                        <!-- Header Media URL + Direct VPS Upload + Choose from Vault -->
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-semibold text-wa-muted">Header Media URL (Image / Banner)</label>
+                                <div class="flex items-center gap-3">
+                                    <button type="button" @click="openVaultPicker('template')" class="text-[11px] text-sky-400 hover:underline cursor-pointer flex items-center gap-1">
+                                        <i class="fas fa-photo-video"></i>
+                                        <span>Choose from Vault</span>
+                                    </button>
+                                    <label class="text-[11px] text-wa-green-bright hover:underline cursor-pointer flex items-center gap-1">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Upload New</span>
+                                        <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'template')">
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input 
+                                    type="text" 
+                                    x-model="templateForm.mediaUrl" 
+                                    placeholder="https://whatsapp.rush.com.sa/uploads/banner.jpg" 
+                                    class="flex-1 bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-mono"
+                                >
+                                <template x-if="templateForm.mediaUrl">
+                                    <button @click="templateForm.mediaUrl = ''" class="p-2 text-wa-muted hover:text-rose-400" title="Remove Media">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </template>
+                            </div>
+                            <template x-if="isUploadingMedia">
+                                <div class="text-[11px] text-wa-green-bright flex items-center gap-1.5 pt-1">
+                                    <i class="fas fa-spinner fa-spin"></i> Uploading to VPS storage...
+                                </div>
+                            </template>
+                        </div>
+
+                        <div class="pt-2 flex items-center gap-3">
+                            <button 
+                                @click="useTemplateInCampaign()" 
+                                class="flex-1 py-2.5 bg-wa-green hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-wa-green/20 transition-all flex items-center justify-center gap-2"
+                            >
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Use this Template in Broadcast Campaign</span>
+                            </button>
+                            <button 
+                                type="button" 
+                                @click="downloadTemplateCSV(selectedTemplate || {name: templateForm.name, body: templateForm.body})" 
+                                class="px-4 py-2.5 bg-wa-panel hover:bg-wa-surface border border-wa-border text-white hover:text-emerald-400 rounded-xl text-xs font-semibold transition-all flex items-center gap-2"
+                                title="Download sample CSV formatted with variables for this template"
+                            >
+                                <i class="fas fa-file-csv text-emerald-400"></i>
+                                <span>Download CSV</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Smartphone Preview -->
+                    <div class="lg:col-span-5 flex flex-col items-center justify-center">
+                        <div class="phone-mockup">
+                            <!-- Phone Top Notch -->
+                            <div class="h-6 bg-wa-surface w-full flex items-center justify-between px-6 text-[10px] text-wa-muted">
+                                <span>09:41</span>
+                                <div class="flex items-center gap-1.5">
+                                    <i class="fas fa-signal"></i>
+                                    <i class="fas fa-wifi"></i>
+                                    <i class="fas fa-battery-full text-wa-green-bright"></i>
+                                </div>
+                            </div>
+
+                            <!-- WhatsApp Header -->
+                            <div class="bg-wa-panel px-3 py-2 flex items-center gap-2.5 border-b border-wa-border shadow">
+                                <i class="fas fa-arrow-left text-xs text-wa-muted"></i>
+                                <div class="w-8 h-8 rounded-full bg-rush-red flex items-center justify-center text-white font-bold text-xs">
+                                    R
+                                </div>
+                                <div class="flex-1 leading-tight">
+                                    <h4 class="font-bold text-xs text-white flex items-center gap-1">
+                                        RushWash
+                                        <i class="fas fa-check-circle text-wa-green-bright text-[10px]"></i>
+                                    </h4>
+                                    <span class="text-[10px] text-wa-muted">Official Business Account</span>
+                                </div>
+                            </div>
+
+                            <!-- Chat Area -->
+                            <div class="flex-1 p-3.5 overflow-y-auto space-y-3 flex flex-col justify-end" style="background-color: var(--background);">
+                                <div class="self-end max-w-[92%] wa-bubble-out p-3 text-xs shadow-md space-y-2">
+                                    <!-- Image Preview if available -->
+                                    <template x-if="templateForm.mediaUrl">
+                                        <div class="rounded-lg overflow-hidden bg-black/30 max-h-36 mb-1.5 border border-white/10">
+                                            <img :src="templateForm.mediaUrl" alt="Media" class="w-full h-full object-cover">
+                                        </div>
+                                    </template>
+
+                                    <!-- Rendered Body -->
+                                    <p class="font-arabic leading-relaxed whitespace-pre-line text-right" dir="rtl" x-text="renderPreviewBody()"></p>
+
+                                    <!-- Rendered Template Buttons in Preview -->
+                                    <template x-if="templateForm.buttons && templateForm.buttons.length > 0">
+                                        <div class="pt-2 border-t border-white/10 flex flex-col gap-1.5">
+                                            <template x-for="btn in templateForm.buttons" :key="btn.text">
+                                                <div class="py-1.5 px-3 bg-black/20 hover:bg-black/30 rounded-lg text-center font-bold text-[11px] text-emerald-300 border border-white/10 flex items-center justify-center gap-1.5">
+                                                    <i class="fas fa-external-link-alt text-[9px]" x-show="btn.type === 'URL'"></i>
+                                                    <span x-text="btn.text"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+
+                                    <div class="flex items-center justify-end gap-1 text-[9px] text-wa-muted pt-1">
+                                        <span>Just now</span>
+                                        <i class="fas fa-check-double text-sky-400 text-[10px]"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer Input -->
+                            <div class="p-2 bg-wa-panel flex items-center gap-2 border-t border-wa-border">
+                                <div class="flex-1 bg-wa-surface rounded-full px-3 py-1.5 text-[11px] text-wa-muted">Type a reply...</div>
+                                <div class="w-7 h-7 rounded-full bg-wa-green flex items-center justify-center text-white text-xs">
+                                    <i class="fas fa-microphone"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="text-xs text-wa-muted mt-3 flex items-center gap-1.5">
+                            <i class="fas fa-mobile-alt text-wa-green-bright"></i> Live WhatsApp iOS / Android Render
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: LIVE CONVERSATIONS -->
+            <div x-show="activeTab === 'chats'" class="space-y-6" x-cloak>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Live WhatsApp Conversations</h2>
+                        <p class="text-xs text-wa-muted">All customer chat threads are synchronized in real-time with Chatwoot.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[600px] glass-panel rounded-2xl border border-wa-border overflow-hidden">
+                    <!-- Conversations List -->
+                    <div class="lg:col-span-4 border-r border-wa-border flex flex-col bg-wa-panel/40">
+                        <div class="p-3 border-b border-wa-border">
+                            <input 
+                                type="text" 
+                                x-model="chatSearch" 
+                                placeholder="Search chats..." 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-1.5 text-xs text-wa-text focus:outline-none focus:border-wa-green"
+                            >
+                        </div>
+                        <div class="flex-1 overflow-y-auto divide-y divide-wa-border">
+                            <template x-for="conv in filteredConversations()" :key="conv.phone">
+                                <div 
+                                    @click="selectChat(conv)" 
+                                    :class="selectedConv?.phone === conv.phone ? 'bg-wa-surface border-l-4 border-wa-green' : 'hover:bg-wa-surface/30'"
+                                    class="p-3.5 cursor-pointer transition-all flex items-start gap-3"
+                                >
+                                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-wa-green to-emerald-700 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="font-bold text-xs text-white truncate" x-text="'+' + conv.phone"></span>
+                                            <span class="text-[10px] text-wa-muted" x-text="formatTime(conv.last_timestamp)"></span>
+                                        </div>
+                                        <p class="text-xs text-wa-muted truncate font-arabic" x-text="conv.last_message || 'Media / Image'"></p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Chat Message View -->
+                    <div class="lg:col-span-8 flex flex-col justify-between bg-wa-deep/50">
+                        <template x-if="selectedConv">
+                            <div class="flex-1 flex flex-col justify-between overflow-hidden">
+                                <!-- Chat Header -->
+                                <div class="p-4 bg-wa-panel border-b border-wa-border flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-wa-green flex items-center justify-center text-white text-xs font-bold">
+                                            <i class="fab fa-whatsapp"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-bold text-xs text-white" x-text="'+' + selectedConv.phone"></h3>
+                                            <span class="text-[10px] text-emerald-400 flex items-center gap-1">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active WhatsApp Session
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <a :href="'https://chatwoot.rush.com.sa'" target="_blank" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1.5">
+                                        <i class="fas fa-external-link-alt text-[10px]"></i> Reply in Chatwoot
+                                    </a>
+                                </div>
+
+                                <!-- Messages Scroll Area -->
+                                <div class="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col justify-end">
+                                    <template x-for="m in activeChatMessages" :key="m.message_id || Math.random()">
+                                        <div 
+                                            :class="m.direction === 'outbound' || m.event_type === 'outbound_message' ? 'self-end wa-bubble-out' : 'self-start wa-bubble-in'"
+                                            class="max-w-[75%] p-3 text-xs shadow-md space-y-1.5"
+                                        >
+                                            <!-- Attachment Image if present -->
+                                            <template x-if="m.media_url || (m.attachments && m.attachments.length > 0)">
+                                                <div class="rounded-lg overflow-hidden bg-black/30 max-h-48 mb-1 border border-white/10">
+                                                    <img :src="m.media_url || m.attachments[0].url || m.attachments[0].data_url" alt="Media Attachment" class="w-full h-full object-cover">
+                                                </div>
+                                            </template>
+
+                                            <p class="font-arabic leading-relaxed whitespace-pre-line" x-text="m.content"></p>
+                                            <div class="flex items-center justify-end gap-1 text-[9px] text-wa-muted">
+                                                <span x-text="formatTime(m.received_at || m.timestamp)"></span>
+                                                <template x-if="m.direction === 'outbound' || m.event_type === 'outbound_message'">
+                                                    <i class="fas fa-check-double text-sky-400 text-[10px]"></i>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <!-- Instant Reply Bar with Attachment Upload -->
+                                <div class="p-3 bg-wa-panel border-t border-wa-border space-y-2">
+                                    <!-- Pending Chat Attachment Preview -->
+                                    <template x-if="chatAttachmentUrl">
+                                        <div class="flex items-center gap-2 p-2 rounded-xl bg-wa-surface border border-wa-border max-w-sm">
+                                            <img :src="chatAttachmentUrl" alt="Attachment" class="w-10 h-10 object-cover rounded-lg">
+                                            <div class="flex-1 min-w-0">
+                                                <span class="text-[11px] font-semibold text-white block truncate">Media attached</span>
+                                                <span class="text-[10px] text-wa-muted truncate block font-mono" x-text="chatAttachmentUrl"></span>
+                                            </div>
+                                            <button @click="chatAttachmentUrl = ''" class="text-wa-muted hover:text-rose-400 p-1">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+
+                                    <div class="flex items-center gap-2">
+                                        <!-- Attach Media Buttons (Pick from Vault or Upload) -->
+                                        <button type="button" @click="openVaultPicker('chat')" class="p-2.5 bg-wa-surface hover:bg-wa-border text-sky-400 hover:text-white rounded-xl text-xs cursor-pointer transition-colors" title="Choose Media from VPS Vault">
+                                            <i class="fas fa-photo-video"></i>
+                                        </button>
+                                        <label class="p-2.5 bg-wa-surface hover:bg-wa-border text-wa-muted hover:text-white rounded-xl text-xs cursor-pointer transition-colors" title="Upload Media to VPS">
+                                            <i class="fas fa-paperclip" :class="{'fa-spin': isUploadingMedia}"></i>
+                                            <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'chat')">
+                                        </label>
+
+                                        <input 
+                                            type="text" 
+                                            x-model="replyText" 
+                                            @keyup.enter="sendDirectReply()" 
+                                            placeholder="Type message to customer..." 
+                                            class="flex-1 bg-wa-surface border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-arabic"
+                                        >
+                                        <button 
+                                            @click="sendDirectReply()" 
+                                            class="px-4 py-2 bg-wa-green hover:bg-emerald-600 text-white font-bold rounded-xl text-xs transition-all shadow flex items-center gap-1.5"
+                                        >
+                                            <i class="fas fa-paper-plane"></i>
+                                            <span>Send</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="!selectedConv">
+                            <div class="flex-1 flex flex-col items-center justify-center text-wa-muted text-xs space-y-2">
+                                <i class="fab fa-whatsapp text-4xl text-wa-border"></i>
+                                <span>Select a customer from the left list to view conversation history.</span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: MEDIA VAULT (HOSTED ON VPS) -->
+            <div x-show="activeTab === 'media'" class="space-y-6" x-cloak>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>VPS Media Vault &amp; Asset Uploader</span>
+                            <span class="text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2.5 py-0.5 rounded-full font-bold">Direct HTTPS Links</span>
+                        </h2>
+                        <p class="text-xs text-wa-muted">Upload promotional banners, flyers, PDFs and videos directly to the VPS storage for instant WhatsApp broadcast links.</p>
+                    </div>
+                    
+                    <!-- Direct File Uploader Button -->
+                    <label class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-purple-500/20 cursor-pointer transition-all">
+                        <i class="fas fa-cloud-upload-alt" :class="{'fa-spin': isUploadingMedia}"></i>
+                        <span x-text="isUploadingMedia ? 'Uploading...' : 'Upload New Media to VPS'"></span>
+                        <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'vault')">
+                    </label>
+                </div>
+
+                <!-- Upload Drag & Drop Box -->
+                <div class="glass-panel p-6 rounded-2xl border-2 border-dashed border-wa-border hover:border-wa-green/60 transition-all text-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-wa-panel border border-wa-border text-wa-green-bright flex items-center justify-center mx-auto text-lg">
+                        <i class="fas fa-image"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-white">Click or Drag &amp; Drop media assets here</h4>
+                        <p class="text-[11px] text-wa-muted">Supports JPG, PNG, WEBP, GIF, PDF, and MP4. Hosted at <code>https://whatsapp.rush.com.sa/uploads/...</code></p>
+                    </div>
+                    <label class="inline-block px-4 py-1.5 bg-wa-panel hover:bg-wa-surface text-white rounded-xl text-xs font-semibold border border-wa-border cursor-pointer transition-colors">
+                        <span>Select File from Device</span>
+                        <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'vault')">
+                    </label>
+                </div>
+
+                <!-- Hosted Media Grid -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-white uppercase tracking-wider">Hosted Media Assets on VPS</span>
+                        <span class="text-xs text-wa-muted" x-text="uploads.length + ' assets online'"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <template x-for="u in uploads" :key="u.filename">
+                            <div class="glass-panel rounded-2xl border border-wa-border overflow-hidden flex flex-col justify-between hover:border-wa-green/40 transition-all shadow-md group">
+                                <div class="h-36 bg-black/40 relative overflow-hidden flex items-center justify-center">
+                                    <template x-if="u.filename.endsWith('.pdf')">
+                                        <div class="text-rose-400 flex flex-col items-center gap-1">
+                                            <i class="fas fa-file-pdf text-3xl"></i>
+                                            <span class="text-[10px] font-semibold uppercase">PDF Document</span>
+                                        </div>
+                                    </template>
+                                    <template x-if="!u.filename.endsWith('.pdf')">
+                                        <img :src="u.url" :alt="u.filename" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                    </template>
+                                    <span class="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/60 backdrop-blur-sm text-[10px] font-mono text-white" x-text="u.size_formatted"></span>
+                                </div>
+
+                                <div class="p-4 space-y-2.5">
+                                    <div class="space-y-0.5">
+                                        <span class="font-bold text-xs text-white block truncate" :title="u.filename" x-text="u.filename"></span>
+                                        <span class="text-[10px] text-wa-muted font-mono truncate block" x-text="u.url"></span>
+                                    </div>
+
+                                    <div class="pt-2 border-t border-wa-border/60 flex items-center gap-1.5">
+                                        <button 
+                                            @click="copyDirectLink(u.url)" 
+                                            class="flex-1 py-1 bg-wa-surface hover:bg-wa-panel text-white rounded-lg text-[11px] font-semibold border border-wa-border transition-colors flex items-center justify-center gap-1"
+                                            title="Copy direct HTTPS URL"
+                                        >
+                                            <i class="fas fa-copy text-wa-green-bright text-[10px]"></i>
+                                            <span>Copy Link</span>
+                                        </button>
+                                        <button 
+                                            @click="useMediaInTemplate(u.url)" 
+                                            class="px-2.5 py-1 bg-wa-panel hover:bg-wa-surface text-sky-400 rounded-lg text-[11px] font-semibold border border-wa-border transition-colors"
+                                            title="Use in Template"
+                                        >
+                                            <i class="fas fa-mobile-alt"></i>
+                                        </button>
+                                        <button 
+                                            @click="useMediaInCampaign(u.url)" 
+                                            class="px-2.5 py-1 bg-wa-green hover:bg-emerald-600 text-white rounded-lg text-[11px] font-bold transition-all shadow"
+                                            title="Use in Campaign"
+                                        >
+                                            <i class="fas fa-paper-plane"></i>
+                                        </button>
+                                        <button 
+                                            @click="deleteMedia(u.filename)" 
+                                            class="px-2 py-1 text-wa-muted hover:text-rose-400 rounded-lg text-[11px] transition-colors"
+                                            title="Delete file"
+                                        >
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <div x-show="uploads.length === 0" class="col-span-full py-12 text-center text-wa-muted text-xs glass-panel rounded-2xl border border-wa-border">
+                            No media uploaded yet. Use the upload button above to upload your first promo banner or file!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: DLR REPORTS -->
+            <div x-show="activeTab === 'dlr'" class="space-y-6" x-cloak>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Delivery Reports (DLR) Telemetry</h2>
+                        <p class="text-xs text-wa-muted">Complete audit log of outbound WhatsApp messages, carrier timestamps, and delivery status.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            @click="syncUnifonicStatuses()" 
+                            class="px-3.5 py-1.5 bg-wa-panel hover:bg-wa-surface text-sky-400 hover:text-white rounded-xl text-xs font-semibold border border-wa-border flex items-center gap-2 transition-colors shadow"
+                            :disabled="isSyncingDLR"
+                        >
+                            <i class="fas fa-sync-alt" :class="{'fa-spin': isSyncingDLR}"></i>
+                            <span>Sync Statuses from Unifonic</span>
+                        </button>
+                        <button 
+                            @click="exportDLRToCSV()" 
+                            class="px-3.5 py-1.5 bg-wa-panel hover:bg-wa-surface text-white rounded-xl text-xs font-semibold border border-wa-border flex items-center gap-2 transition-colors shadow"
+                        >
+                            <i class="fas fa-file-csv text-emerald-400"></i>
+                            <span>Export CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="glass-panel rounded-2xl border border-wa-border overflow-hidden">
+                    <div class="p-4 border-b border-wa-border flex items-center justify-between gap-4 bg-wa-panel/50 flex-wrap">
+                        <div class="flex items-center gap-2 flex-wrap flex-1 min-w-[240px]">
+                            <!-- Traffic Scope Toggle -->
+                            <div class="inline-flex p-1 bg-wa-panel rounded-xl border border-wa-border text-xs">
+                                <button 
+                                    @click="trafficType = 'all'; loadAllData()" 
+                                    :class="trafficType === 'all' ? 'bg-wa-green text-white font-semibold shadow' : 'text-wa-muted hover:text-white'"
+                                    class="px-2.5 py-1 rounded-lg transition-all"
+                                >All Outbound</button>
+                                <button 
+                                    @click="trafficType = 'campaign'; loadAllData()" 
+                                    :class="trafficType === 'campaign' ? 'bg-wa-green text-white font-semibold shadow' : 'text-wa-muted hover:text-white'"
+                                    class="px-2.5 py-1 rounded-lg transition-all"
+                                >Campaigns</button>
+                                <button 
+                                    @click="trafficType = 'support'; loadAllData()" 
+                                    :class="trafficType === 'support' ? 'bg-wa-green text-white font-semibold shadow' : 'text-wa-muted hover:text-white'"
+                                    class="px-2.5 py-1 rounded-lg transition-all"
+                                >Support</button>
+                            </div>
+                            <select x-model="dlrStatusFilter" @change="filterDLR()" class="bg-wa-panel border border-wa-border rounded-xl px-3 py-1.5 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                                <option value="ALL">All Statuses</option>
+                                <option value="DELIVERED">Delivered</option>
+                                <option value="READ">Read</option>
+                                <option value="SENT">Sent</option>
+                                <option value="FAILED">Failed</option>
+                            </select>
+                            <input 
+                                type="text" 
+                                x-model="dlrPhoneSearch" 
+                                @input="filterDLR()" 
+                                placeholder="Filter by phone number..." 
+                                class="bg-wa-panel border border-wa-border rounded-xl px-3 py-1.5 text-xs text-wa-text focus:outline-none focus:border-wa-green flex-1 min-w-[150px]"
+                            >
+                        </div>
+                        <span class="text-xs text-wa-muted" x-text="filteredReports.length + ' records matching active filter'"></span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-wa-panel text-wa-muted uppercase text-[10px] tracking-wider border-b border-wa-border">
+                                <tr>
+                                    <th class="py-3 px-4">Message ID</th>
+                                    <th class="py-3 px-4">Recipient Phone</th>
+                                    <th class="py-3 px-4">Content Summary</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Cost</th>
+                                    <th class="py-3 px-4">Sent At</th>
+                                    <th class="py-3 px-4">Delivered At</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-wa-border">
+                                <template x-for="r in filteredReports.slice(0, 50)" :key="r.message_id">
+                                    <tr class="hover:bg-wa-surface/40 transition-colors">
+                                        <td class="py-3 px-4 font-mono text-[10px] text-wa-muted" x-text="(r.message_id || '').substring(0, 14) + '...'"></td>
+                                        <td class="py-3 px-4 font-mono font-bold text-white" x-text="r.recipient"></td>
+                                        <td class="py-3 px-4 max-w-xs truncate text-wa-muted font-arabic" x-text="r.content"></td>
+                                        <td class="py-3 px-4">
+                                            <span 
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold" 
+                                                :class="{
+                                                    'bg-emerald-500/10 text-emerald-400': r.status === 'DELIVERED',
+                                                    'bg-sky-500/10 text-sky-400': r.status === 'READ',
+                                                    'bg-blue-500/10 text-blue-400': r.status === 'SENT',
+                                                    'bg-rose-500/10 text-rose-400': r.status === 'FAILED'
+                                                }"
+                                                x-text="r.status"
+                                            ></span>
+                                        </td>
+                                        <td class="py-3 px-4 font-mono text-xs font-bold" :class="r.cost > 0 ? 'text-amber-300' : 'text-wa-muted'" x-text="(r.cost !== undefined ? r.cost.toFixed ? r.cost.toFixed(3) : r.cost : '0.00') + ' ' + (r.currency || stats.currency || 'SAR')"></td>
+                                        <td class="py-3 px-4 text-wa-muted text-[11px]" x-text="formatDate(r.sent_at)"></td>
+                                        <td class="py-3 px-4 text-wa-muted text-[11px]" x-text="r.delivered_at ? formatDate(r.delivered_at) : '-'"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SNAPCHAT & META ADS ATTRIBUTION -->
+            <div x-show="activeTab === 'ads'" class="space-y-6" x-cloak>
+                <!-- Ads Header & Actions -->
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>Snapchat &amp; Meta Ads Performance &amp; ROI</span>
+                            <span class="text-xs bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                                Live Attribution
+                            </span>
+                        </h2>
+                        <p class="text-xs text-wa-muted">Track full-funnel paid ad spend, Click-to-WhatsApp leads, conversation costs, customer conversions, and true blended ROAS.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button 
+                            @click="showAdsLinkModal = true" 
+                            class="px-3.5 py-2 bg-wa-panel hover:bg-wa-surface text-wa-text border border-wa-border rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow"
+                        >
+                            <i class="fas fa-link text-cyan-400"></i>
+                            <span>Tracking Link Builder</span>
+                        </button>
+                        <button 
+                            @click="showAdsSettingsModal = true" 
+                            class="px-3.5 py-2 bg-wa-panel hover:bg-wa-surface text-wa-text border border-wa-border rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer shadow"
+                        >
+                            <i class="fas fa-sliders-h text-amber-400"></i>
+                            <span>Ad Accounts &amp; Keys</span>
+                        </button>
+                        <button 
+                            @click="syncAds()" 
+                            class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+                            :disabled="isSyncingAds"
+                        >
+                            <i class="fas fa-sync-alt" :class="{'fa-spin': isSyncingAds}"></i>
+                            <span x-text="isSyncingAds ? 'Syncing APIs...' : 'Sync Ads Data'"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hero KPI Cards (5 Metrics) -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <!-- Total Spend -->
+                    <div class="glass-panel p-4 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between text-wa-muted text-xs">
+                            <span class="font-semibold">Total Ad Spend</span>
+                            <i class="fas fa-wallet text-purple-400"></i>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-white flex items-baseline gap-1">
+                            <span x-text="(adsData?.overview?.total_spend_sar || 0).toLocaleString()"></span>
+                            <span class="text-xs text-wa-muted font-normal">SAR</span>
+                        </div>
+                        <div class="text-[10px] text-wa-muted flex items-center gap-1">
+                            <span>Meta: <strong class="text-white" x-text="(adsData?.platforms?.meta?.spend_sar || 0).toLocaleString() + ' SAR'"></strong></span>
+                            <span>&bull;</span>
+                            <span>Snap: <strong class="text-white" x-text="(adsData?.platforms?.snapchat?.spend_sar || 0).toLocaleString() + ' SAR'"></strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Impressions & Clicks -->
+                    <div class="glass-panel p-4 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between text-wa-muted text-xs">
+                            <span class="font-semibold">Clicks &amp; Swipes</span>
+                            <i class="fas fa-mouse-pointer text-blue-400"></i>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-white flex items-baseline gap-1">
+                            <span x-text="(adsData?.overview?.total_clicks_swipes || 0).toLocaleString()"></span>
+                            <span class="text-xs text-wa-muted font-normal">clicks</span>
+                        </div>
+                        <div class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                            <span>Avg CPC: <strong class="font-mono" x-text="(adsData?.overview?.blended_cpc_sar || 0).toFixed(2) + ' SAR'"></strong></span>
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp Inbound Leads -->
+                    <div class="glass-panel p-4 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 space-y-2 relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-cyan-500/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between text-cyan-300 text-xs">
+                            <span class="font-semibold">WhatsApp Leads</span>
+                            <i class="fab fa-whatsapp text-wa-green-bright text-base"></i>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-white flex items-baseline gap-1">
+                            <span x-text="(adsData?.overview?.total_wa_leads || 0).toLocaleString()"></span>
+                            <span class="text-xs text-cyan-300 font-normal">chats</span>
+                        </div>
+                        <div class="text-[10px] text-cyan-200 font-bold flex items-center gap-1">
+                            <span>Cost / WA Lead: <strong class="font-mono text-amber-300" x-text="(adsData?.overview?.blended_cost_per_lead_sar || 0).toFixed(2) + ' SAR'"></strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Conversions -->
+                    <div class="glass-panel p-4 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between text-wa-muted text-xs">
+                            <span class="font-semibold">Converted Orders</span>
+                            <i class="fas fa-check-double text-emerald-400"></i>
+                        </div>
+                        <div class="text-xl font-bold font-mono text-emerald-400 flex items-baseline gap-1">
+                            <span x-text="(adsData?.overview?.total_conversions || 0).toLocaleString()"></span>
+                            <span class="text-xs text-wa-muted font-normal">orders</span>
+                        </div>
+                        <div class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                            <span>Conv. Rate: <strong class="font-mono" x-text="(adsData?.overview?.blended_conversion_rate_pct || 0).toFixed(1) + '%'"></strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Revenue & Blended ROAS -->
+                    <div class="glass-panel p-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 space-y-2 relative overflow-hidden">
+                        <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-amber-500/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div class="flex items-center justify-between text-amber-300 text-xs">
+                            <span class="font-semibold">Blended ROAS</span>
+                            <i class="fas fa-trophy text-amber-400"></i>
+                        </div>
+                        <div class="text-2xl font-black font-mono text-amber-300 flex items-baseline gap-1">
+                            <span x-text="(adsData?.overview?.blended_roas || 0).toFixed(2)"></span>
+                            <span class="text-sm font-bold text-amber-400">x</span>
+                        </div>
+                        <div class="text-[10px] text-amber-200/80 font-bold flex items-center gap-1">
+                            <span>Revenue: <strong class="font-mono text-white" x-text="(adsData?.overview?.total_revenue_sar || 0).toLocaleString() + ' SAR'"></strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Head-to-Head Comparison -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Meta Ads Platform Card -->
+                    <div class="glass-panel p-6 rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-950/20 to-wa-panel space-y-5">
+                        <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg shadow-inner">
+                                    <i class="fab fa-meta"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                                        <span>Meta Ads (Instagram &amp; Facebook)</span>
+                                    </h3>
+                                    <p class="text-[11px] text-wa-muted">Click-to-WhatsApp (CTWA) &amp; Direct Lead Ads</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30" x-text="adsData?.platforms?.meta?.active_campaigns ? adsData.platforms.meta.active_campaigns + ' Active Campaigns' : '2 Active Campaigns'"></span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-wa-border space-y-1">
+                                <span class="text-[10px] text-wa-muted block">Ad Spend</span>
+                                <div class="text-sm font-bold font-mono text-white" x-text="(adsData?.platforms?.meta?.spend_sar || 0).toLocaleString() + ' SAR'"></div>
+                                <span class="text-[9px] text-wa-muted" x-text="(adsData?.platforms?.meta?.impressions || 0).toLocaleString() + ' Impr'"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-wa-border space-y-1">
+                                <span class="text-[10px] text-wa-muted block">Clicks &amp; CPC</span>
+                                <div class="text-sm font-bold font-mono text-white" x-text="(adsData?.platforms?.meta?.clicks || 0).toLocaleString()"></div>
+                                <span class="text-[9px] text-blue-400 font-semibold" x-text="'CPC: ' + (adsData?.platforms?.meta?.cpc_sar || 0).toFixed(2) + ' SAR'"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-blue-500/30 bg-blue-950/20 space-y-1">
+                                <span class="text-[10px] text-blue-300 block">WhatsApp Leads</span>
+                                <div class="text-sm font-bold font-mono text-blue-400" x-text="(adsData?.platforms?.meta?.wa_leads || 0).toLocaleString()"></div>
+                                <span class="text-[9px] text-amber-300 font-semibold" x-text="'CPL: ' + (adsData?.platforms?.meta?.cost_per_lead_sar || 0).toFixed(2) + ' SAR'"></span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-wa-panel/80 rounded-xl border border-wa-border flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-wa-muted block">Meta Generated Revenue</span>
+                                <div class="text-lg font-bold font-mono text-emerald-400" x-text="(adsData?.platforms?.meta?.revenue_sar || 0).toLocaleString() + ' SAR'"></div>
+                                <span class="text-[10px] text-wa-muted" x-text="(adsData?.platforms?.meta?.conversions || 0) + ' Paying Customers (' + (adsData?.platforms?.meta?.conversion_rate_pct || 0).toFixed(1) + '%)'"></span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-wa-muted block">Meta ROAS</span>
+                                <div class="text-2xl font-black font-mono text-amber-400" x-text="(adsData?.platforms?.meta?.roas || 0).toFixed(2) + 'x'"></div>
+                                <span class="text-[10px] text-emerald-400 font-bold">High Performing</span>
                             </div>
                         </div>
                     </div>
-                `;
-            }});
-            container.innerHTML = html;
-        }}
 
-        async function selectConversation(phone) {{
-            activePhone = phone;
-            document.getElementById('chat-header').style.display = 'flex';
-            document.getElementById('composer-area').style.display = 'flex';
-            document.getElementById('active-phone').innerHTML = '<bdi class="phone-isolate">' + escapeHtml(formatPhoneDisplay(phone)) + '</bdi>';
-            
-            const av = document.getElementById('active-avatar');
-            av.innerText = phone.slice(-2);
-            av.style.background = getAvatarGradient(phone);
-            
-            filterConversations();
-            await loadMessages(phone);
-            document.getElementById('reply-text').focus();
-        }}
-
-        function copyActivePhone() {{
-            if (!activePhone) return;
-            navigator.clipboard.writeText(activePhone);
-            const textEl = document.getElementById('copy-phone-text');
-            if (textEl) {{
-                textEl.innerText = 'Copied!';
-                setTimeout(() => textEl.innerText = 'Copy Phone', 1800);
-            }}
-        }}
-
-        function openDirectWhatsApp() {{
-            if (!activePhone) return;
-            window.open('https://wa.me/' + activePhone.replace(/\\D/g, ''), '_blank');
-        }}
-
-        async function loadMessages(phone, isBackground = false) {{
-            if (activePhone !== phone) return;
-            try {{
-                const res = await fetch(`/api/conversations/${{phone}}/messages`);
-                const data = await res.json();
-                renderMessages(data.messages || [], isBackground);
-            }} catch (e) {{}}
-        }}
-
-        function renderMessages(messages, isBackground) {{
-            const container = document.getElementById('messages-container');
-            const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 120;
-            
-            if (messages.length === 0) {{
-                container.innerHTML = `
-                    <div class="chat-empty-state">
-                        <div class="empty-illustration">
-                            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <!-- Snapchat Ads Platform Card -->
+                    <div class="glass-panel p-6 rounded-2xl border border-yellow-500/30 bg-gradient-to-br from-yellow-950/20 to-wa-panel space-y-5">
+                        <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-yellow-500/20 text-yellow-400 flex items-center justify-center text-lg shadow-inner">
+                                    <i class="fab fa-snapchat-ghost"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                                        <span>Snapchat Ads (Story &amp; Spotlight)</span>
+                                    </h3>
+                                    <p class="text-[11px] text-wa-muted">Swipe-Up to WhatsApp &amp; Geo-Targeted Local Ads</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-yellow-500/20 text-yellow-300 border border-yellow-500/30" x-text="adsData?.platforms?.snapchat?.active_campaigns ? adsData.platforms.snapchat.active_campaigns + ' Active Campaigns' : '2 Active Campaigns'"></span>
                         </div>
-                        <h4 style="color: #ffffff;">No messages yet</h4>
-                        <p style="font-size: 13px; color: var(--wa-text-secondary);">Send a reply below or choose a quick template to start.</p>
-                    </div>
-                `;
-                return;
-            }}
 
-            let html = '';
-            let lastDateStr = '';
-
-            messages.forEach(m => {{
-                const isOut = (m.direction === 'outbound' || m.event_type === 'outbound_message');
-                const rowClass = isOut ? 'outbound' : 'inbound';
-                const timeStr = m.received_at ? m.received_at.slice(11, 16) : '';
-                const dateHeader = m.received_at ? formatDatePill(m.received_at) : '';
-
-                if (dateHeader && dateHeader !== lastDateStr) {{
-                    html += `
-                        <div class="date-divider">
-                            <span class="date-divider-pill">${{dateHeader}}</span>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-wa-border space-y-1">
+                                <span class="text-[10px] text-wa-muted block">Ad Spend</span>
+                                <div class="text-sm font-bold font-mono text-white" x-text="(adsData?.platforms?.snapchat?.spend_sar || 0).toLocaleString() + ' SAR'"></div>
+                                <span class="text-[9px] text-wa-muted" x-text="(adsData?.platforms?.snapchat?.impressions || 0).toLocaleString() + ' Impr'"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-wa-border space-y-1">
+                                <span class="text-[10px] text-wa-muted block">Swipe-Ups &amp; CPS</span>
+                                <div class="text-sm font-bold font-mono text-white" x-text="(adsData?.platforms?.snapchat?.clicks || 0).toLocaleString()"></div>
+                                <span class="text-[9px] text-yellow-400 font-semibold" x-text="'CPS: ' + (adsData?.platforms?.snapchat?.cpc_sar || 0).toFixed(2) + ' SAR'"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel/60 rounded-xl border border-yellow-500/30 bg-yellow-950/20 space-y-1">
+                                <span class="text-[10px] text-yellow-300 block">WhatsApp Leads</span>
+                                <div class="text-sm font-bold font-mono text-yellow-400" x-text="(adsData?.platforms?.snapchat?.wa_leads || 0).toLocaleString()"></div>
+                                <span class="text-[9px] text-amber-300 font-semibold" x-text="'CPL: ' + (adsData?.platforms?.snapchat?.cost_per_lead_sar || 0).toFixed(2) + ' SAR'"></span>
+                            </div>
                         </div>
-                    `;
-                    lastDateStr = dateHeader;
-                }}
 
-                // WhatsApp Vector Double Blue Checkmarks
-                let statusIcon = '';
-                if (isOut) {{
-                    const st = (m.status || 'SENT').toUpperCase();
-                    if (st === 'READ') {{
-                        statusIcon = '<span class="status-ticks ticks-read" title="Read by customer"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M11.07 0L5.65 5.42L3.12 2.89L2 4.01L5.65 7.66L12.19 1.12L11.07 0ZM14.88 0L9.46 5.42L8.34 4.3L7.22 5.42L9.46 7.66L16 1.12L14.88 0Z"/></svg></span>';
-                    }} else if (st === 'DELIVERED') {{
-                        statusIcon = '<span class="status-ticks ticks-delivered" title="Delivered"><svg width="16" height="11" viewBox="0 0 16 11" fill="currentColor"><path d="M11.07 0L5.65 5.42L3.12 2.89L2 4.01L5.65 7.66L12.19 1.12L11.07 0ZM14.88 0L9.46 5.42L8.34 4.3L7.22 5.42L9.46 7.66L16 1.12L14.88 0Z"/></svg></span>';
-                    }} else if (st === 'FAILED') {{
-                        statusIcon = '<span style="color: #f87171; font-size: 12px;" title="' + escapeHtml(m.error || 'Failed') + '">⚠️</span>';
-                    }} else {{
-                        statusIcon = '<span class="status-ticks ticks-sent" title="Sent"><svg width="12" height="11" viewBox="0 0 12 11" fill="currentColor"><path d="M4.58 7.66L1 4.08L2.12 2.96L4.58 5.42L10.02 0L11.14 1.12L4.58 7.66Z"/></svg></span>';
-                    }}
-                }}
-
-                html += `
-                    <div class="bubble-row ${{rowClass}}">
-                        <div class="bubble ${{rowClass}}">
-                            <div class="bubble-text" dir="auto">${{escapeHtml(m.content || '')}}</div>
-                            <div class="bubble-meta">
-                                <span>${{timeStr}}</span>
-                                ${{statusIcon}}
+                        <div class="p-4 bg-wa-panel/80 rounded-xl border border-wa-border flex items-center justify-between">
+                            <div>
+                                <span class="text-xs text-wa-muted block">Snap Generated Revenue</span>
+                                <div class="text-lg font-bold font-mono text-emerald-400" x-text="(adsData?.platforms?.snapchat?.revenue_sar || 0).toLocaleString() + ' SAR'"></div>
+                                <span class="text-[10px] text-wa-muted" x-text="(adsData?.platforms?.snapchat?.conversions || 0) + ' Paying Customers (' + (adsData?.platforms?.snapchat?.conversion_rate_pct || 0).toFixed(1) + '%)'"></span>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs text-wa-muted block">Snapchat ROAS</span>
+                                <div class="text-2xl font-black font-mono text-amber-400" x-text="(adsData?.platforms?.snapchat?.roas || 0).toFixed(2) + 'x'"></div>
+                                <span class="text-[10px] text-emerald-400 font-bold">Strong Volume</span>
                             </div>
                         </div>
                     </div>
-                `;
-            }});
+                </div>
 
-            container.innerHTML = html;
-            if (!isBackground || wasAtBottom) container.scrollTop = container.scrollHeight;
-        }}
+                <!-- Funnel Visualizer -->
+                <div class="glass-panel p-6 rounded-2xl border border-wa-border space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                            <i class="fas fa-filter text-wa-green-bright"></i>
+                            <span>Paid Ads &rarr; WhatsApp &rarr; Sales Conversion Funnel</span>
+                        </h3>
+                        <span class="text-xs text-wa-muted">Real-time attribution bridge</span>
+                    </div>
 
-        async function sendReply() {{
-            if (!activePhone || isSending) return;
-            const input = document.getElementById('reply-text');
-            const text = input.value.trim();
-            if (!text) return;
-
-            isSending = true;
-            const btn = document.getElementById('send-button');
-            btn.disabled = true;
-
-            try {{
-                const res = await fetch(`/api/conversations/${{activePhone}}/reply`, {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ text: text }})
-                }});
-                const data = await res.json();
-                if (!res.ok || !data.success) {{
-                    const err = data.error || 'Failed to dispatch WhatsApp message.';
-                    alert('WhatsApp send failed: ' + err + ' - Please click Settings to configure API keys.');
-                    openSettingsModal();
-                }} else {{
-                    input.value = '';
-                }}
-                await loadMessages(activePhone);
-                await loadConversations(true);
-            }} catch (e) {{
-                alert('Send failed: ' + e);
-            }} finally {{
-                isSending = false;
-                btn.disabled = false;
-                input.focus();
-            }}
-        }}
-
-        function handleKey(e) {{
-            if (e.key === 'Enter' && !e.shiftKey) {{
-                e.preventDefault();
-                sendReply();
-            }}
-        }}
-
-        function insertTemplate(text) {{
-            const input = document.getElementById('reply-text');
-            input.value = text;
-            input.focus();
-        }}
-
-        // --- DELIVERY REPORTS TAB ---
-        let statsSource = 'campaign';
-        let cachedLiveKPIs = null;
-
-        const UNIFONIC_CAMPAIGN_DATA = {{
-            total: 444,
-            submitted: 444,
-            sent: 341,
-            delivered: 296,
-            read: 83,
-            unconfirmed: 0,
-            failed: 103,
-            success_rate: 76.8,
-            read_rate: 28.0,
-            channel: 'WhatsApp',
-            utility: 0,
-            marketing: 0,
-            marketing_lite: 293,
-            authentication: 0,
-            service: 0,
-            messages_sent: 343,
-            messages_received: 11,
-            messages_delivered: 294,
-            estimated_spending_bi: '14.68',
-            estimated_spending_ui: '0.00'
-        }};
-
-        function setStatsSource(src) {{
-            statsSource = src;
-            const btnCamp = document.getElementById('btn-view-campaign');
-            const btnLive = document.getElementById('btn-view-live');
-            if (btnCamp) btnCamp.classList.toggle('active', src === 'campaign');
-            if (btnLive) btnLive.classList.toggle('active', src === 'live');
-            updateStatsDisplay();
-        }}
-
-        function updateStatsDisplay() {{
-            const data = (statsSource === 'campaign') ? UNIFONIC_CAMPAIGN_DATA : (cachedLiveKPIs || UNIFONIC_CAMPAIGN_DATA);
-            
-            // 1. KPI Cards
-            const setTxt = (id, val) => {{ const el = document.getElementById(id); if (el) el.innerText = val; }};
-            setTxt('kpi-total-dispatched', data.total || 0);
-            setTxt('kpi-sent-rate', (data.success_rate || 0) + '%');
-            setTxt('kpi-read-rate', (data.read_rate || 28.0) + '%');
-            setTxt('kpi-failed-count', data.failed || 0);
-            setTxt('kpi-spend-usd', '$' + (data.estimated_spending_bi || '14.68'));
-
-            // 2. Donut Chart
-            const rate = data.success_rate || 0;
-            setTxt('donut-rate-text', rate + '%');
-            const arc = document.getElementById('donut-arc-success');
-            if (arc) {{
-                const circumference = 515.2; // 2 * pi * 82
-                const offset = circumference * (1 - (rate / 100));
-                arc.style.strokeDasharray = circumference;
-                arc.style.strokeDashoffset = offset;
-            }}
-
-            // 3. Status Breakdown
-            setTxt('bd-total', data.total || 0);
-            setTxt('bd-submitted', data.submitted || 0);
-            setTxt('bd-sent', data.sent || 0);
-            setTxt('bd-delivered', data.delivered || 0);
-            setTxt('bd-read', data.read || 0);
-            setTxt('bd-failed', data.failed || 0);
-
-            // 4. Channel Usage
-            setTxt('ch-utility', data.utility || 0);
-            setTxt('ch-marketing', data.marketing || 0);
-            setTxt('ch-marketing-lite', data.marketing_lite || 0);
-            setTxt('ch-auth', data.authentication || 0);
-            setTxt('ch-service', data.service || 0);
-            setTxt('ch-sent', data.messages_sent || 0);
-            setTxt('ch-recv', data.messages_received || 0);
-            setTxt('ch-deliv', data.messages_delivered || 0);
-            setTxt('ch-spend-bi', '$' + (data.estimated_spending_bi || '0.00'));
-        }}
-
-        function applyStatusFilter(status, el) {{
-            document.querySelectorAll('.breakdown-row').forEach(r => r.classList.remove('active'));
-            if (el) el.classList.add('active');
-            const sel = document.getElementById('report-status-filter');
-            if (sel) {{
-                sel.value = status;
-            }}
-            loadReports();
-        }}
-
-        async function loadReports(isBackground = false) {{
-            const statusFilter = document.getElementById('report-status-filter').value;
-            const phoneFilter = document.getElementById('report-phone-filter').value.trim();
-            try {{
-                const res = await fetch(`/api/reports?status=${{statusFilter}}&phone=${{phoneFilter}}`);
-                const data = await res.json();
-                renderReports(data);
-            }} catch (e) {{}}
-        }}
-
-        function renderReports(data) {{
-            cachedLiveKPIs = data.kpis || {{}};
-            updateStatsDisplay();
-
-            const tbody = document.getElementById('reports-table-body');
-            const reports = data.reports || [];
-            if (reports.length === 0) {{
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 28px; color: var(--wa-text-secondary);">No delivery reports match your filter.</td></tr>';
-                return;
-            }}
-
-            let html = '';
-            reports.forEach(r => {{
-                const st = r.status || 'SENT';
-                const sentTime = r.sent_at ? formatDateTime(r.sent_at) : '-';
-                const delivTime = r.delivered_at ? formatDateTime(r.delivered_at) : '-';
-                const readTime = r.read_at ? formatDateTime(r.read_at) : '-';
-                const cleanPhone = formatPhoneDisplay(r.recipient);
-
-                html += `
-                    <tr>
-                        <td><code style="color: var(--wa-green-bright); font-size: 11.5px;">${{escapeHtml(r.message_id)}}</code></td>
-                        <td><strong class="phone-isolate"><bdi>${{cleanPhone}}</bdi></strong></td>
-                        <td><span class="badge-status badge-${{st}}">${{st}}</span></td>
-                        <td><span class="phone-isolate">${{sentTime}}</span></td>
-                        <td><span class="phone-isolate">${{delivTime}}</span></td>
-                        <td><span class="phone-isolate">${{readTime}}</span></td>
-                        <td dir="auto" style="direction: auto; unicode-bidi: plaintext; text-align: start; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                            ${{r.error ? '<span style="color:#f87171;" title="' + escapeHtml(r.error) + '">⚠️ ' + escapeHtml(r.error) + '</span>' : escapeHtml(r.content || '-')}}
-                        </td>
-                    </tr>
-                `;
-            }});
-            tbody.innerHTML = html;
-        }}
-
-        async function syncUnifonicStatus() {{
-            const btn = document.getElementById('sync-unifonic-btn');
-            if (btn) {{
-                btn.disabled = true;
-                btn.innerHTML = '<span>⏳ Syncing via GET...</span>';
-            }}
-            try {{
-                const res = await fetch('/api/unifonic/sync', {{ method: 'POST' }});
-                const data = await res.json();
-                if (data.success) {{
-                    alert('Unifonic GET Sync complete: queried ' + (data.queried_count || 0) + ' messages, updated ' + (data.results_received || 0) + ' delivery receipts.');
-                    await loadReports();
-                }} else {{
-                    alert('Sync error: ' + (data.error || 'Failed to sync.'));
-                }}
-            }} catch (e) {{
-                alert('Sync failed: ' + e);
-            }} finally {{
-                if (btn) {{
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>🔄 Sync from Unifonic (GET)</span>';
-                }}
-            }}
-        }}
-
-        // --- WEBHOOK STREAM TAB ---
-        async function loadRawFeed() {{
-            try {{
-                const res = await fetch('/api/events?limit=30');
-                const data = await res.json();
-                const container = document.getElementById('raw-feed-container');
-                const events = data.events || [];
-                if (events.length === 0) {{
-                    container.innerHTML = '<div style="color: var(--wa-text-secondary); text-align: center; padding: 28px;">No webhook events received yet.</div>';
-                    return;
-                }}
-                let html = '';
-                events.forEach(ev => {{
-                    const evType = ev.event_type || 'unknown';
-                    const time = ev.received_at || '';
-                    html += `
-                        <div class="event-card">
-                            <div class="event-header">
-                                <span class="badge-status badge-${{evType.toUpperCase()}}" style="background: var(--wa-surface); color: var(--wa-green-bright);">${{evType}}</span>
-                                <span style="font-size: 12px; color: var(--wa-text-secondary);">${{time}}</span>
-                            </div>
-                            <div class="json-block">${{escapeHtml(JSON.stringify(ev, null, 2))}}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-center">
+                        <div class="p-4 bg-wa-panel rounded-xl border border-wa-border space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-wa-muted">1. Ad Impressions</span>
+                            <div class="text-lg font-bold text-white font-mono" x-text="(adsData?.overview?.total_impressions || 0).toLocaleString()"></div>
+                            <span class="text-[10px] text-wa-muted">100% Reach</span>
                         </div>
-                    `;
-                }});
-                container.innerHTML = html;
-            }} catch (e) {{}}
-        }}
+                        <div class="p-4 bg-wa-panel rounded-xl border border-wa-border space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-blue-400">2. Clicks &amp; Swipes</span>
+                            <div class="text-lg font-bold text-blue-400 font-mono" x-text="(adsData?.overview?.total_clicks_swipes || 0).toLocaleString()"></div>
+                            <span class="text-[10px] text-blue-300 font-semibold" x-text="(((adsData?.overview?.total_clicks_swipes || 0) / (adsData?.overview?.total_impressions || 1)) * 100).toFixed(2) + '% CTR'"></span>
+                        </div>
+                        <div class="p-4 bg-wa-panel rounded-xl border border-cyan-500/40 bg-cyan-950/20 space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-cyan-300">3. WhatsApp Chats</span>
+                            <div class="text-lg font-bold text-cyan-300 font-mono" x-text="(adsData?.overview?.total_wa_leads || 0).toLocaleString()"></div>
+                            <span class="text-[10px] text-cyan-200 font-semibold" x-text="(((adsData?.overview?.total_wa_leads || 0) / (adsData?.overview?.total_clicks_swipes || 1)) * 100).toFixed(1) + '% Start Rate'"></span>
+                        </div>
+                        <div class="p-4 bg-wa-panel rounded-xl border border-wa-border space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-emerald-400">4. Paid Conversions</span>
+                            <div class="text-lg font-bold text-emerald-400 font-mono" x-text="(adsData?.overview?.total_conversions || 0).toLocaleString()"></div>
+                            <span class="text-[10px] text-emerald-400 font-semibold" x-text="(adsData?.overview?.blended_conversion_rate_pct || 0).toFixed(1) + '% Conv Rate'"></span>
+                        </div>
+                        <div class="p-4 bg-wa-panel rounded-xl border border-amber-500/40 bg-amber-950/20 space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-amber-300">5. Revenue &amp; ROAS</span>
+                            <div class="text-lg font-bold text-amber-300 font-mono" x-text="(adsData?.overview?.total_revenue_sar || 0).toLocaleString() + ' SAR'"></div>
+                            <span class="text-[10px] text-amber-400 font-bold" x-text="(adsData?.overview?.blended_roas || 0).toFixed(2) + 'x Return'"></span>
+                        </div>
+                    </div>
+                </div>
 
-        // --- MODALS & HELPERS ---
-        function openNewChatModal() {{
-            document.getElementById('new-chat-modal').style.display = 'flex';
-            document.getElementById('new-phone').focus();
-        }}
-        function closeNewChatModal() {{
-            document.getElementById('new-chat-modal').style.display = 'none';
-        }}
-        async function submitNewChat() {{
-            const phone = document.getElementById('new-phone').value.trim();
-            const msg = document.getElementById('new-initial-msg').value.trim();
-            if (!phone) return alert('Please enter a phone number');
-            
-            const res = await fetch('/api/conversations/start', {{
-                method: 'POST',
-                headers: {{ 'Content-Type': 'application/json' }},
-                body: JSON.stringify({{ phone: phone, initial_message: msg }})
-            }});
-            const data = await res.json();
-            closeNewChatModal();
-            await loadConversations();
-            selectConversation(data.phone);
-        }}
+                <!-- Campaign Breakdown Table -->
+                <div class="glass-panel rounded-2xl border border-wa-border overflow-hidden">
+                    <div class="p-4 border-b border-wa-border flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm text-white">Campaign Performance Table</h3>
+                            <span class="text-xs bg-wa-surface text-wa-muted px-2 py-0.5 rounded-md font-mono" x-text="filteredAdsCampaigns().length + ' campaigns'"></span>
+                        </div>
 
-        async function openSettingsModal() {{
-            try {{
-                const res = await fetch('/api/settings');
-                const data = await res.json();
-                if (data.public_id) {{
-                    const pInput = document.getElementById('settings-public-id');
-                    if (pInput) pInput.value = data.public_id;
-                }}
-                if (data.channel_id) {{
-                    const cInput = document.getElementById('settings-channel-id');
-                    if (cInput) cInput.value = data.channel_id;
-                }}
-                if (data.is_secret_set) {{
-                    const sInput = document.getElementById('settings-secret-key');
-                    if (sInput) sInput.placeholder = '•••••••• (Configured)';
-                }}
-            }} catch (e) {{}}
-            document.getElementById('settings-modal').style.display = 'flex';
-        }}
-        function closeSettingsModal() {{
-            document.getElementById('settings-modal').style.display = 'none';
-        }}
-        async function saveSettings() {{
-            const pid = document.getElementById('settings-public-id').value.trim();
-            const cid = document.getElementById('settings-channel-id').value.trim();
-            const sec = document.getElementById('settings-secret-key').value.trim();
-            try {{
-                const payload = {{ public_id: pid, channel_id: cid }};
-                if (sec) payload.secret_key = sec;
-                const res = await fetch('/api/settings', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify(payload)
-                }});
-                closeSettingsModal();
-                alert('✅ Settings saved! WhatsApp dispatch is active.');
-            }} catch (e) {{
-                alert('Failed to save settings: ' + e);
-            }}
-        }}
+                        <div class="flex items-center gap-3">
+                            <!-- Platform filter -->
+                            <div class="flex items-center bg-wa-panel rounded-xl p-1 border border-wa-border text-xs">
+                                <button 
+                                    @click="adsPlatformFilter = 'ALL'" 
+                                    :class="adsPlatformFilter === 'ALL' ? 'bg-wa-surface text-white font-bold' : 'text-wa-muted hover:text-white'" 
+                                    class="px-2.5 py-1 rounded-lg transition-all"
+                                >
+                                    All
+                                </button>
+                                <button 
+                                    @click="adsPlatformFilter = 'meta'" 
+                                    :class="adsPlatformFilter === 'meta' ? 'bg-blue-600 text-white font-bold' : 'text-wa-muted hover:text-white'" 
+                                    class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1"
+                                >
+                                    <i class="fab fa-meta text-[10px]"></i> Meta
+                                </button>
+                                <button 
+                                    @click="adsPlatformFilter = 'snapchat'" 
+                                    :class="adsPlatformFilter === 'snapchat' ? 'bg-yellow-500 text-black font-bold' : 'text-wa-muted hover:text-white'" 
+                                    class="px-2.5 py-1 rounded-lg transition-all flex items-center gap-1"
+                                >
+                                    <i class="fab fa-snapchat-ghost text-[10px]"></i> Snap
+                                </button>
+                            </div>
 
-        function formatDatePill(isoStr) {{
-            if (!isoStr) return '';
-            try {{
-                const d = new Date(isoStr);
-                if (isNaN(d.getTime())) return '';
-                const now = new Date();
-                const isToday = d.toDateString() === now.toDateString();
-                if (isToday) return 'Today';
-                const yesterday = new Date();
-                yesterday.setDate(now.getDate() - 1);
-                if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-                return d.toLocaleDateString([], {{ month: 'short', day: 'numeric', year: 'numeric' }});
-            }} catch (e) {{ return ''; }}
-        }}
+                            <!-- Search -->
+                            <input 
+                                type="text" 
+                                x-model="adsSearch" 
+                                placeholder="Search campaign or keyword..." 
+                                class="bg-wa-panel border border-wa-border rounded-xl px-3 py-1.5 text-xs text-wa-text focus:outline-none focus:border-cyan-400 w-52"
+                            >
+                        </div>
+                    </div>
 
-        function formatTime(isoStr) {{
-            if (!isoStr) return '';
-            try {{
-                const d = new Date(isoStr);
-                if (isNaN(d.getTime())) return '';
-                const now = new Date();
-                const isToday = d.toDateString() === now.toDateString();
-                const timePart = d.toLocaleTimeString([], {{ hour: '2-digit', minute: '2-digit', hour12: true }});
-                if (isToday) return timePart;
-                const yesterday = new Date();
-                yesterday.setDate(now.getDate() - 1);
-                if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-                return d.toLocaleDateString([], {{ month: 'short', day: 'numeric' }});
-            }} catch (e) {{ return ''; }}
-        }}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-wa-panel/80 text-wa-muted border-b border-wa-border text-[11px] uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Platform</th>
+                                    <th class="py-3 px-4">Campaign Name</th>
+                                    <th class="py-3 px-4">Delivery</th>
+                                    <th class="py-3 px-4">Review</th>
+                                    <th class="py-3 px-4 text-right">Impressions</th>
+                                    <th class="py-3 px-4 text-right">Spend (SAR)</th>
+                                    <th class="py-3 px-4 text-right">Clicks/Swipes</th>
+                                    <th class="py-3 px-4 text-right">WA Leads</th>
+                                    <th class="py-3 px-4 text-right">Cost / Lead</th>
+                                    <th class="py-3 px-4 text-right">Orders</th>
+                                    <th class="py-3 px-4 text-right">Revenue</th>
+                                    <th class="py-3 px-4 text-right">ROAS</th>
+                                    <th class="py-3 px-4">Attribution Tag</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-wa-border">
+                                <template x-for="c in filteredAdsCampaigns()" :key="c.id">
+                                    <tr class="hover:bg-wa-surface/30 transition-colors">
+                                        <td class="py-3 px-4">
+                                            <span 
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 w-fit" 
+                                                :class="c.platform === 'meta' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20'"
+                                            >
+                                                <i :class="c.platform === 'meta' ? 'fab fa-meta' : 'fab fa-snapchat-ghost'"></i>
+                                                <span x-text="c.platform === 'meta' ? 'Meta' : 'Snap'"></span>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <div class="font-semibold text-white max-w-xs truncate" x-text="c.campaign_name"></div>
+                                            <div class="text-[10px] text-wa-muted flex items-center gap-2 mt-0.5" x-show="c.ads_list && c.ads_list.length > 0">
+                                                <span x-text="c.ads_list.length + ' creative(s)'"></span>
+                                                <template x-for="ad in (c.ads_list || []).slice(0, 2)" :key="ad.id">
+                                                    <span class="text-[9px] px-1.5 py-0.2 rounded bg-wa-surface border border-wa-border text-wa-muted truncate max-w-[100px]" x-text="ad.name"></span>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <template x-if="c.delivery_status === 'DELIVERING'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1.5 w-fit">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                    <span>Delivering</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="c.delivery_status === 'COMPLETED'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-500/15 text-slate-300 border border-slate-500/30 flex items-center gap-1 w-fit">
+                                                    <i class="fas fa-flag-checkered text-[9px]"></i>
+                                                    <span>Completed</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="c.delivery_status === 'PAUSED'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-500/15 text-gray-400 border border-gray-500/30 flex items-center gap-1 w-fit">
+                                                    <i class="fas fa-pause text-[8px]"></i>
+                                                    <span>Paused</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="c.delivery_status === 'REJECTED'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/30 flex items-center gap-1 w-fit">
+                                                    <i class="fas fa-times-circle text-[9px]"></i>
+                                                    <span>Rejected</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="c.delivery_status === 'PENDING_REVIEW'">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 w-fit">
+                                                    <i class="fas fa-clock text-[9px]"></i>
+                                                    <span>In Review</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="!['DELIVERING', 'COMPLETED', 'PAUSED', 'REJECTED', 'PENDING_REVIEW'].includes(c.delivery_status)">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-500/15 text-gray-400 border border-gray-500/30" x-text="c.status || 'PAUSED'"></span>
+                                            </template>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span 
+                                                class="px-2 py-0.5 rounded text-[9px] font-bold"
+                                                :class="c.review_status === 'REJECTED' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : (c.review_status === 'PENDING_REVIEW' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20')"
+                                                x-text="c.review_status || 'APPROVED'"
+                                            ></span>
+                                        </td>
+                                        <td class="py-3 px-4 text-right font-mono text-purple-300 font-bold" x-text="(c.impressions || 0).toLocaleString()"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-bold text-white" x-text="(c.spend_sar || 0).toLocaleString()"></td>
+                                        <td class="py-3 px-4 text-right font-mono text-wa-muted" x-text="(c.clicks || 0).toLocaleString()"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-bold text-cyan-400" x-text="(c.wa_conversations_started || 0).toLocaleString()"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-bold text-amber-300" x-text="(c.cost_per_wa_lead_sar || 0).toFixed(2) + ' SAR'"></td>
+                                        <td class="py-3 px-4 text-right font-mono text-emerald-400 font-bold" x-text="(c.conversions_count || 0)"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-bold text-white" x-text="(c.revenue_sar || 0).toLocaleString() + ' SAR'"></td>
+                                        <td class="py-3 px-4 text-right font-mono font-black text-amber-400" x-text="(c.roas || 0).toFixed(2) + 'x'"></td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-0.5 rounded bg-wa-panel border border-wa-border text-[10px] font-mono text-wa-muted" x-text="c.ad_keyword || '-'"></span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
 
-        function formatDateTime(isoStr) {{
-            if (!isoStr) return '';
-            try {{
-                const d = new Date(isoStr);
-                return d.toLocaleDateString([], {{ month: 'short', day: 'numeric' }}) + ' ' + d.toLocaleTimeString([], {{ hour: '2-digit', minute: '2-digit' }});
-            }} catch (e) {{ return ''; }}
-        }}
+            <!-- MODAL: ADS TRACKING LINK BUILDER -->
+            <div x-show="showAdsLinkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+                <div class="glass-panel w-full max-w-lg rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                        <h3 class="font-bold text-base text-white flex items-center gap-2">
+                            <i class="fas fa-link text-cyan-400"></i>
+                            <span>Click-to-WhatsApp Ad Link Builder</span>
+                        </h3>
+                        <button @click="showAdsLinkModal = false" class="text-wa-muted hover:text-white p-1">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
 
-        function escapeHtml(text) {{
-            if (!text) return '';
-            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }}
-    </script>
-</body>
-</html>"""
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Ad Platform</label>
+                            <select 
+                                x-model="adsLinkGen.platform" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400"
+                            >
+                                <option value="snapchat">Snapchat Ads (Swipe-Up Link)</option>
+                                <option value="meta">Meta Ads (Instagram / Facebook Story / Reel)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Campaign Tracking Keyword</label>
+                            <input 
+                                type="text" 
+                                x-model="adsLinkGen.keyword" 
+                                placeholder="e.g. SNAP96, META_OCTOBER, VIP_WASH" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-cyan-400"
+                            >
+                            <span class="text-[10px] text-wa-muted">This keyword will be prefixed in the customer's message to auto-attribute the lead.</span>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Pre-filled Customer Message</label>
+                            <textarea 
+                                x-model="adsLinkGen.custom_text" 
+                                rows="2" 
+                                placeholder="e.g. مرحباً RushWash، أود الاستفسار عن عرض اليوم الوطني 🚗" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-arabic focus:outline-none focus:border-cyan-400"
+                            ></textarea>
+                        </div>
+
+                        <button 
+                            @click="generateTrackingLink()" 
+                            class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow"
+                        >
+                            <i class="fas fa-magic"></i> Generate Tracking Link
+                        </button>
+
+                        <div x-show="adsLinkGen.result_url" class="p-3 bg-wa-panel rounded-xl border border-cyan-500/30 space-y-2">
+                            <label class="text-[11px] font-bold text-cyan-300 block">Generated wa.me Tracking URL:</label>
+                            <div class="flex items-center gap-2">
+                                <input 
+                                    type="text" 
+                                    readonly 
+                                    :value="adsLinkGen.result_url" 
+                                    class="w-full bg-wa-deep border border-wa-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono"
+                                >
+                                <button 
+                                    @click="copyTrackingLink()" 
+                                    class="px-3 py-1.5 bg-wa-green hover:bg-emerald-600 text-white rounded-lg text-xs font-bold shrink-0 transition-all flex items-center gap-1 cursor-pointer"
+                                >
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: ADS API CREDENTIALS & SETTINGS -->
+            <div x-show="showAdsSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+                <div class="glass-panel w-full max-w-xl rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                        <h3 class="font-bold text-base text-white flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-amber-400"></i>
+                            <span>Meta &amp; Snapchat Ads API Configuration</span>
+                        </h3>
+                        <button @click="showAdsSettingsModal = false" class="text-wa-muted hover:text-white p-1">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-5">
+                        <!-- Meta API Config -->
+                        <div class="p-4 bg-wa-panel/60 rounded-xl border border-blue-500/30 space-y-3">
+                            <h4 class="text-xs font-bold text-blue-400 flex items-center gap-1.5">
+                                <i class="fab fa-meta"></i> Meta Marketing API (Graph API)
+                            </h4>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-wa-muted font-semibold">Meta Ad Account ID</label>
+                                <input 
+                                    type="text" 
+                                    x-model="adsSettingsForm.meta.ad_account_id" 
+                                    placeholder="act_1234567890" 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-400"
+                                >
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-wa-muted font-semibold">Meta System User / Long-Lived Access Token</label>
+                                <input 
+                                    type="password" 
+                                    x-model="adsSettingsForm.meta.access_token" 
+                                    placeholder="EAAB..." 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-blue-400"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Snapchat API Config -->
+                        <div class="p-4 bg-wa-panel/60 rounded-xl border border-yellow-500/30 space-y-3">
+                            <h4 class="text-xs font-bold text-yellow-300 flex items-center gap-1.5">
+                                <i class="fab fa-snapchat-ghost"></i> Snapchat Marketing API
+                            </h4>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-wa-muted font-semibold">Snap Ad Account ID</label>
+                                <input 
+                                    type="text" 
+                                    x-model="adsSettingsForm.snapchat.ad_account_id" 
+                                    placeholder="snap_acc_..." 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                                >
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted font-semibold">Snap Client ID</label>
+                                    <input 
+                                        type="text" 
+                                        x-model="adsSettingsForm.snapchat.client_id" 
+                                        placeholder="client_id..." 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                                    >
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted font-semibold">Snap Client Secret</label>
+                                    <input 
+                                        type="password" 
+                                        x-model="adsSettingsForm.snapchat.client_secret" 
+                                        placeholder="••••••••" 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                                    >
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-wa-muted font-semibold">Snap Refresh Token</label>
+                                <input 
+                                    type="password" 
+                                    x-model="adsSettingsForm.snapchat.refresh_token" 
+                                    placeholder="refresh_token..." 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-yellow-400"
+                                >
+                            </div>
+
+                            <!-- Snap 1-Click OAuth Helper -->
+                            <div class="p-3 bg-yellow-950/20 border border-yellow-500/30 rounded-xl space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-bold text-yellow-300">1-Click Snapchat Connect:</span>
+                                    <a 
+                                        :href="'https://accounts.snapchat.com/login/oauth2/authorize?client_id=' + (adsSettingsForm.snapchat.client_id || '4971139a-3473-4f0c-b1cc-c4dc3c1b5a18') + '&redirect_uri=https://whatsapp.rush.com.sa/&response_type=code&scope=snapchat-marketing-api'" 
+                                        target="_blank" 
+                                        class="px-3 py-1 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-lg text-xs flex items-center gap-1 transition-all shadow"
+                                    >
+                                        <i class="fab fa-snapchat-ghost"></i> 1. Authorize on Snap
+                                    </a>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <input 
+                                        type="text" 
+                                        x-model="snapAuthCodeInput" 
+                                        placeholder="Paste 'code=' from redirected URL here..." 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-lg px-2.5 py-1.5 text-[11px] text-white font-mono"
+                                    >
+                                    <button 
+                                        type="button"
+                                        @click="exchangeSnapOAuthCode()" 
+                                        class="px-3 py-1.5 bg-wa-green hover:bg-emerald-600 text-white font-bold rounded-lg text-xs shrink-0 cursor-pointer"
+                                    >
+                                        Connect
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Destination Number -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Destination WhatsApp Business Number</label>
+                            <input 
+                                type="text" 
+                                x-model="adsSettingsForm.whatsapp_business_phone" 
+                                placeholder="966559421442" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-wa-green"
+                            >
+                        </div>
+
+                        <div class="pt-3 border-t border-wa-border flex items-center justify-end gap-3">
+                            <button 
+                                @click="showAdsSettingsModal = false" 
+                                class="px-4 py-2 bg-wa-surface hover:bg-wa-panel text-wa-text rounded-xl text-xs font-semibold"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                @click="saveAdsSettings()" 
+                                class="px-5 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                                :disabled="isSavingAdsSettings"
+                            >
+                                <i class="fas fa-save" :class="{'fa-spin': isSavingAdsSettings}"></i>
+                                <span x-text="isSavingAdsSettings ? 'Saving...' : 'Save API Credentials'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SMART TRACKING LINKS (RUSH.COM.SA) -->
+            <div x-show="activeTab === 'links'" class="space-y-6" x-cloak>
+                <!-- Header Banner -->
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>Smart Tracking Links (rush.com.sa)</span>
+                            <span class="text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-0.5 rounded-full font-bold">Traffic &amp; Click Analytics</span>
+                        </h2>
+                        <p class="text-xs text-wa-muted">Create branded short links that redirect to rush.com.sa, automatically attach UTM campaign tags, count clicks, identify unique visitors, and track device/OS statistics in real time.</p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button 
+                            @click="loadTrackingLinks()" 
+                            class="px-3 py-2 bg-wa-surface hover:bg-wa-panel border border-wa-border text-wa-text rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <i class="fas fa-sync-alt text-xs"></i>
+                            <span>Refresh</span>
+                        </button>
+                        <button 
+                            @click="openCreateLinkModal()" 
+                            class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+                        >
+                            <i class="fas fa-plus"></i>
+                            <span>Create Tracking Link</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Metric Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted">Total Short Links</span>
+                            <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                                <i class="fas fa-link text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-bold font-mono text-white" x-text="trackingLinksData?.total_links || 0"></div>
+                        <span class="text-[10px] text-wa-muted">Active Branded Trackers</span>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted">Total Clicks &amp; Swipes</span>
+                            <div class="w-8 h-8 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                                <i class="fas fa-mouse-pointer text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-bold font-mono text-cyan-300" x-text="(trackingLinksData?.total_clicks || 0).toLocaleString()"></div>
+                        <span class="text-[10px] text-cyan-400 font-semibold" x-text="(trackingLinksData?.total_unique_clicks || 0).toLocaleString() + ' unique visitors'"></span>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl border border-wa-border space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-wa-muted">Routing Engine</span>
+                            <div class="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                                <i class="fas fa-bolt text-xs"></i>
+                            </div>
+                        </div>
+                        <div class="text-2xl font-bold font-mono text-emerald-400">302 Direct</div>
+                        <span class="text-[10px] text-emerald-400 font-semibold">Zero-Latency Redirect &amp; UTM Injection</span>
+                    </div>
+                </div>
+
+                <!-- Links Table -->
+                <div class="glass-panel rounded-2xl border border-wa-border overflow-hidden">
+                    <div class="p-4 border-b border-wa-border flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-sm text-white">Branded Smart Tracking Links</h3>
+                            <span class="text-xs bg-wa-surface text-wa-muted px-2 py-0.5 rounded-md font-mono" x-text="(trackingLinksData?.links?.length || 0) + ' links'"></span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-wa-panel/80 text-wa-muted border-b border-wa-border text-[11px] uppercase tracking-wider">
+                                <tr>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Campaign Title &amp; Platform</th>
+                                    <th class="py-3 px-4">Smart Tracking Short Link</th>
+                                    <th class="py-3 px-4">Destination Target (rush.com.sa)</th>
+                                    <th class="py-3 px-4 text-right">Clicks</th>
+                                    <th class="py-3 px-4 text-right">Unique</th>
+                                    <th class="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-wa-border">
+                                <template x-for="link in trackingLinksData?.links || []" :key="link.slug">
+                                    <tr class="hover:bg-wa-surface/30 transition-colors">
+                                        <!-- Status & Toggle -->
+                                        <td class="py-3 px-4">
+                                            <button 
+                                                @click="toggleLinkStatus(link.slug)" 
+                                                class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                                                :class="link.status === 'ACTIVE' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25' : 'bg-gray-500/15 text-gray-400 border border-gray-500/30 hover:bg-gray-500/25'"
+                                                :title="'Click to toggle status (Currently ' + link.status + ')'"
+                                            >
+                                                <span class="w-1.5 h-1.5 rounded-full" :class="link.status === 'ACTIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-gray-400'"></span>
+                                                <span x-text="link.status"></span>
+                                            </button>
+                                        </td>
+
+                                        <!-- Title & Platform -->
+                                        <td class="py-3 px-4 max-w-xs">
+                                            <div class="font-bold text-white truncate text-xs" x-text="link.title"></div>
+                                            <div class="flex items-center gap-2 mt-0.5">
+                                                <span 
+                                                    class="px-1.5 py-0.5 rounded text-[9px] font-bold capitalize flex items-center gap-1 w-fit" 
+                                                    :class="{
+                                                        'bg-yellow-500/10 text-yellow-300 border border-yellow-500/20': link.platform === 'snapchat',
+                                                        'bg-pink-500/10 text-pink-400 border border-pink-500/20': link.platform === 'instagram',
+                                                        'bg-blue-500/10 text-blue-400 border border-blue-500/20': link.platform === 'meta',
+                                                        'bg-cyan-500/10 text-cyan-300 border border-cyan-500/20': link.platform === 'tiktok',
+                                                        'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20': link.platform === 'whatsapp',
+                                                        'bg-gray-500/10 text-gray-300 border border-gray-500/20': link.platform === 'direct'
+                                                    }"
+                                                >
+                                                    <i :class="{
+                                                        'fab fa-snapchat-ghost': link.platform === 'snapchat',
+                                                        'fab fa-instagram': link.platform === 'instagram',
+                                                        'fab fa-meta': link.platform === 'meta',
+                                                        'fab fa-tiktok': link.platform === 'tiktok',
+                                                        'fab fa-whatsapp': link.platform === 'whatsapp',
+                                                        'fas fa-globe': link.platform === 'direct'
+                                                    }"></i>
+                                                    <span x-text="link.platform"></span>
+                                                </span>
+                                            </div>
+                                        </td>
+
+                                        <!-- Short Link -->
+                                        <td class="py-3 px-4">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="font-mono font-bold text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[11px]" x-text="'/r/' + link.slug"></span>
+                                                <button 
+                                                    @click="copyTextToClipboard('https://whatsapp.rush.com.sa/r/' + link.slug, 'Smart Tracking URL copied to clipboard!')" 
+                                                    class="p-1 hover:text-white text-wa-muted transition-colors cursor-pointer"
+                                                    title="Copy Short Link"
+                                                >
+                                                    <i class="fas fa-copy text-xs"></i>
+                                                </button>
+                                                <a 
+                                                    :href="'https://whatsapp.rush.com.sa/r/' + link.slug" 
+                                                    target="_blank" 
+                                                    class="p-1 hover:text-white text-wa-muted transition-colors cursor-pointer"
+                                                    title="Test Redirect in New Tab"
+                                                >
+                                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+
+                                        <!-- Destination URL -->
+                                        <td class="py-3 px-4 max-w-sm">
+                                            <div class="text-[11px] text-wa-muted font-mono truncate" :title="link.destination_url" x-text="link.destination_url"></div>
+                                        </td>
+
+                                        <!-- Clicks -->
+                                        <td class="py-3 px-4 text-right">
+                                            <span class="font-mono font-bold text-cyan-300 text-xs" x-text="(link.total_clicks || 0).toLocaleString()"></span>
+                                        </td>
+
+                                        <!-- Unique -->
+                                        <td class="py-3 px-4 text-right">
+                                            <span class="font-mono font-bold text-emerald-400 text-xs" x-text="(link.unique_clicks || 0).toLocaleString()"></span>
+                                        </td>
+
+                                        <!-- Actions -->
+                                        <td class="py-3 px-4 text-right">
+                                            <div class="flex items-center justify-end gap-1.5">
+                                                <button 
+                                                    @click="copyTextToClipboard('https://whatsapp.rush.com.sa/r/' + link.slug, 'Tracking Link copied!')" 
+                                                    class="px-2.5 py-1 bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                                    title="Copy Tracking URL"
+                                                >
+                                                    <i class="fas fa-copy"></i>
+                                                    <span>Copy</span>
+                                                </button>
+                                                <button 
+                                                    @click="openEditLinkModal(link)" 
+                                                    class="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                                    title="Edit Smart Tracking Link"
+                                                >
+                                                    <i class="fas fa-edit"></i>
+                                                    <span>Edit</span>
+                                                </button>
+                                                <button 
+                                                    @click="openLinkStatsModal(link.slug)" 
+                                                    class="px-2.5 py-1 bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                                                    title="View Detailed Analytics"
+                                                >
+                                                    <i class="fas fa-chart-bar"></i>
+                                                    <span>Stats</span>
+                                                </button>
+                                                <button 
+                                                    @click="openQrModal('https://whatsapp.rush.com.sa/r/' + link.slug, link.title)" 
+                                                    class="p-1.5 bg-wa-surface hover:bg-wa-panel text-wa-muted hover:text-white rounded-lg text-xs transition-colors cursor-pointer"
+                                                    title="Generate QR Code"
+                                                >
+                                                    <i class="fas fa-qrcode"></i>
+                                                </button>
+                                                <button 
+                                                    @click="deleteTrackingLink(link.slug)" 
+                                                    class="p-1.5 hover:bg-rose-500/20 text-wa-muted hover:text-rose-400 rounded-lg text-xs transition-colors cursor-pointer"
+                                                    title="Delete Link"
+                                                >
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: CREATE TRACKING LINK -->
+            <div x-show="showCreateLinkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+                <div class="glass-panel w-full max-w-xl rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                        <h3 class="font-bold text-base text-white flex items-center gap-2">
+                            <i class="fas fa-link text-indigo-400"></i>
+                            <span x-text="editingLinkSlug ? 'Edit Smart Tracking Link' : 'Create Smart Tracking Link (rush.com.sa)'"></span>
+                        </h3>
+                        <button @click="showCreateLinkModal = false" class="text-wa-muted hover:text-white p-1 cursor-pointer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Campaign Title -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-white">Campaign Title / Name</label>
+                            <input 
+                                type="text" 
+                                x-model="newLinkForm.title" 
+                                @input="autoFillUtmFromPlatform()"
+                                placeholder="e.g. National Day Special Offer 2026" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                            >
+                        </div>
+
+                        <!-- Status and Platform row -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-white">Status</label>
+                                <select 
+                                    x-model="newLinkForm.status" 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                                >
+                                    <option value="ACTIVE">🟢 ACTIVE (Tracking Enabled)</option>
+                                    <option value="PAUSED">⏸️ PAUSED (Paused)</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-white">Platform / Channel</label>
+                                <select 
+                                    x-model="newLinkForm.platform" 
+                                    @change="autoFillUtmFromPlatform()"
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-400"
+                                >
+                                    <option value="snapchat">👻 Snapchat Ads (Swipe-Up)</option>
+                                    <option value="instagram">📸 Instagram Bio / Reel / Story</option>
+                                    <option value="meta">🌐 Meta Ads (Facebook / Instagram Feed)</option>
+                                    <option value="tiktok">🎵 TikTok Ads &amp; Bio</option>
+                                    <option value="whatsapp">💬 WhatsApp Broadcast</option>
+                                    <option value="sms">📱 SMS Campaign Link</option>
+                                    <option value="google">🔍 Google Ads (Search / Display)</option>
+                                    <option value="influencer">🤝 Influencer / Affiliate</option>
+                                    <option value="direct">🔗 Direct Website / Flyer</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Custom Slug -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-white">Custom URL Slug</label>
+                            <div class="flex items-center">
+                                <span class="bg-wa-deep border border-r-0 border-wa-border px-3 py-2 text-xs text-wa-muted rounded-l-xl font-mono">https://whatsapp.rush.com.sa/r/</span>
+                                <input 
+                                    type="text" 
+                                    x-model="newLinkForm.slug" 
+                                    placeholder="watan96" 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-r-xl px-3 py-2 text-xs text-indigo-300 font-mono focus:outline-none focus:border-indigo-400"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Destination URL -->
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-white">Destination Target URL</label>
+                            <input 
+                                type="text" 
+                                x-model="newLinkForm.destination_url" 
+                                placeholder="https://rush.com.sa/en" 
+                                class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-400"
+                            >
+                            <span class="text-[10px] text-wa-muted">Where visitors will be redirected (e.g. rush.com.sa homepage or package page).</span>
+                        </div>
+
+                        <!-- UTM Parameters Accordion -->
+                        <div class="p-4 bg-wa-panel/80 rounded-xl border border-wa-border space-y-3">
+                            <h4 class="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
+                                <i class="fas fa-tags"></i>
+                                <span>Auto-Generated UTM Campaign Tags</span>
+                            </h4>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted">utm_source</label>
+                                    <input type="text" x-model="newLinkForm.utm_source" class="w-full bg-wa-deep border border-wa-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted">utm_medium</label>
+                                    <input type="text" x-model="newLinkForm.utm_medium" class="w-full bg-wa-deep border border-wa-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted">utm_campaign</label>
+                                    <input type="text" x-model="newLinkForm.utm_campaign" class="w-full bg-wa-deep border border-wa-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] text-wa-muted">utm_content (optional)</label>
+                                    <input type="text" x-model="newLinkForm.utm_content" placeholder="e.g. video_ad_1, discount_50" class="w-full bg-wa-deep border border-wa-border rounded-lg px-2.5 py-1.5 text-xs text-white font-mono">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-wa-border flex items-center justify-end gap-3">
+                            <button 
+                                @click="showCreateLinkModal = false" 
+                                class="px-4 py-2 bg-wa-surface hover:bg-wa-panel text-wa-text rounded-xl text-xs font-semibold cursor-pointer"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                @click="submitTrackingLink()" 
+                                class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                                :disabled="isCreatingLink"
+                            >
+                                <i class="fas" :class="isCreatingLink ? 'fa-spinner fa-spin' : (editingLinkSlug ? 'fa-check' : 'fa-link')"></i>
+                                <span x-text="isCreatingLink ? (editingLinkSlug ? 'Saving...' : 'Creating...') : (editingLinkSlug ? 'Save Changes' : 'Generate Short Link')"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: LINK DETAILED ANALYTICS -->
+            <div x-show="showLinkStatsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+                <div class="glass-panel w-full max-w-2xl rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+                    <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                        <div>
+                            <h3 class="font-bold text-base text-white flex items-center gap-2">
+                                <i class="fas fa-chart-pie text-indigo-400"></i>
+                                <span x-text="'Analytics: ' + (activeLinkStats?.link?.title || 'Link Stats')"></span>
+                            </h3>
+                            <span class="text-xs font-mono text-indigo-300" x-text="'/r/' + (activeLinkStats?.link?.slug || '')"></span>
+                        </div>
+                        <button @click="showLinkStatsModal = false" class="text-wa-muted hover:text-white p-1 cursor-pointer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div x-show="!activeLinkStats" class="py-12 text-center text-wa-muted">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2 text-indigo-400"></i>
+                        <p class="text-xs">Loading analytics data...</p>
+                    </div>
+
+                    <div x-show="activeLinkStats" class="space-y-5">
+                        <!-- Stat Highlights -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border text-center">
+                                <span class="text-[10px] text-wa-muted block uppercase">Total Clicks</span>
+                                <span class="text-xl font-bold font-mono text-cyan-300" x-text="activeLinkStats?.total_clicks || 0"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border text-center">
+                                <span class="text-[10px] text-wa-muted block uppercase">Unique Users</span>
+                                <span class="text-xl font-bold font-mono text-emerald-400" x-text="activeLinkStats?.unique_visitors || activeLinkStats?.unique_clicks || 0"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border text-center">
+                                <span class="text-[10px] text-wa-muted block uppercase">Platform</span>
+                                <span class="text-sm font-bold capitalize text-yellow-300" x-text="activeLinkStats?.link?.platform || '-'"></span>
+                            </div>
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border text-center">
+                                <span class="text-[10px] text-wa-muted block uppercase">Status</span>
+                                <span class="text-xs font-bold text-emerald-400">● Active 302</span>
+                            </div>
+                        </div>
+
+                        <!-- Comprehensive Device Hardware & Location Breakdown -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <!-- Device Brand & Model -->
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border space-y-2">
+                                <span class="text-xs font-bold text-white flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-mobile-alt text-cyan-400"></i> Model & Brand</span>
+                                    <span class="text-[10px] text-wa-muted font-normal">Hardware</span>
+                                </span>
+                                <div class="space-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
+                                    <template x-for="(count, mdl) in (activeLinkStats?.model_breakdown || activeLinkStats?.device_breakdown || {})" :key="mdl">
+                                        <div class="flex items-center justify-between text-wa-text hover:text-white">
+                                            <span x-text="mdl" class="truncate max-w-[130px]" :title="mdl"></span>
+                                            <span class="font-mono font-bold text-cyan-300" x-text="count + ' (' + Math.round((count/activeLinkStats.total_clicks)*100) + '%)'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Operating System & Version -->
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border space-y-2">
+                                <span class="text-xs font-bold text-white flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-microchip text-indigo-400"></i> OS & Version</span>
+                                    <span class="text-[10px] text-wa-muted font-normal">Platform</span>
+                                </span>
+                                <div class="space-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
+                                    <template x-for="(count, osName) in (activeLinkStats?.os_version_breakdown || activeLinkStats?.os_breakdown || {})" :key="osName">
+                                        <div class="flex items-center justify-between text-wa-text hover:text-white">
+                                            <span x-text="osName" class="truncate max-w-[130px]"></span>
+                                            <span class="font-mono font-bold text-indigo-300" x-text="count + ' (' + Math.round((count/activeLinkStats.total_clicks)*100) + '%)'"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- In-App Browser & Version -->
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border space-y-2">
+                                <span class="text-xs font-bold text-white flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-compass text-emerald-400"></i> App / Browser</span>
+                                    <span class="text-[10px] text-wa-muted font-normal">Client</span>
+                                </span>
+                                <div class="space-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
+                                    <template x-for="(count, br) in (activeLinkStats?.browser_breakdown || {})" :key="br">
+                                        <div class="flex items-center justify-between text-wa-text hover:text-white">
+                                            <span x-text="br" class="truncate max-w-[130px]" :title="br"></span>
+                                            <span class="font-mono font-bold text-emerald-400" x-text="count"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Telecom Carrier & City -->
+                            <div class="p-3 bg-wa-panel rounded-xl border border-wa-border space-y-2">
+                                <span class="text-xs font-bold text-white flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5"><i class="fas fa-tower-broadcast text-yellow-400"></i> Carrier & City</span>
+                                    <span class="text-[10px] text-wa-muted font-normal">KSA Network</span>
+                                </span>
+                                <div class="space-y-1.5 text-xs max-h-36 overflow-y-auto pr-1">
+                                    <template x-for="(count, cr) in (activeLinkStats?.carrier_breakdown || {})" :key="cr">
+                                        <div class="flex items-center justify-between text-wa-text hover:text-white">
+                                            <span x-text="cr" class="truncate max-w-[130px]" :title="cr"></span>
+                                            <span class="font-mono font-bold text-yellow-300" x-text="count"></span>
+                                        </div>
+                                    </template>
+                                    <template x-for="(count, ct) in (activeLinkStats?.city_breakdown || {})" :key="ct">
+                                        <div class="flex items-center justify-between text-wa-muted text-[11px] pt-1 border-t border-wa-border/50">
+                                            <span><i class="fas fa-map-marker-alt text-red-400 mr-1 text-[10px]"></i><span x-text="ct"></span></span>
+                                            <span class="font-mono text-white" x-text="count"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Click Stream (Recent 25 events) -->
+                        <div class="space-y-2">
+                            <span class="text-xs font-bold text-white flex items-center justify-between">
+                                <span class="flex items-center gap-1.5"><i class="fas fa-history text-indigo-400"></i> Recent Visitor Clicks Stream</span>
+                                <span class="text-[10px] text-wa-muted">Live 302 Ingestion with Whole Device Capture</span>
+                            </span>
+                            <div class="bg-wa-deep rounded-xl border border-wa-border overflow-hidden max-h-56 overflow-y-auto">
+                                <table class="w-full text-left text-[11px]">
+                                    <thead class="bg-wa-panel text-wa-muted border-b border-wa-border">
+                                        <tr>
+                                            <th class="py-2 px-3">Time</th>
+                                            <th class="py-2 px-3">Platform</th>
+                                            <th class="py-2 px-3">Device Model & Hardware</th>
+                                            <th class="py-2 px-3">OS Version</th>
+                                            <th class="py-2 px-3">App / Browser</th>
+                                            <th class="py-2 px-3">City & Carrier</th>
+                                            <th class="py-2 px-3">Visitor Hash</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-wa-border font-mono">
+                                        <template x-for="c in (activeLinkStats?.recent_clicks || activeLinkStats?.recent_events || [])" :key="c.click_id || c.timestamp">
+                                            <tr class="hover:bg-wa-surface/20 text-wa-muted">
+                                                <td class="py-1.5 px-3 text-white" x-text="new Date(c.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})"></td>
+                                                <td class="py-1.5 px-3 capitalize text-yellow-300" x-text="c.platform"></td>
+                                                <td class="py-1.5 px-3 text-white font-sans font-medium" x-text="c.model || c.brand || c.device"></td>
+                                                <td class="py-1.5 px-3 text-indigo-300" x-text="c.os_full || (c.os + (c.os_version ? ' ' + c.os_version : ''))"></td>
+                                                <td class="py-1.5 px-3" x-text="c.browser_full || c.browser"></td>
+                                                <td class="py-1.5 px-3 text-[10px] text-wa-text font-sans" x-text="(c.city || 'Riyadh') + ' • ' + (c.carrier || 'STC')"></td>
+                                                <td class="py-1.5 px-3 text-[10px]" x-text="c.visitor_hash"></td>
+                                            </tr>
+                                        </template>
+                                        <tr x-show="!(activeLinkStats?.recent_clicks?.length || activeLinkStats?.recent_events?.length)">
+                                            <td colspan="7" class="py-4 text-center text-wa-muted">No clicks recorded yet. Share your link to start tracking!</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL: QR CODE GENERATOR -->
+            <div x-show="showQrModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+                <div class="glass-panel w-full max-w-sm rounded-2xl border border-wa-border p-6 space-y-4 text-center relative shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                        <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                            <i class="fas fa-qrcode text-indigo-400"></i>
+                            <span>Tracking QR Code</span>
+                        </h3>
+                        <button @click="showQrModal = false" class="text-wa-muted hover:text-white p-1 cursor-pointer">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-4 bg-white rounded-2xl inline-block shadow-lg mx-auto">
+                        <img 
+                            :src="'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(activeQrUrl)" 
+                            alt="QR Code" 
+                            class="w-48 h-48 mx-auto"
+                        >
+                    </div>
+
+                    <div class="space-y-1">
+                        <h4 class="font-bold text-xs text-white" x-text="activeQrTitle"></h4>
+                        <span class="text-[11px] text-indigo-300 font-mono block break-all" x-text="activeQrUrl"></span>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 pt-2">
+                        <button 
+                            @click="copyTextToClipboard(activeQrUrl, 'URL copied!')" 
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <i class="fas fa-copy"></i> Copy Link
+                        </button>
+                        <a 
+                            :href="'https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=' + encodeURIComponent(activeQrUrl)" 
+                            download="rush_tracking_qr.png" 
+                            target="_blank"
+                            class="px-4 py-2 bg-wa-surface hover:bg-wa-panel border border-wa-border text-wa-text rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                        >
+                            <i class="fas fa-download"></i> High-Res PNG
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 7: SETTINGS & PRICING -->
+            <div x-show="activeTab === 'settings'" class="space-y-6" x-cloak>
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                            <span>Unifonic &amp; WhatsApp Rate Cards &amp; Settings</span>
+                            <span class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-0.5 rounded-full font-bold">Billing Telemetry</span>
+                        </h2>
+                        <p class="text-xs text-wa-muted">Configure enterprise per-message rates, currency, and WABA credentials. Real-time cost analytics and campaign budgets calculate automatically.</p>
+                    </div>
+                    <button 
+                        @click="saveSettings()" 
+                        class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold rounded-xl text-xs transition-all shadow-lg flex items-center gap-2 cursor-pointer"
+                        :disabled="isSavingSettings"
+                    >
+                        <i class="fas fa-save" :class="{'fa-spin': isSavingSettings}"></i>
+                        <span x-text="isSavingSettings ? 'Saving Changes...' : 'Save Pricing & Settings'"></span>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Rate Card Configuration -->
+                    <div class="glass-panel p-6 rounded-2xl border border-wa-border space-y-5">
+                        <div class="flex items-center gap-3 border-b border-wa-border pb-3">
+                            <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center">
+                                <i class="fas fa-receipt text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-white">Message Rate Card</h3>
+                                <p class="text-[11px] text-wa-muted">Contract rates billed by Unifonic per delivered Meta conversation</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Currency -->
+                            <div class="grid grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block text-xs font-semibold text-white">Billing Currency</label>
+                                    <span class="text-[10px] text-wa-muted">Currency code used in reports</span>
+                                </div>
+                                <select 
+                                    x-model="settingsForm.currency" 
+                                    class="bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 font-bold"
+                                >
+                                    <option value="SAR">SAR - Saudi Riyal (ر.س)</option>
+                                    <option value="AED">AED - UAE Dirham (د.إ)</option>
+                                    <option value="USD">USD - US Dollar ($)</option>
+                                    <option value="KWD">KWD - Kuwaiti Dinar</option>
+                                    <option value="BHD">BHD - Bahraini Dinar</option>
+                                    <option value="QAR">QAR - Qatari Riyal</option>
+                                    <option value="OMR">OMR - Omani Rial</option>
+                                </select>
+                            </div>
+
+                            <!-- Marketing Rate -->
+                            <div class="grid grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block text-xs font-semibold text-white flex items-center gap-1.5">
+                                        <span>Marketing Rate</span>
+                                        <span class="text-[9px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold">Promotions</span>
+                                    </label>
+                                    <span class="text-[10px] text-wa-muted">Broadcasts, offers &amp; re-engagement</span>
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="number" 
+                                        step="0.001" 
+                                        min="0" 
+                                        x-model="settingsForm.cost_marketing" 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                                    >
+                                    <span class="absolute right-3 top-2 text-[10px] text-wa-muted font-bold" x-text="settingsForm.currency || 'SAR'"></span>
+                                </div>
+                            </div>
+
+                            <!-- Utility Rate -->
+                            <div class="grid grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block text-xs font-semibold text-white flex items-center gap-1.5">
+                                        <span>Utility Rate</span>
+                                        <span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-bold">Orders / Alerts</span>
+                                    </label>
+                                    <span class="text-[10px] text-wa-muted">Receipts, booking alerts, status updates</span>
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="number" 
+                                        step="0.001" 
+                                        min="0" 
+                                        x-model="settingsForm.cost_utility" 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                                    >
+                                    <span class="absolute right-3 top-2 text-[10px] text-wa-muted font-bold" x-text="settingsForm.currency || 'SAR'"></span>
+                                </div>
+                            </div>
+
+                            <!-- Authentication Rate -->
+                            <div class="grid grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block text-xs font-semibold text-white flex items-center gap-1.5">
+                                        <span>Authentication Rate</span>
+                                        <span class="text-[9px] bg-purple-500/10 text-purple-400 px-1.5 py-0.5 rounded font-bold">OTP</span>
+                                    </label>
+                                    <span class="text-[10px] text-wa-muted">One-time passwords &amp; account verify</span>
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="number" 
+                                        step="0.001" 
+                                        min="0" 
+                                        x-model="settingsForm.cost_auth" 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                                    >
+                                    <span class="absolute right-3 top-2 text-[10px] text-wa-muted font-bold" x-text="settingsForm.currency || 'SAR'"></span>
+                                </div>
+                            </div>
+
+                            <!-- Service Rate -->
+                            <div class="grid grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <label class="block text-xs font-semibold text-white flex items-center gap-1.5">
+                                        <span>Service Rate (Message 1,001+)</span>
+                                        <span class="text-[9px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded font-bold">1,000 Free/Mo</span>
+                                    </label>
+                                    <span class="text-[10px] text-wa-muted">Rate applied after 1,000 monthly free tier (Oct 1, 2026 Meta policy)</span>
+                                </div>
+                                <div class="relative">
+                                    <input 
+                                        type="number" 
+                                        step="0.001" 
+                                        min="0" 
+                                        x-model="settingsForm.cost_service" 
+                                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-400"
+                                    >
+                                    <span class="absolute right-3 top-2 text-[10px] text-wa-muted font-bold" x-text="settingsForm.currency || 'SAR'"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rule Notice -->
+                        <div class="p-3 bg-wa-panel/80 rounded-xl border border-wa-border text-[11px] text-wa-muted space-y-1.5">
+                            <div class="text-amber-400 font-semibold flex items-center gap-1">
+                                <i class="fas fa-info-circle"></i> Meta / Unifonic Billing Rules (Effective Oct 1, 2026):
+                            </div>
+                            <ul class="list-disc list-inside space-y-1 text-[10px]">
+                                <li>Charges apply only to successfully <strong>DELIVERED</strong> or <strong>READ</strong> messages.</li>
+                                <li><strong>Free Monthly Service Tier:</strong> Each business phone number receives <strong>1,000 free delivered service messages per calendar month</strong> (<code class="text-sky-300">free_customer_service</code>, <code class="text-sky-300">billable: false</code>).</li>
+                                <li><strong>Regular Charge (1,001+):</strong> Service messages exceeding the 1,000 allowance are billed as <code class="text-amber-300">regular</code> (<code class="text-amber-300">billable: true</code>) at the Service Rate above.</li>
+                                <li>The 1,000 allowance resets at 12:00 AM on the 1st of each month with <strong>no rollover</strong>.</li>
+                                <li>Failed, rejected, or undelivered messages are counted as <strong>0.00 SAR</strong>. Ensure a payment method is active in Meta Billing Hub to prevent delivery halts after 1,000 messages.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- WABA & Unifonic Credentials -->
+                    <div class="glass-panel p-6 rounded-2xl border border-wa-border space-y-5">
+                        <div class="flex items-center gap-3 border-b border-wa-border pb-3">
+                            <div class="w-8 h-8 rounded-xl bg-wa-green/10 text-wa-green-bright flex items-center justify-center">
+                                <i class="fas fa-key text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-sm text-white">Unifonic WABA Integration</h3>
+                                <p class="text-[11px] text-wa-muted">Credentials &amp; webhooks linking Unifonic and Chatwoot</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3.5">
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">Unifonic Public ID (App SID)</label>
+                                <input 
+                                    type="text" 
+                                    x-model="settingsForm.public_id" 
+                                    placeholder="e.g. 569e5d95-..." 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-wa-green"
+                                >
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">Unifonic Secret Key</label>
+                                <input 
+                                    type="password" 
+                                    x-model="settingsForm.secret_key" 
+                                    placeholder="••••••••••••••••" 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-wa-green"
+                                >
+                                <span class="text-[10px] text-wa-muted">Leave unchanged to keep currently configured secret.</span>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">WABA Sender / Channel Number</label>
+                                <input 
+                                    type="text" 
+                                    x-model="settingsForm.channel_id" 
+                                    placeholder="e.g. 96653337736" 
+                                    class="w-full bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-wa-green"
+                                >
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-wa-muted">Public Webhook URL (Registered in Unifonic)</label>
+                                <input 
+                                    type="text" 
+                                    x-model="settingsForm.https_webhook_url" 
+                                    readonly 
+                                    class="w-full bg-wa-panel/50 border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-muted font-mono"
+                                >
+                            </div>
+
+                            <div class="pt-2 flex items-center justify-between text-[11px]">
+                                <span class="text-wa-muted">Database Engine:</span>
+                                <span class="font-mono text-emerald-400" x-text="settingsForm.database"></span>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-wa-border flex items-center justify-end">
+                            <button 
+                                @click="saveSettings()" 
+                                class="px-5 py-2.5 bg-wa-green hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+                                :disabled="isSavingSettings"
+                            >
+                                <i class="fas fa-check-circle" :class="{'fa-spin': isSavingSettings}"></i>
+                                <span x-text="isSavingSettings ? 'Saving...' : 'Apply & Persist Settings'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- NEW CAMPAIGN MODAL -->
+    <div x-show="showNewCampaignModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+        <div class="glass-panel w-full max-w-xl rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl">
+            <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i class="fas fa-bullhorn text-wa-green-bright"></i>
+                    Launch New Broadcast Campaign
+                </h3>
+                <button @click="showNewCampaignModal = false" class="text-wa-muted hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Select Pre-Approved Template -->
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-wa-muted">Pre-Approved Template</label>
+                    <select 
+                        @change="onModalTemplateSelect($event.target.value)" 
+                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green"
+                    >
+                        <option value="">-- Choose from Pre-Approved Meta Templates --</option>
+                        <template x-for="t in templates" :key="t.name">
+                            <option :value="t.name" x-text="t.name + ' (' + (t.category || 'MARKETING') + ' - ' + (t.language || 'AR') + ')'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-wa-muted">Campaign Name</label>
+                    <input type="text" x-model="newCampaign.name" placeholder="e.g. VIP National Day Offer" class="w-full bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                </div>
+
+                <!-- Detected Template Variables Helper -->
+                <template x-if="getDetectedCampaignVariables().length > 0">
+                    <div class="p-3 bg-wa-panel rounded-xl border border-sky-500/30 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-sky-400 flex items-center gap-1.5">
+                                <i class="fas fa-magic"></i>
+                                <span>Template Variables Detected:</span>
+                            </span>
+                            <span class="text-[10px] text-wa-muted">Set default fallback values if omitted per customer</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <template x-for="v in getDetectedCampaignVariables()" :key="v">
+                                <div class="flex items-center gap-2 bg-wa-surface px-3 py-1.5 rounded-lg border border-wa-border text-xs">
+                                    <span class="font-mono text-wa-green-bright font-bold shrink-0" x-text="'{{' + v + '}}:'"></span>
+                                    <input 
+                                        type="text" 
+                                        x-model="newCampaign.defaultVars[v]" 
+                                        :placeholder="'Default for {{' + v + '}}'" 
+                                        class="bg-transparent border-none text-xs text-white focus:outline-none w-full font-arabic"
+                                    >
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-wa-muted">Customer Audience &amp; Variables</label>
+                        <div class="flex items-center gap-3">
+                            <button 
+                                type="button" 
+                                @click="downloadCampaignCSVTemplate()" 
+                                class="text-[11px] text-emerald-400 hover:text-emerald-300 cursor-pointer flex items-center gap-1 font-medium transition-colors"
+                                title="Download sample CSV formatted with template columns and variables"
+                            >
+                                <i class="fas fa-file-download"></i>
+                                <span>Download CSV Template</span>
+                            </button>
+                            <label class="text-[11px] text-sky-400 hover:text-white cursor-pointer flex items-center gap-1">
+                                <i class="fas fa-file-csv"></i>
+                                <span>Import CSV / TXT</span>
+                                <input type="file" class="hidden" accept=".csv,.txt" @change="handleCampaignCSVUpload($event)">
+                            </label>
+                        </div>
+                    </div>
+                    <textarea 
+                        x-model="newCampaign.rawNumbers" 
+                        rows="4" 
+                        placeholder="Format: Phone, Var1, Var2...&#10;0569809578, FIRSTWASH-123, محمد&#10;966553337736, RUSH96, أحمد" 
+                        class="w-full bg-wa-panel border border-wa-border rounded-xl p-3 text-xs text-wa-text font-mono focus:outline-none focus:border-wa-green font-arabic"
+                    ></textarea>
+                    <div class="flex items-center justify-between text-[10px] text-wa-muted">
+                        <span>Format: <code>Phone, Var1, Var2...</code> (Comma, Tab, Pipe separated)</span>
+                        <strong class="text-wa-green-bright" x-text="parseCampaignRecipients().length + ' recipients detected'"></strong>
+                    </div>
+                </div>
+
+                <!-- Live Sample Preview of Personalized Messages -->
+                <template x-if="parseCampaignRecipients().length > 0">
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-[11px] text-wa-muted font-bold uppercase tracking-wider">
+                            <span>Audience Preview (First <span x-text="Math.min(3, parseCampaignRecipients().length)"></span> of <span x-text="parseCampaignRecipients().length"></span>)</span>
+                            <span>Personalized Output</span>
+                        </div>
+                        <div class="max-h-24 overflow-y-auto rounded-xl border border-wa-border bg-wa-panel/60 divide-y divide-wa-border/50 text-[11px]">
+                            <template x-for="(rec, idx) in parseCampaignRecipients().slice(0, 3)" :key="idx">
+                                <div class="p-2 flex items-center justify-between gap-3">
+                                    <span class="font-mono text-emerald-400 shrink-0 font-bold" x-text="rec.phone"></span>
+                                    <span class="text-wa-muted truncate max-w-xs font-arabic" dir="rtl" x-text="getCampaignRecipientPreview(rec)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Media Attachment with VPS Upload & Vault Picker -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-wa-muted">Header Media URL (Optional Banner/Photo)</label>
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="openVaultPicker('campaign')" class="text-[11px] text-sky-400 hover:underline cursor-pointer flex items-center gap-1">
+                                <i class="fas fa-photo-video"></i>
+                                <span>Choose from Vault</span>
+                            </button>
+                            <label class="text-[11px] text-wa-green-bright hover:underline cursor-pointer flex items-center gap-1">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Upload New</span>
+                                <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'campaign')">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            x-model="newCampaign.mediaUrl" 
+                            placeholder="https://whatsapp.rush.com.sa/uploads/banner.jpg" 
+                            class="flex-1 bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-mono"
+                        >
+                        <template x-if="newCampaign.mediaUrl">
+                            <button @click="newCampaign.mediaUrl = ''" class="p-2 text-wa-muted hover:text-rose-400">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </template>
+                    </div>
+                    <template x-if="newCampaign.mediaUrl">
+                        <div class="p-2 rounded-xl bg-wa-surface border border-wa-border flex items-center gap-2 mt-1 max-h-20">
+                            <img :src="newCampaign.mediaUrl" alt="Campaign Banner" class="w-12 h-12 object-cover rounded-lg">
+                            <span class="text-[11px] text-wa-muted font-mono truncate" x-text="newCampaign.mediaUrl"></span>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-xs font-semibold text-wa-muted">Message Template Body</label>
+                    <textarea 
+                        x-model="newCampaign.template" 
+                        rows="4" 
+                        placeholder="أهلاً بك {{1}} في مغسلة رش! يسعدنا تقديم عرض خاص..." 
+                        class="w-full bg-wa-panel border border-wa-border rounded-xl p-3 text-xs text-wa-text font-arabic focus:outline-none focus:border-wa-green"
+                        dir="rtl"
+                    ></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-wa-border">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-wa-muted">Est. Campaign Cost:</span>
+                    <span class="text-xs font-mono font-bold text-amber-300 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg" x-text="getEstimatedCampaignCost() + ' ' + (stats.currency || 'SAR') + ' (' + (parseCampaignRecipients().length) + ' recipients)'"></span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button @click="showNewCampaignModal = false" class="px-4 py-2 text-xs text-wa-muted hover:text-white">Cancel</button>
+                    <button 
+                        @click="launchCampaign()" 
+                        class="px-5 py-2.5 bg-wa-green hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-wa-green/20 flex items-center gap-2"
+                    >
+                        <i class="fas fa-paper-plane"></i>
+                        <span>Start Broadcast</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CREATE TEMPLATE VIA API MODAL -->
+    <div x-show="showCreateTemplateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+        <div class="glass-panel w-full max-w-2xl rounded-2xl border border-wa-border p-6 space-y-5 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-wa-border pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-wa-green/20 border border-wa-green/30 flex items-center justify-center text-wa-green-bright text-sm">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Create WhatsApp Template via API</h3>
+                        <p class="text-[11px] text-wa-muted">Register Meta/Unifonic compatible templates with dynamic variables &amp; media.</p>
+                    </div>
+                </div>
+                <button @click="showCreateTemplateModal = false" class="text-wa-muted hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Tab Switcher (Form vs cURL Code) -->
+            <div class="flex items-center bg-wa-panel p-1 rounded-xl border border-wa-border">
+                <button 
+                    @click="createTemplateTab = 'form'" 
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2"
+                    :class="createTemplateTab === 'form' ? 'bg-wa-surface text-wa-green-bright shadow font-bold' : 'text-wa-muted hover:text-white'"
+                >
+                    <i class="fas fa-edit"></i>
+                    <span>Template Form</span>
+                </button>
+                <button 
+                    @click="createTemplateTab = 'api'" 
+                    class="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2"
+                    :class="createTemplateTab === 'api' ? 'bg-wa-surface text-wa-green-bright shadow font-bold' : 'text-wa-muted hover:text-white'"
+                >
+                    <i class="fas fa-terminal"></i>
+                    <span>REST API &amp; cURL Command</span>
+                </button>
+            </div>
+
+            <!-- Form Mode -->
+            <div x-show="createTemplateTab === 'form'" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-wa-muted">Template Name <span class="text-rose-400">*</span></label>
+                        <input 
+                            type="text" 
+                            x-model="newTemplateForm.name" 
+                            placeholder="e.g. rush_vip_discount" 
+                            class="w-full bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text font-mono focus:outline-none focus:border-wa-green"
+                        >
+                        <span class="text-[10px] text-wa-muted">Only lowercase letters, numbers, and underscores (Meta requirement).</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Category</label>
+                            <select x-model="newTemplateForm.category" class="w-full bg-wa-panel border border-wa-border rounded-xl px-2.5 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                                <option value="MARKETING">Marketing</option>
+                                <option value="UTILITY">Utility</option>
+                                <option value="AUTHENTICATION">Auth</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Language</label>
+                            <select x-model="newTemplateForm.language" class="w-full bg-wa-panel border border-wa-border rounded-xl px-2.5 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                                <option value="ar">Arabic (ar)</option>
+                                <option value="en">English (en)</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-wa-muted">Review Status</label>
+                            <select x-model="newTemplateForm.status" class="w-full bg-wa-panel border border-wa-border rounded-xl px-2 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-semibold text-amber-400">
+                                <option value="IN_REVIEW">In Review</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="PENDING">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Message Body -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-wa-muted">Message Body <span class="text-rose-400">*</span></label>
+                        <div class="flex items-center gap-1.5 text-[10px]">
+                            <span class="text-wa-muted">Insert:</span>
+                            <button type="button" @click="insertVariableInNewTemplate('{{1}}')" class="px-1.5 py-0.5 rounded bg-wa-surface border border-wa-border text-wa-green-bright hover:bg-wa-panel">+ {{1}} Name</button>
+                            <button type="button" @click="insertVariableInNewTemplate('{{2}}')" class="px-1.5 py-0.5 rounded bg-wa-surface border border-wa-border text-wa-green-bright hover:bg-wa-panel">+ {{2}} Code</button>
+                        </div>
+                    </div>
+                    <textarea 
+                        x-model="newTemplateForm.body" 
+                        rows="4" 
+                        placeholder="أهلاً بك {{1}} في مغسلة رش! يسعدنا تقديم كود خصم خاص {{2}}..." 
+                        class="w-full bg-wa-panel border border-wa-border rounded-xl p-3.5 text-xs text-wa-text font-arabic focus:outline-none focus:border-wa-green leading-relaxed"
+                        dir="rtl"
+                    ></textarea>
+                </div>
+
+                <!-- Header Media Attachment with Choose from Vault -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-semibold text-wa-muted">Header Media URL (Optional Image/Banner)</label>
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="openVaultPicker('create_template')" class="text-[11px] text-sky-400 hover:underline cursor-pointer flex items-center gap-1">
+                                <i class="fas fa-photo-video"></i>
+                                <span>Choose from Vault</span>
+                            </button>
+                            <label class="text-[11px] text-wa-green-bright hover:underline cursor-pointer flex items-center gap-1">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>Upload New</span>
+                                <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'create_template')">
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            x-model="newTemplateForm.mediaUrl" 
+                            placeholder="https://whatsapp.rush.com.sa/uploads/banner.jpg" 
+                            class="flex-1 bg-wa-panel border border-wa-border rounded-xl px-4 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-mono"
+                        >
+                        <template x-if="newTemplateForm.mediaUrl">
+                            <button @click="newTemplateForm.mediaUrl = ''" class="p-2 text-wa-muted hover:text-rose-400">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <div class="space-y-1.5 pt-1">
+                    <label class="text-xs font-semibold text-wa-muted">Call to Action Button (Optional)</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <select x-model="newTemplateForm.buttonType" class="bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green">
+                            <option value="URL">Visit Website (URL)</option>
+                            <option value="QUICK_REPLY">Quick Reply</option>
+                        </select>
+                        <input 
+                            type="text" 
+                            x-model="newTemplateForm.buttonText" 
+                            placeholder="Button Text (e.g. اشترك الآن)" 
+                            class="bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-arabic"
+                            dir="rtl"
+                        >
+                        <input 
+                            type="text" 
+                            x-model="newTemplateForm.buttonUrl" 
+                            placeholder="https://rush.com.sa" 
+                            class="bg-wa-panel border border-wa-border rounded-xl px-3 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green font-mono"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Developer API / cURL Mode -->
+            <div x-show="createTemplateTab === 'api'" class="space-y-3" x-cloak>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-wa-muted font-medium">Programmatic REST API Endpoint:</span>
+                    <button 
+                        @click="copyCurlSnippet()" 
+                        class="px-2.5 py-1 bg-wa-surface hover:bg-wa-panel text-white rounded-lg text-xs font-semibold border border-wa-border flex items-center gap-1.5 transition-colors"
+                    >
+                        <i class="fas fa-copy text-wa-green-bright"></i>
+                        <span>Copy cURL</span>
+                    </button>
+                </div>
+                <div class="relative bg-black/60 rounded-xl p-4 border border-wa-border font-mono text-[11px] text-emerald-400 overflow-x-auto leading-relaxed max-h-64 whitespace-pre">
+                    <code x-text="getCurlCodeSnippet()"></code>
+                </div>
+                <div class="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-[11px] text-blue-300 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5">
+                        <i class="fas fa-info-circle"></i> Direct API Automation:
+                    </p>
+                    <p class="text-blue-300/80">Send a <code class="bg-blue-900/40 px-1 py-0.5 rounded text-white font-mono">POST /api/templates</code> request with this payload from your backend, CRM, or automated workflow to create templates on-demand.</p>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-wa-border">
+                <button @click="showCreateTemplateModal = false" class="px-4 py-2 text-xs text-wa-muted hover:text-white">Cancel</button>
+                <button 
+                    @click="submitCreateTemplate()" 
+                    class="px-5 py-2.5 bg-gradient-to-r from-wa-green to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-bold rounded-xl text-xs shadow-lg shadow-wa-green/20 flex items-center gap-2"
+                    :disabled="isSubmittingTemplate"
+                >
+                    <i class="fas fa-spinner fa-spin" x-show="isSubmittingTemplate"></i>
+                    <i class="fas fa-check-circle" x-show="!isSubmittingTemplate"></i>
+                    <span x-text="isSubmittingTemplate ? 'Creating Template...' : 'Save &amp; Register Template'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MEDIA VAULT PICKER MODAL -->
+    <div x-show="showVaultPickerModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" x-cloak>
+        <div class="glass-panel w-full max-w-3xl rounded-2xl border border-wa-border p-6 space-y-4 relative shadow-2xl max-h-[85vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between border-b border-wa-border pb-3 shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-sky-500/20 border border-sky-500/30 flex items-center justify-center text-sky-400 text-sm">
+                        <i class="fas fa-photo-video"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white">Choose Media from VPS Vault</h3>
+                        <p class="text-[11px] text-wa-muted">Select an uploaded image, video, or document to attach immediately.</p>
+                    </div>
+                </div>
+                <button @click="showVaultPickerModal = false" class="text-wa-muted hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Search & Quick Upload Toolbar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="w-full sm:w-72">
+                    <input 
+                        type="text" 
+                        x-model="vaultSearchQuery" 
+                        placeholder="Search media files..." 
+                        class="w-full bg-wa-panel border border-wa-border rounded-xl px-3.5 py-2 text-xs text-wa-text focus:outline-none focus:border-wa-green"
+                    >
+                </div>
+                <label class="px-3.5 py-2 bg-wa-surface hover:bg-wa-panel text-wa-green-bright rounded-xl text-xs font-bold border border-wa-border flex items-center gap-2 cursor-pointer transition-colors shadow">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>Upload New to Vault</span>
+                    <input type="file" class="hidden" accept="image/*,video/*,application/pdf" @change="uploadMediaFile($event, 'vault_picker')">
+                </label>
+            </div>
+
+            <!-- Files Grid -->
+            <div class="flex-1 overflow-y-auto min-h-[300px]">
+                <template x-if="filteredVaultUploads().length === 0">
+                    <div class="py-16 text-center text-wa-muted space-y-2">
+                        <i class="fas fa-folder-open text-4xl opacity-40"></i>
+                        <p class="text-xs">No media files found in Vault.</p>
+                    </div>
+                </template>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                    <template x-for="item in filteredVaultUploads()" :key="item.filename">
+                        <div 
+                            @click="selectVaultMedia(item.url)"
+                            class="glass-panel p-2.5 rounded-xl border border-wa-border hover:border-wa-green/60 cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between group shadow"
+                        >
+                            <!-- Thumbnail -->
+                            <div class="w-full h-28 rounded-lg overflow-hidden bg-black/40 border border-white/5 flex items-center justify-center relative">
+                                <template x-if="item.is_image">
+                                    <img :src="item.url" :alt="item.filename" class="w-full h-full object-cover">
+                                </template>
+                                <template x-if="!item.is_image">
+                                    <div class="text-center p-2 text-wa-muted">
+                                        <i class="fas fa-file-pdf text-rose-400 text-3xl mb-1"></i>
+                                        <span class="text-[10px] block truncate font-mono" x-text="item.filename"></span>
+                                    </div>
+                                </template>
+                                <div class="absolute inset-0 bg-wa-green/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span class="px-2.5 py-1 rounded-lg bg-wa-green text-white font-bold text-[11px] shadow">Select</span>
+                                </div>
+                            </div>
+
+                            <!-- Meta -->
+                            <div class="pt-2">
+                                <span class="font-mono text-[11px] text-white truncate block" x-text="item.filename"></span>
+                                <div class="flex items-center justify-between text-[10px] text-wa-muted pt-0.5">
+                                    <span x-text="item.size || ''"></span>
+                                    <span x-text="formatDate(item.uploaded_at)"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-between pt-3 border-t border-wa-border shrink-0">
+                <span class="text-xs text-wa-muted">
+                    Total Assets: <strong class="text-white" x-text="uploads.length"></strong>
+                </span>
+                <button @click="showVaultPickerModal = false" class="px-4 py-2 text-xs text-wa-muted hover:text-white">Close</button>
+            </div>
+        </div>
+    </div>
+
+    </body>
+</html>
+"""

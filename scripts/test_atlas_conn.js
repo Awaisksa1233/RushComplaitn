@@ -28,7 +28,7 @@ function sanitizeMongoUri(uri) {
   return uri;
 }
 
-const rawUri = process.env.MONGODB_URI;
+const rawUri = process.env.ATLAS_URI;
 const uri = sanitizeMongoUri(rawUri);
 
 console.log('Connecting to Atlas...');

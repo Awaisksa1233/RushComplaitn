@@ -42,6 +42,7 @@ const args = process.argv.slice(2);
 const isFullSync = args.includes('--full');
 const isAllDbs = args.includes('--all');
 const autoProcess = args.includes('--process');
+const noLocal = args.includes('--no-local');
 
 const sinceArgIdx = args.indexOf('--since');
 const customSince = sinceArgIdx !== -1 && args[sinceArgIdx + 1] ? args[sinceArgIdx + 1] : null;
@@ -70,12 +71,13 @@ const CORE_CRM_COLLECTIONS = [
   'rushwash_refund_requests'
 ];
 
-const rawUri = process.env.MONGODB_URI;
+const rawUri = process.env.ATLAS_URI;
 if (!rawUri) {
-  console.error('[!] Error: MONGODB_URI is not defined in .env');
+  console.error('[!] Error: ATLAS_URI is not defined in .env');
   process.exit(1);
 }
 const uri = sanitizeMongoUri(rawUri);
+const LOCAL_MONGO_URI = process.env.LOCAL_MONGO_URI || 'mongodb://127.0.0.1:27017';
 
 const baseBackupDir = path.join(__dirname, '..', 'database', 'atlas_backup');
 const latestBackupDir = path.join(baseBackupDir, 'latest');
@@ -148,16 +150,36 @@ async function loadExistingMap(jsonlPath) {
   return map;
 }
 
+// Ensure indexes on local collection
+async function ensureLocalIndexes(localCol, indexes) {
+  if (!localCol || !indexes || !Array.isArray(indexes)) return;
+  try {
+    const existing = await localCol.indexes().catch(() => []);
+    const existingNames = new Set(existing.map(i => i.name));
+    for (const idx of indexes) {
+      if (idx.name === '_id_' || existingNames.has(idx.name)) continue;
+      const keys = idx.key;
+      const options = { name: idx.name };
+      if (idx.unique) options.unique = true;
+      if (idx.sparse) options.sparse = true;
+      if (idx.expireAfterSeconds !== undefined) options.expireAfterSeconds = idx.expireAfterSeconds;
+      await localCol.createIndex(keys, options).catch(() => {});
+    }
+  } catch (e) {}
+}
+
 // Sync a single collection (delta or full)
-async function syncCollection(db, collectionName, targetDir, sinceDate) {
+async function syncCollection(db, collectionName, targetDir, sinceDate, localDb) {
   const col = db.collection(collectionName);
+  const localCol = localDb ? localDb.collection(collectionName) : null;
   const totalInDb = await col.countDocuments();
   
   const jsonlFilePath = path.join(targetDir, `${collectionName}.jsonl`);
+  const deltasFilePath = path.join(targetDir, `${collectionName}.deltas.jsonl`);
   const jsonFilePath = path.join(targetDir, `${collectionName}.json`);
   const metaFilePath = path.join(targetDir, `${collectionName}.metadata.json`);
 
-  // Fetch indexes
+  // Fetch indexes from Atlas
   let indexes = [];
   try {
     indexes = await col.indexes();
@@ -170,6 +192,10 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
 
   if (isIncremental && queryCount === 0) {
     console.log(`  ✓ [${collectionName}]: Up to date (${totalInDb.toLocaleString()} docs, 0 new/modified)`);
+    // Remove stale deltas file if any
+    if (fs.existsSync(deltasFilePath)) {
+      try { fs.unlinkSync(deltasFilePath); } catch (e) {}
+    }
     // Update metadata
     fs.writeFileSync(metaFilePath, JSON.stringify({
       collection: collectionName,
@@ -177,6 +203,11 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
       totalDocs: totalInDb,
       lastSyncedAt: new Date().toISOString()
     }, null, 2), 'utf-8');
+
+    if (localCol) {
+      await ensureLocalIndexes(localCol, indexes);
+    }
+
     return { name: collectionName, totalDocs: totalInDb, deltaCount: 0, status: 'UP_TO_DATE' };
   }
 
@@ -190,7 +221,13 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
 
     let processed = 0;
     let isFirst = true;
-    const cursor = col.find(query).batchSize(2000);
+    let localBatch = [];
+    const BATCH_SIZE = 2000;
+    const cursor = col.find(query).batchSize(BATCH_SIZE);
+
+    if (localCol) {
+      await localCol.drop().catch(() => {});
+    }
 
     for await (const doc of cursor) {
       const ejsonString = BSON.EJSON.stringify(doc);
@@ -199,11 +236,29 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
       else isFirst = false;
       jsonStream.write('  ' + ejsonString);
       processed++;
+
+      if (localCol) {
+        localBatch.push(doc);
+        if (localBatch.length >= BATCH_SIZE) {
+          await localCol.insertMany(localBatch, { ordered: false }).catch(() => {});
+          localBatch = [];
+        }
+      }
     }
     jsonStream.write('\n]\n');
 
+    if (localCol && localBatch.length > 0) {
+      await localCol.insertMany(localBatch, { ordered: false }).catch(() => {});
+      localBatch = [];
+    }
+
     await new Promise(res => jsonlStream.end(res));
     await new Promise(res => jsonStream.end(res));
+
+    // Remove any delta file
+    if (fs.existsSync(deltasFilePath)) {
+      try { fs.unlinkSync(deltasFilePath); } catch (e) {}
+    }
 
     fs.writeFileSync(metaFilePath, JSON.stringify({
       collection: collectionName,
@@ -212,25 +267,59 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
       lastSyncedAt: new Date().toISOString()
     }, null, 2), 'utf-8');
 
+    if (localCol) {
+      await ensureLocalIndexes(localCol, indexes);
+      console.log(`    ✓ Local MongoDB [${collectionName}]: Rebuilt (${processed.toLocaleString()} docs)`);
+    }
+
     return { name: collectionName, totalDocs: processed, deltaCount: processed, status: 'SYNCED_FULL' };
   }
 
   // Incremental merge
   const existingMap = await loadExistingMap(jsonlFilePath);
+  const deltasStream = fs.createWriteStream(deltasFilePath, { encoding: 'utf-8' });
+
   let newlyAdded = 0;
   let updated = 0;
+  let localUpsertBatch = [];
+  const LOCAL_BATCH_SIZE = 1000;
 
   const cursor = col.find(query).batchSize(2000);
   for await (const doc of cursor) {
+    const ejsonStr = BSON.EJSON.stringify(doc);
+    deltasStream.write(ejsonStr + '\n');
+
     const idKey = doc._id ? (typeof doc._id === 'object' ? JSON.stringify(doc._id) : String(doc._id)) : null;
     if (idKey) {
       if (existingMap.has(idKey)) updated++;
       else newlyAdded++;
-      existingMap.set(idKey, BSON.EJSON.stringify(doc));
+      existingMap.set(idKey, ejsonStr);
+
+      if (localCol) {
+        localUpsertBatch.push({
+          replaceOne: {
+            filter: { _id: doc._id },
+            replacement: doc,
+            upsert: true
+          }
+        });
+
+        if (localUpsertBatch.length >= LOCAL_BATCH_SIZE) {
+          await localCol.bulkWrite(localUpsertBatch, { ordered: false });
+          localUpsertBatch = [];
+        }
+      }
     }
   }
 
-  // Write merged output
+  if (localCol && localUpsertBatch.length > 0) {
+    await localCol.bulkWrite(localUpsertBatch, { ordered: false });
+    localUpsertBatch = [];
+  }
+
+  await new Promise(res => deltasStream.end(res));
+
+  // Write merged output to files
   const jsonlStream = fs.createWriteStream(jsonlFilePath, { encoding: 'utf-8' });
   const jsonStream = fs.createWriteStream(jsonFilePath, { encoding: 'utf-8' });
   jsonStream.write('[\n');
@@ -256,8 +345,13 @@ async function syncCollection(db, collectionName, targetDir, sinceDate) {
     lastSyncedAt: new Date().toISOString()
   }, null, 2), 'utf-8');
 
-  console.log(`    ✓ Merged: +${newlyAdded} new, ${updated} updated (Total: ${count.toLocaleString()} docs)`);
-  return { name: collectionName, totalDocs: count, deltaCount: newlyAdded + updated, status: 'MERGED' };
+  if (localCol) {
+    await ensureLocalIndexes(localCol, indexes);
+  }
+
+  const deltaTotal = newlyAdded + updated;
+  console.log(`    ✓ Merged: +${newlyAdded} new, ${updated} updated (Total: ${count.toLocaleString()} docs)${localCol ? ` [Local Mongo Upserted]` : ''}`);
+  return { name: collectionName, totalDocs: count, deltaCount: deltaTotal, status: 'MERGED' };
 }
 
 async function main() {
@@ -270,6 +364,7 @@ async function main() {
   console.log(`Sync Mode:       ${lastSyncDate ? `INCREMENTAL (Since: ${lastSyncDate.toISOString()})` : 'FULL SNAPSHOT'}`);
   console.log(`Target Dir:      ${latestBackupDir}`);
   console.log(`Target Scope:    ${isAllDbs ? 'All Databases' : (customCols ? `Custom: [${customCols.join(', ')}]` : 'Core CRM Collections')}`);
+  console.log(`Local Mongo:     ${noLocal ? 'Disabled (--no-local)' : LOCAL_MONGO_URI}`);
   console.log('====================================================\n');
 
   fs.mkdirSync(latestBackupDir, { recursive: true });
@@ -279,6 +374,18 @@ async function main() {
     connectTimeoutMS: 30000,
     socketTimeoutMS: 60000,
   });
+
+  let localClient = null;
+  if (!noLocal) {
+    try {
+      localClient = new MongoClient(LOCAL_MONGO_URI, { serverSelectionTimeoutMS: 3000 });
+      await localClient.connect();
+      console.log('[+] Connected to local MongoDB instance (in-flight replication enabled).\n');
+    } catch (err) {
+      console.log('[-] Note: Local MongoDB instance not reachable, skipping direct local sync.\n');
+      localClient = null;
+    }
+  }
 
   try {
     await client.connect();
@@ -311,6 +418,7 @@ async function main() {
       fs.mkdirSync(dbDir, { recursive: true });
 
       const db = client.db(dbName);
+      const localDb = localClient ? localClient.db(dbName) : null;
       const allCols = await db.listCollections().toArray();
 
       let targetCols = allCols.map(c => c.name);
@@ -328,8 +436,12 @@ async function main() {
         collections: []
       };
 
+      let colIdx = 0;
+      const totalColsCount = targetCols.length;
       for (const colName of targetCols) {
-        const result = await syncCollection(db, colName, dbDir, lastSyncDate);
+        colIdx++;
+        console.log(`[PROGRESS] ${colIdx}/${totalColsCount}: ${colName}`);
+        const result = await syncCollection(db, colName, dbDir, lastSyncDate, localDb);
         dbSummary.collections.push(result);
         totalChangesAcrossDbs += result.deltaCount;
         totalDocsAcrossDbs += result.totalDocs;
@@ -349,6 +461,7 @@ async function main() {
     console.log(`Time Elapsed:    ${elapsedSec}s`);
     console.log(`Total Docs:      ${totalDocsAcrossDbs.toLocaleString()}`);
     console.log(`Changes Synced:  ${totalChangesAcrossDbs.toLocaleString()}`);
+    console.log(`Local Replicas:  ${localClient ? 'Updated in-flight (0s extra time)' : 'Skipped'}`);
     console.log(`Manifest:        ${manifestPath}`);
     console.log('====================================================\n');
 
@@ -368,6 +481,9 @@ async function main() {
     process.exit(1);
   } finally {
     await client.close();
+    if (localClient) {
+      await localClient.close();
+    }
   }
 }
 

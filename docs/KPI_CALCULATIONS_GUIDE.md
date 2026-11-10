@@ -33,9 +33,21 @@ A business-level summary of how Key Performance Indicators (KPIs) are defined an
 
 ### Active Memberships
 - **What It Measures**: Total count of active, paying members currently entitled to wash services.
-- **Breakdown**:
+- **Headline Definition**:
+  - Must strictly be **Active + CTE** (Active paying members + CTE / Cancelled-to-Expiry members who cancelled but whose pre-paid cycle is still active).
+- **Breakdown & KPIs**:
   - **Auto-Renewing**: Members with active automated renewal billing enabled.
-  - **Cancelled (Valid until expiry)**: Members who requested cancellation but whose pre-paid billing cycle is still running.
+  - **Cancelled (Valid until expiry / CTE)**: Members who requested cancellation but whose pre-paid billing cycle is still running.
+  - **Frozen**: Displayed as a dedicated KPI metric in the card details/stats, but **never included in the headline total**.
+
+### Valid Plans Card
+- **Default State (Toggle OFF)**: Strictly displays **Active (auto-renewal enabled)** members only.
+- **Toggle State (Toggle ON - Include Cancelled)**: Adds **VTE** (Valid-To-Expiry / Cancelled-to-Expiry members whose paid period is active).
+- **Canonical Package Categories**: All plans roll up strictly into four distinct categories:
+  - **Fresh** (all Fresh plans & Fresh combos)
+  - **Shiny** (all Shiny plans & Shiny combos)
+  - **Nano** (all Nano plans & Nano combos)
+  - **Interior cleaning** (all child add-ons & bundled interior cleans)
 
 ---
 
@@ -50,14 +62,21 @@ A business-level summary of how Key Performance Indicators (KPIs) are defined an
 - **What It Measures**: The percentage of members lost within the period relative to the active customer base.
 - **Formula**:
   $$\text{Churn Rate (\%)} = \left( \frac{\text{Total Lost Members}}{\text{Starting Member Base}} \right) \times 100\%$$
+- **Headline Window**: calendar month to date (AST) by default, following the dashboard period filter. The base is the Active + CTE members valid at the **start** of the window. Churn Today is a secondary operational line.
+- **Counting**: Voluntary = `cancelled_voluntary` by `cancelledAt`. Involuntary = `expired` with `retryCount: 5`. Involuntary lapses are only reliably tracked since the 5-retry flow began on 15 Oct 2026.
 - **Types of Churn**:
   - **Voluntary Churn**: Members who explicitly chose to cancel their subscription.
   - **Involuntary Churn**: Members lost due to repeated payment failures and expired payment cards.
 
 ---
 
-### Renewal Collection Rate
+### Renewal Collection Rate & Renewals Card
 - **What It Measures**: Efficiency in successfully collecting scheduled recurring membership renewals.
+- **Scope & Window Standards**:
+  - **Collection Rate**: Must strictly evaluate against renewals scheduled **for today** (not contaminated by multi-day or historical backlog).
+  - **Failed Declines**: Must strictly count payment declines that occurred **today** (not cumulative unrecovered backlog).
+  - **Recovered**: Maintained as renewals successfully recovered via retry within today.
+  - **Total Retry Attempts Done**: Dedicated KPI metric tracking the total retry attempts executed today.
 - **Formula**:
   $$\text{Renewal Collection Rate (\%)} = \left( \frac{\text{First-Try Payments Collected} + \text{Recovered Payments}}{\text{Total Renewals Scheduled}} \right) \times 100\%$$
 
@@ -90,6 +109,16 @@ A business-level summary of how Key Performance Indicators (KPIs) are defined an
   - **Month 6**: $\ge 72\%$ (Long-term loyalty)
 
 ---
+
+## 4. Wash Operations & Utilization
+
+### Wash Transactions Card Standards
+- **Canonical Categories**: Washes roll up strictly into four groups:
+  - **Nano** (Subscription member passes + One-time retail Nano passes)
+  - **Fresh** (Subscription member passes + One-time retail Fresh passes)
+  - **Shiny** (Subscription member passes + One-time retail Shiny passes)
+  - **Interior cleaning** (Subscription member interior cleans + One-time retail interior cleans)
+- **Total Volume**: Each category combines both subscription usage and one-time retail purchases into the unified tier count.
 
 ## 4. Wash Operations & Utilization
 

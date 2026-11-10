@@ -101,8 +101,9 @@ npm run dev:full
 
 Open your web browser and visit: **`http://localhost:5173`**
 
-## 📚 Documentation & KPI Guide
+## 📚 Documentation, RCA & KPI Guides
 
+- [**Consolidated Master RCA Blueprint (docs/MASTER_RCA_DASHBOARD.md)**](docs/MASTER_RCA_DASHBOARD.md) — Unified Root Cause Analysis (RCA v2.0) synthesizing the Oct 5 Executive Discrepancy RCA, the Legacy ETL Catalog Remap RCA, and the 13 Database Reconciliation findings.
 - [**Executive KPI Calculations Guide (docs/KPI_CALCULATIONS_GUIDE.md)**](docs/KPI_CALCULATIONS_GUIDE.md) — Comprehensive business-level summary explaining how all revenue, membership, churn, and fleet KPIs are calculated across the dashboard.
 
 ---

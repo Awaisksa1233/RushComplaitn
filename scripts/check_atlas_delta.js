@@ -30,9 +30,9 @@ function sanitizeMongoUri(uri) {
   return uri;
 }
 
-const rawUri = process.env.MONGODB_URI;
+const rawUri = process.env.ATLAS_URI;
 if (!rawUri) {
-  console.error('No MONGODB_URI found.');
+  console.error('No ATLAS_URI found.');
   process.exit(1);
 }
 

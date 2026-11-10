@@ -307,8 +307,10 @@ def run_pipeline():
         r_str = extract_date_str(s.get('renewalDate'), extract_date_str(s.get('updatedAt'), '2026-09-30'))
         renewal_date_str = r_str[:10] if len(r_str) >= 10 else '2026-09-30'
 
+        today_str = datetime.now().strftime('%Y-%m-%d')
         used_washes = wash_by_cust.get(c_code, 0) or wash_by_plate.get(plate, 0)
         status = s.get('status')
+        is_valid_to_expiry = renewal_date_str >= today_str
 
         if status == 'active':
             package_stats[pkg_key]['count'] += 1
@@ -328,6 +330,8 @@ def run_pipeline():
                 "packageId": pkg_key,
                 "packageReadableCode": s.get('packageReadableCode', pkg_def['catalogCode']),
                 "mrr": total_member_price,
+                "category": "auto_renew",
+                "isAutoRenew": True,
                 "hasInteriorAddon": has_interior,
                 "interiorSubCode": active_child.get('readableCode') if active_child else None,
                 "interiorPrice": child_price if has_interior else 0,
@@ -337,6 +341,55 @@ def run_pipeline():
                 "branch": "Al Kharj — King Abdullah Road (HQ Branch)",
                 "washesUsedThisPeriod": used_washes
             })
+        elif status in ['cancelled_voluntary', 'cancelled_billing', 'frozen'] and is_valid_to_expiry:
+            valid_label = "Frozen (Valid to Expiry)" if status == 'frozen' else "Cancelled (Valid to Expiry)"
+            valid_members.append({
+                "id": s.get('readableCode'),
+                "customerId": c_code or c_doc.get('readableCode', 'CUS-00000'),
+                "customer": cust_name,
+                "phone": phone,
+                "car": f"Vehicle ({plate})" if plate != 'N/A' else "Vehicle Registered",
+                "plate": plate,
+                "pkg": pkg_def['name'],
+                "package": pkg_def['name'],
+                "packageId": pkg_key,
+                "packageReadableCode": s.get('packageReadableCode', pkg_def['catalogCode']),
+                "mrr": total_member_price,
+                "category": "valid_to_expiry",
+                "isAutoRenew": False,
+                "hasInteriorAddon": has_interior,
+                "interiorSubCode": active_child.get('readableCode') if active_child else None,
+                "interiorPrice": child_price if has_interior else 0,
+                "renewalDate": renewal_date_str,
+                "validUntil": renewal_date_str,
+                "status": valid_label,
+                "branch": "Al Kharj — King Abdullah Road (HQ Branch)",
+                "washesUsedThisPeriod": used_washes
+            })
+            if status in ['cancelled_voluntary', 'cancelled_billing']:
+                churn_child = all_child_by_parent.get(sub_code)
+                c_child_price = float(churn_child.get('price') or 0.0) if (churn_child and churn_child.get('status') in ['cancelled_voluntary', 'cancelled_billing']) else 0.0
+                total_churn_price = main_price + c_child_price
+                if total_churn_price == 0:
+                    total_churn_price = float(pkg_def['monthlyPrice'])
+                voluntary_churns.append({
+                    "id": f"CHURN-{s.get('readableCode')}",
+                    "subscriptionCode": s.get('readableCode'),
+                    "customerId": c_code or c_doc.get('readableCode', 'CUS-00000'),
+                    "customer": cust_name,
+                    "phone": phone,
+                    "car": f"Vehicle ({plate})" if plate != 'N/A' else "Vehicle Registered",
+                    "plate": plate,
+                    "pkg": pkg_def['name'],
+                    "packageId": pkg_key,
+                    "mrr": total_churn_price,
+                    "reason": "Cancelled in-cycle (Valid until expiry)",
+                    "tenureMonths": max(1, min(12, (hash(s.get('readableCode', '')) % 6) + 1)),
+                    "ltv": total_churn_price * max(1, min(12, (hash(s.get('readableCode', '')) % 6) + 1)),
+                    "churnDate": renewal_date_str,
+                    "validUntilExpiry": True,
+                    "branch": "Al Kharj — King Abdullah Road (HQ Branch)"
+                })
         elif status in ['expired', 'terminated']:
             failed_child = all_child_by_parent.get(sub_code)
             f_child_price = float(failed_child.get('price') or 0.0) if (failed_child and failed_child.get('status') in ['expired', 'terminated']) else 0.0
@@ -358,9 +411,9 @@ def run_pipeline():
                 "recoverable": status == 'expired',
                 "branch": "Al Kharj — King Abdullah Road (HQ Branch)"
             })
-        elif status == 'cancelled_voluntary':
+        elif status in ['cancelled_voluntary', 'cancelled_billing']:
             churn_child = all_child_by_parent.get(sub_code)
-            c_child_price = float(churn_child.get('price') or 0.0) if (churn_child and churn_child.get('status') == 'cancelled_voluntary') else 0.0
+            c_child_price = float(churn_child.get('price') or 0.0) if (churn_child and churn_child.get('status') in ['cancelled_voluntary', 'cancelled_billing']) else 0.0
             total_churn_price = main_price + c_child_price
             if total_churn_price == 0:
                 total_churn_price = float(pkg_def['monthlyPrice'])
@@ -379,10 +432,13 @@ def run_pipeline():
                 "tenureMonths": max(1, min(12, (hash(s.get('readableCode', '')) % 6) + 1)),
                 "ltv": total_churn_price * max(1, min(12, (hash(s.get('readableCode', '')) % 6) + 1)),
                 "churnDate": renewal_date_str,
+                "validUntilExpiry": False,
                 "branch": "Al Kharj — King Abdullah Road (HQ Branch)"
             })
 
-    total_mrr = sum(m['mrr'] for m in valid_members)
+    active_members = [m for m in valid_members if m.get('category') == 'auto_renew']
+    valid_to_expiry_members = [m for m in valid_members if m.get('category') == 'valid_to_expiry']
+    total_mrr = sum(m['mrr'] for m in active_members)
 
     # 5. Process Sales Reps
     rep_map = {}
@@ -750,7 +806,12 @@ def run_pipeline():
             }
         },
         "metricsSummary": {
-            "activeMemberships": len(valid_members),
+            "totalValidMembers": len(valid_members),
+            "validMembers": len(valid_members),
+            "activeMembers": len(active_members),
+            "activeMemberships": len(active_members),
+            "autoRenewCount": len(active_members),
+            "cancelledValidUntilExpiryCount": len(valid_to_expiry_members),
             "totalMRR": total_mrr,
             "failedRenewalsCount": len(failed_renewals),
             "voluntaryChurnCount": len(voluntary_churns),
@@ -765,7 +826,7 @@ def run_pipeline():
             "avgMemberSale": kpi_30d_cur['avgMemberSale'],
             "avgMemberWash": kpi_30d_cur['avgMemberWash'],
             "avgSingleWash": kpi_30d_cur['avgSingleWash'],
-            "averageRevenuePerMember": round(total_mrr / len(valid_members), 1) if valid_members else 0
+            "averageRevenuePerMember": round(total_mrr / len(active_members), 1) if active_members else 0
         },
         "validMembers": valid_members,
         "failedRenewals": failed_renewals,
@@ -831,11 +892,13 @@ def run_pipeline():
     print("=========================================================")
     print("SUCCESS: Relational dataset generated successfully!")
     print(f"Destination: {os.path.abspath(OUTPUT_FILE)}")
-    print(f"Active Members:           {len(valid_members):,} (MRR: SAR {total_mrr:,})")
-    print(f"Failed Renewals in Queue: {len(failed_renewals):,}")
-    print(f"Voluntary Churn in Queue: {len(voluntary_churns):,}")
-    print(f"Sales Reps Processed:     {len(reps_list):,}")
-    print(f"Recent Washes Logged:     {len(recent_washes):,}")
+    print(f"Total Valid Members (Entitled to Wash): {len(valid_members):,}")
+    print(f"  ├── Active Members (Auto-Renew):       {len(active_members):,} (MRR: SAR {total_mrr:,})")
+    print(f"  └── Valid to Expiry (Cancelled/Frozen):{len(valid_to_expiry_members):,}")
+    print(f"Failed Renewals in Queue:                {len(failed_renewals):,}")
+    print(f"Voluntary Churn in Queue:                {len(voluntary_churns):,}")
+    print(f"Sales Reps Processed:                    {len(reps_list):,}")
+    print(f"Recent Washes Logged:                    {len(recent_washes):,}")
     print("=========================================================")
 
 if __name__ == '__main__':

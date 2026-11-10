@@ -227,7 +227,7 @@ class SettingsView(ctk.CTkFrame):
         import os
         from dotenv import load_dotenv
         load_dotenv()
-        atlas_uri = os.getenv("MONGODB_URI", "mongodb+srv://Awais:Awais%40123@prod-cluster000.djidvip.mongodb.net/rushwash")
+        atlas_uri = os.getenv("MONGODB_URI", "mongodb://127.0.0.1:27017/rushwash")  # local only; Atlas is reserved for the sync
         self.entry_uri.delete(0, "end")
         self.entry_uri.insert(0, atlas_uri)
         self.entry_db.delete(0, "end")
