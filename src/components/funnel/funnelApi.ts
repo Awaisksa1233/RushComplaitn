@@ -91,6 +91,8 @@ export interface FlowDraft {
   volume: { perHour: number; perDay: number };
   reentry: 'once' | 'per_cycle';
   approveFirstBatch: boolean;
+  trigger?: FlowTrigger;
+  exitWhen: ExitRule[];
   steps: FlowStep[];
 }
 
@@ -149,6 +151,13 @@ async function send<T>(method: 'PUT' | 'DELETE', path: string, body?: unknown): 
 
 /** Saves edits as an unpublished draft. The live flow is not changed. */
 export const saveFlowDraft = (flowId: string, draft: FlowDraft) => send<{ hasDraft: boolean }>('PUT', `/api/funnel/flows/${encodeURIComponent(flowId)}/draft`, draft);
+/** Applies the saved draft to the live flow. Starting a paused flow needs confirmStart, otherwise the server answers code 'confirm_start'. */
+export async function publishFlowDraft(flowId: string, confirmStart = false) {
+  const res = await fetch(`/api/funnel/flows/${encodeURIComponent(flowId)}/publish`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirmStart }) });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) throw Object.assign(new Error(json?.error || `HTTP ${res.status}`), { code: json?.code as string | undefined });
+  return json.data as { hasDraft: boolean };
+}
 export const discardFlowDraft = (flowId: string) => send<{ hasDraft: boolean }>('DELETE', `/api/funnel/flows/${encodeURIComponent(flowId)}/draft`);
 
 export const fetchDefinition = () => get<FunnelDefinition>('/api/funnel/definition');

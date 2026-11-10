@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { ChevronDown, Clock, GitBranch, Gift, MessageCircle, Pencil, ShieldAlert, Split } from 'lucide-react';
 import type { ExitRule, FlowConfig, FlowStep, FlowTrigger, FlowsResponse } from './funnelApi';
-import { FlowEditor } from './FlowEditor';
+import { FlowEditor, diffFlow } from './FlowEditor';
+import { publishFlowDraft } from './funnelApi';
 import { isApprovedTemplate } from './funnelGraph';
 
 const STAGE_NAME: Record<string, string> = {
@@ -77,9 +78,59 @@ function TemplateChip({ id, letter, weight, sent }: { id: string; letter?: strin
   );
 }
 
+function PublishPanel({ flow, onDone, onCancel }: { flow: FlowConfig; onDone: () => void; onCancel: () => void }) {
+  const changes = flow.draft ? diffFlow(flow, flow.draft) : [];
+  const starts = flow.draft?.status === 'running' && flow.status !== 'running';
+  const [confirmStart, setConfirmStart] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const publish = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await publishFlowDraft(flow.id, confirmStart);
+      onDone();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="border-t border-[#f2f2f2] p-4 space-y-3">
+      <h4 className="text-xs font-bold text-black">Publish this draft to the live flow?</h4>
+      {changes.length === 0 ? (
+        <p className="text-xs text-slate-500">The draft matches the live flow. Nothing would change.</p>
+      ) : (
+        <ul className="list-disc pl-5 text-xs text-slate-800 space-y-0.5">
+          {changes.map((c, i) => (
+            <li key={i}>{c}</li>
+          ))}
+        </ul>
+      )}
+      {starts && (
+        <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+          <input type="checkbox" className="mt-0.5" checked={confirmStart} onChange={(e) => setConfirmStart(e.target.checked)} />
+          <span>This starts the flow. It will begin sending WhatsApp messages to customers who qualify.</span>
+        </label>
+      )}
+      {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">{error}</div>}
+      <div className="flex gap-2">
+        <button onClick={() => void publish()} disabled={busy || (starts && !confirmStart)} className="rounded-lg bg-[#c91e2f] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
+          Publish
+        </button>
+        <button onClick={onCancel} disabled={busy} className="rounded-lg border border-[#e5e5e5] px-3 py-1.5 text-xs font-semibold text-slate-700 hover:text-black">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent: FlowsResponse['sent']; editable: boolean; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const mine = sent.filter((s) => s.flowId === flow.id);
   const totalSent = mine.reduce((a, s) => a + s.sent, 0);
   const sentFor = (stepId: string, templateId: string) => mine.filter((s) => s.stepId === stepId && s.templateId === templateId).reduce((a, s) => a + s.sent, 0);
@@ -111,9 +162,11 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
+      {open && publishing && <PublishPanel flow={flow} onCancel={() => setPublishing(false)} onDone={() => { setPublishing(false); onChanged(); }} />}
+
       {open && editing && <FlowEditor flow={flow} onClose={() => setEditing(false)} onSaved={onChanged} />}
 
-      {open && !editing && (
+      {open && !editing && !publishing && (
         <div className="border-t border-[#f2f2f2] px-4 pt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
           <button
             onClick={() => setEditing(true)}
@@ -123,11 +176,18 @@ function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent:
           >
             <Pencil className="w-3 h-3" /> {flow.hasDraft ? 'Edit draft' : 'Edit'}
           </button>
-          {flow.draft && <span>Showing the live flow below. A saved draft has unpublished changes.</span>}
+          {flow.draft && (
+            <>
+              <button onClick={() => setPublishing(true)} disabled={!editable} className="inline-flex items-center gap-1.5 rounded-lg bg-black px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50">
+                Review and publish
+              </button>
+              <span>Showing the live flow below. The saved draft has unpublished changes.</span>
+            </>
+          )}
         </div>
       )}
 
-      {open && !editing && (
+      {open && !editing && !publishing && (
         <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
           <ol className="lg:col-span-7 space-y-0">
             {flow.steps.map((s, i) => {
