@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronDown, Clock, GitBranch, Gift, MessageCircle, ShieldAlert, Split } from 'lucide-react';
+import { ChevronDown, Clock, GitBranch, Gift, MessageCircle, Pencil, ShieldAlert, Split } from 'lucide-react';
 import type { ExitRule, FlowConfig, FlowStep, FlowTrigger, FlowsResponse } from './funnelApi';
+import { FlowEditor } from './FlowEditor';
 import { isApprovedTemplate } from './funnelGraph';
 
 const STAGE_NAME: Record<string, string> = {
@@ -76,8 +77,9 @@ function TemplateChip({ id, letter, weight, sent }: { id: string; letter?: strin
   );
 }
 
-function FlowCard({ flow, sent }: { flow: FlowConfig; sent: FlowsResponse['sent'] }) {
+function FlowCard({ flow, sent, editable, onChanged }: { flow: FlowConfig; sent: FlowsResponse['sent']; editable: boolean; onChanged: () => void }) {
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const mine = sent.filter((s) => s.flowId === flow.id);
   const totalSent = mine.reduce((a, s) => a + s.sent, 0);
   const sentFor = (stepId: string, templateId: string) => mine.filter((s) => s.stepId === stepId && s.templateId === templateId).reduce((a, s) => a + s.sent, 0);
@@ -92,6 +94,7 @@ function FlowCard({ flow, sent }: { flow: FlowConfig; sent: FlowsResponse['sent'
           <span className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-black">{flow.name.en}</span>
             <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${STATUS_CLASS[flow.status] ?? STATUS_CLASS.completed}`}>{flow.status}</span>
+            {flow.hasDraft && <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700">Unpublished draft</span>}
             {pending.length > 0 && (
               <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                 {pending.length} template{pending.length === 1 ? '' : 's'} need approval
@@ -108,8 +111,24 @@ function FlowCard({ flow, sent }: { flow: FlowConfig; sent: FlowsResponse['sent'
         <ChevronDown className={`w-4 h-4 text-slate-400 shrink-0 mt-1 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && (
-        <div className="border-t border-[#f2f2f2] p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
+      {open && editing && <FlowEditor flow={flow} onClose={() => setEditing(false)} onSaved={onChanged} />}
+
+      {open && !editing && (
+        <div className="border-t border-[#f2f2f2] px-4 pt-3 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
+          <button
+            onClick={() => setEditing(true)}
+            disabled={!editable}
+            title={editable ? 'Edit this flow (saved as a draft)' : 'The funnel database is not reachable, so flows cannot be edited right now'}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-black hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Pencil className="w-3 h-3" /> {flow.hasDraft ? 'Edit draft' : 'Edit'}
+          </button>
+          {flow.draft && <span>Showing the live flow below. A saved draft has unpublished changes.</span>}
+        </div>
+      )}
+
+      {open && !editing && (
+        <div className="p-4 grid grid-cols-1 lg:grid-cols-12 gap-5">
           <ol className="lg:col-span-7 space-y-0">
             {flow.steps.map((s, i) => {
               const Icon = STEP_ICON[s.kind] ?? MessageCircle;
@@ -176,7 +195,7 @@ function FlowCard({ flow, sent }: { flow: FlowConfig; sent: FlowsResponse['sent'
   );
 }
 
-export function FlowsPanel({ data }: { data: FlowsResponse }) {
+export function FlowsPanel({ data, onChanged }: { data: FlowsResponse; onChanged: () => void }) {
   const groups = useMemo(() => {
     const membership = data.flows.filter((f) => f.id.startsWith('mf-'));
     const lifecycle = data.flows.filter((f) => !f.id.startsWith('mf-') && f.number <= 10);
@@ -218,7 +237,7 @@ export function FlowsPanel({ data }: { data: FlowsResponse }) {
           <ShieldAlert className="w-4 h-4 shrink-0 text-slate-400 mt-0.5" />
           <span>
             {data.source === 'live'
-              ? 'Read from the funnel database. View only here: starting, pausing and editing flows stays in the Funnel control panel.'
+              ? 'Read from the funnel database. You can edit a flow here; edits are saved as drafts and only go live when published in the Funnel control panel.'
               : 'The funnel database could not be read, so these are the built-in flow definitions only. Status and sent counts are not live.'}
           </span>
         </div>
@@ -230,7 +249,7 @@ export function FlowsPanel({ data }: { data: FlowsResponse }) {
           <p className="text-xs text-slate-500 mb-3">{g.note}</p>
           <div className="space-y-3">
             {g.flows.map((f) => (
-              <FlowCard key={f.id} flow={f} sent={data.sent} />
+              <FlowCard key={f.id} flow={f} sent={data.sent} editable={data.source === 'live'} onChanged={onChanged} />
             ))}
           </div>
         </section>

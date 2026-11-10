@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, RefreshCw, X } from 'lucide-react';
-import { fetchFlows, fetchFunnelGraph, fetchFunnelTrends, type CohortStage, type FlowsResponse, type FunnelGraphStats, type FunnelTrends } from './funnelApi';
+import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, Pencil, RefreshCw, X } from 'lucide-react';
+import { fetchDefinition, fetchFlows, fetchFunnelGraph, fetchFunnelTrends, type CohortStage, type FlowsResponse, type FunnelDefinition, type FunnelGraphStats, type FunnelTrends, type StageId } from './funnelApi';
+import { DefinitionEditor } from './DefinitionEditor';
 import { MF_NODES, MF_NODE_FLOW, WHY_TEXT, isApprovedTemplate } from './funnelGraph';
 import { MembershipFlowChart, stepStateOf } from './MembershipFlowChart';
 import { FunnelTrendChart, STAGE_META } from './FunnelTrendChart';
@@ -23,7 +24,7 @@ const presetFrom = (p: Preset): Date | null => (p === 'all' ? null : p === 'laun
 
 const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString() : '—');
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
-const STAGE_LABEL = Object.fromEntries(STAGE_META.map((s) => [s.id, s.label])) as Record<string, string>;
+const DEFAULT_LABELS = Object.fromEntries(STAGE_META.map((s) => [s.id, s.label])) as Record<StageId, string>;
 
 function Card({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
@@ -36,7 +37,8 @@ function Card({ title, note, children }: { title: string; note?: string; childre
 }
 
 /** Strict cohort funnel: one bar per stage, same hue (the bars are one measure, so position carries the meaning). */
-function CohortBars({ stages }: { stages: CohortStage[] }) {
+function CohortBars({ stages, labels }: { stages: CohortStage[]; labels: Record<StageId, string> }) {
+  const STAGE_LABEL = labels;
   const top = stages[0]?.count ?? 0;
   return (
     <div className="space-y-3">
@@ -139,6 +141,11 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(false);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [definition, setDefinition] = useState<FunnelDefinition | null>(null);
+  const [editingDef, setEditingDef] = useState(false);
+  const labels = definition?.stageLabels ?? DEFAULT_LABELS;
+  const reminderDay = definition?.freeWashReminderDay ?? 5;
+  const expiryDay = definition?.freeWashExpiryDay ?? 7;
 
   // A failed read clears the numbers: nothing stale is ever shown as current.
   const load = useCallback(
@@ -150,10 +157,11 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
       setLoading(true);
       const from = presetFrom(preset);
       const to = new Date();
-      const [g, t, f] = await Promise.allSettled([fetchFunnelGraph(from, to, false), fetchFunnelTrends(from, to), fetchFlows()]);
+      const [g, t, f, d] = await Promise.allSettled([fetchFunnelGraph(from, to, false), fetchFunnelTrends(from, to), fetchFlows(), fetchDefinition()]);
       setStats(g.status === 'fulfilled' ? g.value : null);
       setTrends(t.status === 'fulfilled' ? t.value : null);
       if (f.status === 'fulfilled') setFlows(f.value);
+      if (d.status === 'fulfilled') setDefinition(d.value);
       setError(g.status === 'rejected' ? (g.reason as Error).message : null);
       if (g.status === 'fulfilled') setUpdatedAt(new Date());
       setLoading(false);
@@ -276,21 +284,42 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
         {tab === 'funnel' && (
           <>
             <p className="text-xs text-slate-500 -mt-2">
-              Numbers count people who signed up in this period and what they did afterwards. Read live from the Rush database; nothing is written.
+              Numbers count people who signed up in this period and what they did afterwards. Read live from the Rush database; the Rush data is never written to.
               {stats && !stats.sources.funnelDb && ' The funnel database could not be read, so messages sent and offers are shown as dashes.'}
             </p>
 
+            {editingDef && definition && (
+              <DefinitionEditor
+                definition={definition}
+                onClose={() => setEditingDef(false)}
+                onSaved={(d) => {
+                  setDefinition(d);
+                  void load(false);
+                }}
+              />
+            )}
+
             <Card title="Conversion funnel" note="Each stage counts only people who came through the stage before it.">
-              {stats ? <CohortBars stages={stats.cohort.stages} /> : <div className="h-40 rounded-lg bg-[#fafafa] animate-pulse" />}
+              {definition && !editingDef && (
+                <button
+                  onClick={() => setEditingDef(true)}
+                  disabled={!definition.editable}
+                  title={definition.editable ? 'Edit stage names and free-wash days' : 'The funnel database is not reachable, so the definition cannot be edited right now'}
+                  className="mb-3 inline-flex items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:text-black hover:border-slate-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Pencil className="w-3 h-3" /> Edit funnel definition
+                </button>
+              )}
+              {stats ? <CohortBars stages={stats.cohort.stages} labels={labels} /> : <div className="h-40 rounded-lg bg-[#fafafa] animate-pulse" />}
             </Card>
 
             {stats && (
-              <Card title="Free-wash redemption speed" note="How quickly new sign-ups use the free wash before it expires on day 7.">
+              <Card title="Free-wash redemption speed" note={`How quickly new sign-ups use the free wash before it expires on day ${expiryDay}.`}>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
                   {[
-                    { label: 'Redeemed within 5 days', value: stats.edges.e3 },
-                    { label: 'Redeemed in days 5 to 7', value: stats.edges.e5 },
-                    { label: 'Not redeemed by day 7', value: stats.edges.e4 }
+                    { label: `Redeemed within ${reminderDay} days`, value: stats.edges.e3 },
+                    { label: `Redeemed in days ${reminderDay} to ${expiryDay}`, value: stats.edges.e5 },
+                    { label: `Not redeemed by day ${expiryDay}`, value: stats.edges.e4 }
                   ].map((x) => (
                     <div key={x.label}>
                       <div className="text-slate-500">{x.label}</div>
@@ -299,7 +328,7 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
                     </div>
                   ))}
                 </div>
-                <p className="text-[11px] text-slate-500 mt-3">“Not redeemed” counts only people whose 7 days have already passed.</p>
+                <p className="text-[11px] text-slate-500 mt-3">“Not redeemed” counts only people whose {expiryDay} days have already passed.</p>
               </Card>
             )}
 
@@ -325,11 +354,11 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
             title="People reaching each stage, per day"
             note={`First time each person reached the stage, by Riyadh calendar day.${trends?.clipped ? ' Showing the most recent 120 days of this period.' : ''}`}
           >
-            {trends ? <FunnelTrendChart trends={trends} /> : <div className="h-72 rounded-lg bg-[#fafafa] animate-pulse" />}
+            {trends ? <FunnelTrendChart trends={trends} labels={labels} /> : <div className="h-72 rounded-lg bg-[#fafafa] animate-pulse" />}
           </Card>
         )}
 
-        {tab === 'flows' && (flows ? <FlowsPanel data={flows} /> : <div className="h-72 rounded-2xl bg-white border border-[#e5e5e5] animate-pulse" />)}
+        {tab === 'flows' && (flows ? <FlowsPanel data={flows} onChanged={() => void load(false)} /> : <div className="h-72 rounded-2xl bg-white border border-[#e5e5e5] animate-pulse" />)}
       </main>
     </>
   );

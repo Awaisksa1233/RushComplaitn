@@ -75,9 +75,33 @@ export interface FlowConfig {
   approveFirstBatch: boolean;
   steps: FlowStep[];
   hasDraft: boolean;
+  /** Unpublished edits. Never sent; the live fields above stay in force until the draft is published in the Funnel control panel. */
+  draft?: FlowDraft;
   trigger?: FlowTrigger;
   exitWhen?: ExitRule[];
   reentry?: 'once' | 'per_cycle';
+}
+
+/** The editable part of a flow. */
+export interface FlowDraft {
+  name: { en: string; ar?: string };
+  description: { en: string; ar?: string };
+  status: 'running' | 'paused';
+  window: { days: number[]; startHour: number; endHour: number };
+  volume: { perHour: number; perDay: number };
+  reentry: 'once' | 'per_cycle';
+  approveFirstBatch: boolean;
+  steps: FlowStep[];
+}
+
+export interface FunnelDefinition {
+  stageLabels: Record<StageId, string>;
+  freeWashReminderDay: number;
+  freeWashExpiryDay: number;
+  /** false = built-in defaults. */
+  custom: boolean;
+  /** false = the funnel database cannot be written right now. */
+  editable: boolean;
 }
 
 export interface FlowsResponse {
@@ -115,3 +139,18 @@ export function fetchFunnelTrends(from: Date | null, to: Date): Promise<FunnelTr
 export function fetchFlows(): Promise<FlowsResponse> {
   return get<FlowsResponse>('/api/funnel/flows');
 }
+
+async function send<T>(method: 'PUT' | 'DELETE', path: string, body?: unknown): Promise<T> {
+  const res = await fetch(path, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.success) throw new Error(json?.error || `HTTP ${res.status}`);
+  return json.data as T;
+}
+
+/** Saves edits as an unpublished draft. The live flow is not changed. */
+export const saveFlowDraft = (flowId: string, draft: FlowDraft) => send<{ hasDraft: boolean }>('PUT', `/api/funnel/flows/${encodeURIComponent(flowId)}/draft`, draft);
+export const discardFlowDraft = (flowId: string) => send<{ hasDraft: boolean }>('DELETE', `/api/funnel/flows/${encodeURIComponent(flowId)}/draft`);
+
+export const fetchDefinition = () => get<FunnelDefinition>('/api/funnel/definition');
+export const saveDefinition = (d: Pick<FunnelDefinition, 'stageLabels' | 'freeWashReminderDay' | 'freeWashExpiryDay'>) => send<FunnelDefinition>('PUT', '/api/funnel/definition', d);
+export const resetDefinition = () => send<FunnelDefinition>('DELETE', '/api/funnel/definition');

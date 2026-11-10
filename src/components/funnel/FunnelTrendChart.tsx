@@ -21,11 +21,12 @@ const niceMax = (v: number) => {
 };
 const dayLabel = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
-export function FunnelTrendChart({ trends }: { trends: FunnelTrends }) {
+export function FunnelTrendChart({ trends, labels }: { trends: FunnelTrends; labels?: Record<StageId, string> }) {
   const [hidden, setHidden] = useState<Set<StageId>>(new Set());
   const [hover, setHover] = useState<number | null>(null);
   const { days, series } = trends;
-  const shown = STAGE_META.filter((s) => !hidden.has(s.id));
+  const meta = STAGE_META.map((s) => ({ ...s, label: labels?.[s.id] || s.label }));
+  const shown = meta.filter((s) => !hidden.has(s.id));
 
   const yMax = useMemo(() => niceMax(Math.max(1, ...shown.flatMap((s) => series[s.id]))), [shown, series]);
   const innerW = W - PAD.left - PAD.right;
@@ -56,7 +57,7 @@ export function FunnelTrendChart({ trends }: { trends: FunnelTrends }) {
     <div>
       {/* Legend doubles as the show/hide control */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {STAGE_META.map((s) => {
+        {meta.map((s) => {
           const off = hidden.has(s.id);
           const total = series[s.id].reduce((a, b) => a + b, 0);
           return (
@@ -127,7 +128,7 @@ export function FunnelTrendChart({ trends }: { trends: FunnelTrends }) {
             </tr>
           </thead>
           <tbody>
-            {STAGE_META.map((s) => {
+            {meta.map((s) => {
               const vals = series[s.id];
               const total = vals.reduce((a, b) => a + b, 0);
               const peak = Math.max(...vals);

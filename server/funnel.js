@@ -153,8 +153,11 @@ async function deriveStageEvents(db) {
 }
 
 // ---- Pure analytics (analytics/cohort.ts and analytics/membership-graph.ts) ----
-const FREE_WASH_REMINDER_DAY = 5;
-const FREE_WASH_EXPIRY_DAY = 7;
+const DEFAULT_DEFINITION = {
+  stageLabels: { signed_up: 'Signed up', free_wash_redeemed: 'Free wash redeemed', subscribed: 'Subscribed', first_full_renewal: 'First full-price renewal' },
+  freeWashReminderDay: 5,
+  freeWashExpiryDay: 7
+};
 const CHAIN = ['signed_up', 'free_wash_redeemed', 'subscribed', 'first_full_renewal'];
 const DELIVERED_OR_BETTER = new Set(['sent', 'delivered', 'read', 'replied']);
 const UNMEASURED = {
@@ -250,7 +253,9 @@ function buildCohortFunnel(events, win) {
 }
 
 /** Real numbers for the Membership Funnel chart (nodes and arrows). */
-function buildMembershipGraph({ events, messages, window, now, promo, promoPlaceholder, includeHistorical, offersMeasured }) {
+function buildMembershipGraph({ events, messages, window, now, promo, promoPlaceholder, includeHistorical, offersMeasured, definition = DEFAULT_DEFINITION }) {
+  const FREE_WASH_REMINDER_DAY = definition.freeWashReminderDay;
+  const FREE_WASH_EXPIRY_DAY = definition.freeWashExpiryDay;
   const first = firstPerPerson(events);
   const cohort = [];
   const fromMs = window.from.getTime();
@@ -358,6 +363,107 @@ function buildTrends(events, window) {
   return { window: { from: window.from.toISOString(), to: window.to.toISOString() }, days, series };
 }
 
+// ---- Editing: validation. Edits are saved as DRAFTS; nothing here publishes or starts a flow. ----
+class ValidationError extends Error {}
+const bad = (msg) => {
+  throw new ValidationError(msg);
+};
+const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
+const text = (v, what, max = 200, { required = true } = {}) => {
+  if (v === undefined || v === null || v === '') {
+    if (required) bad(`${what} is required`);
+    return undefined;
+  }
+  if (typeof v !== 'string') bad(`${what} must be text`);
+  const t = v.trim();
+  if (required && !t) bad(`${what} is required`);
+  if (t.length > max) bad(`${what} is too long (max ${max} characters)`);
+  return t;
+};
+const int = (v, what, min, max) => {
+  if (!Number.isInteger(v) || v < min || v > max) bad(`${what} must be a whole number from ${min} to ${max}`);
+  return v;
+};
+const TEMPLATE_ID = /^[A-Za-z0-9_]{1,80}$/;
+const templateId = (v, what) => {
+  if (typeof v !== 'string' || !TEMPLATE_ID.test(v)) bad(`${what} must be a template id (letters, numbers and underscores)`);
+  return v;
+};
+
+/** Validates an edited flow against the live one. Steps can be edited but not added, removed or re-typed. */
+export function validateFlowDraft(input, live) {
+  if (!isObj(input)) bad('Send the flow as an object');
+  const out = {};
+  if (!isObj(input.name)) bad('name is required');
+  out.name = { en: text(input.name.en, 'Flow name') };
+  const ar = text(input.name.ar, 'Arabic name', 200, { required: false });
+  if (ar) out.name.ar = ar;
+  if (!isObj(input.description)) bad('description is required');
+  out.description = { en: text(input.description.en, 'Description', 1000) };
+  const dar = text(input.description.ar, 'Arabic description', 1000, { required: false });
+  if (dar) out.description.ar = dar;
+
+  if (!['running', 'paused'].includes(input.status)) bad('Status must be running or paused');
+  out.status = input.status;
+
+  if (!isObj(input.window) || !Array.isArray(input.window.days)) bad('Send window is required');
+  const days = [...new Set(input.window.days.map((d) => int(d, 'Send day', 0, 6)))].sort((a, b) => a - b);
+  if (days.length === 0) bad('Pick at least one send day');
+  const startHour = int(input.window.startHour, 'Start hour', 0, 23);
+  const endHour = int(input.window.endHour, 'End hour', 1, 24);
+  if (endHour <= startHour) bad('The send window must end after it starts');
+  out.window = { days, startHour, endHour };
+
+  if (!isObj(input.volume)) bad('Volume limit is required');
+  const perHour = int(input.volume.perHour, 'Per-hour limit', 1, 100000);
+  const perDay = int(input.volume.perDay, 'Per-day limit', 1, 1000000);
+  if (perHour > perDay) bad('The per-hour limit cannot exceed the per-day limit');
+  out.volume = { perHour, perDay };
+
+  if (!['once', 'per_cycle'].includes(input.reentry)) bad('Re-entry must be once or per_cycle');
+  out.reentry = input.reentry;
+  if (typeof input.approveFirstBatch !== 'boolean') bad('approveFirstBatch must be true or false');
+  out.approveFirstBatch = input.approveFirstBatch;
+
+  if (!Array.isArray(input.steps) || input.steps.length !== live.steps.length) bad('Steps cannot be added or removed here');
+  out.steps = input.steps.map((s, i) => {
+    const base = live.steps[i];
+    if (!isObj(s) || s.id !== base.id || s.kind !== base.kind) bad(`Step ${i + 1} does not match the flow`);
+    if (!isObj(s.name)) bad(`Step ${i + 1} needs a name`);
+    const step = { ...base, name: { ...base.name, en: text(s.name.en, `Step ${i + 1} name`) }, paused: !!s.paused };
+    if (base.kind === 'wait') step.waitHours = int(s.waitHours, `Step ${i + 1} wait (hours)`, 0, 24 * 365);
+    if (base.kind === 'send_template') {
+      if (base.variants?.length) {
+        if (!Array.isArray(s.variants) || s.variants.length !== base.variants.length) bad(`Step ${i + 1} variants do not match`);
+        step.variants = s.variants.map((v, j) => {
+          if (!isObj(v) || v.key !== base.variants[j].key) bad(`Step ${i + 1} variant ${j + 1} does not match`);
+          return { key: v.key, templateId: templateId(v.templateId, `Step ${i + 1} template ${v.key}`), weight: int(v.weight, `Step ${i + 1} weight ${v.key}`, 0, 100) };
+        });
+        if (step.variants.reduce((a, v) => a + v.weight, 0) !== 100) bad(`Step ${i + 1} A/B weights must add up to 100`);
+        step.templateId = step.variants[0].templateId;
+      } else {
+        step.templateId = templateId(s.templateId, `Step ${i + 1} template`);
+      }
+    }
+    if (base.holdoutPct !== undefined || s.holdoutPct !== undefined) {
+      if (s.holdoutPct !== undefined) step.holdoutPct = int(s.holdoutPct, `Step ${i + 1} hold-back`, 0, 100);
+    }
+    return step;
+  });
+  return out;
+}
+
+/** Validates the funnel definition (dashboard presentation only: stage names and the free-wash day thresholds). */
+export function validateDefinition(input) {
+  if (!isObj(input) || !isObj(input.stageLabels)) bad('Send the definition as an object');
+  const stageLabels = {};
+  for (const id of CHAIN) stageLabels[id] = text(input.stageLabels[id], `Name of stage "${id}"`, 60);
+  const freeWashReminderDay = int(input.freeWashReminderDay, 'Reminder day', 1, 30);
+  const freeWashExpiryDay = int(input.freeWashExpiryDay, 'Expiry day', 1, 60);
+  if (freeWashExpiryDay <= freeWashReminderDay) bad('The expiry day must come after the reminder day');
+  return { stageLabels, freeWashReminderDay, freeWashExpiryDay };
+}
+
 // ---- Routes ----
 const parseDate = (v) => {
   if (v === undefined || v === '') return undefined;
@@ -456,6 +562,88 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
     res.status(503).json({ success: false, error: `Could not read the data for ${what}. No numbers are shown rather than wrong ones.` });
   };
 
+  /** Funnel definition: stage names and free-wash day thresholds. Dashboard presentation only, so it never affects sends. */
+  async function readDefinition() {
+    try {
+      const fdb = await getFunnelDb();
+      const doc = fdb ? await fdb.collection('funnel_dashboard_config').findOne({ _id: 'funnel_definition' }) : null;
+      if (doc) return { ...validateDefinition(doc), custom: true };
+    } catch {
+      /* fall through to the defaults */
+    }
+    return { ...DEFAULT_DEFINITION, custom: false };
+  }
+
+  app.get('/api/funnel/definition', async (req, res) => {
+    const fdb = await getFunnelDb();
+    res.json({ success: true, data: { ...(await readDefinition()), editable: fdb !== null } });
+  });
+
+  app.put('/api/funnel/definition', async (req, res) => {
+    try {
+      const def = validateDefinition(req.body);
+      const fdb = await getFunnelDb();
+      if (!fdb) return res.status(503).json({ success: false, error: 'The funnel database is not reachable, so nothing was saved.' });
+      await fdb.collection('funnel_dashboard_config').updateOne({ _id: 'funnel_definition' }, { $set: { ...def, updatedAt: new Date() } }, { upsert: true });
+      res.json({ success: true, data: { ...def, custom: true, editable: true } });
+    } catch (err) {
+      if (err instanceof ValidationError) return res.status(400).json({ success: false, error: err.message });
+      unavailable(res, err, 'saving the funnel definition');
+    }
+  });
+
+  app.delete('/api/funnel/definition', async (req, res) => {
+    try {
+      const fdb = await getFunnelDb();
+      if (!fdb) return res.status(503).json({ success: false, error: 'The funnel database is not reachable, so nothing was changed.' });
+      await fdb.collection('funnel_dashboard_config').deleteOne({ _id: 'funnel_definition' });
+      res.json({ success: true, data: { ...DEFAULT_DEFINITION, custom: false, editable: true } });
+    } catch (err) {
+      unavailable(res, err, 'resetting the funnel definition');
+    }
+  });
+
+  // PUT /api/funnel/flows/:id/draft  -> saves an edited flow as a DRAFT. The live flow is never changed here.
+  // DELETE /api/funnel/flows/:id/draft -> discards the draft.
+  const flowFilter = (id) => ({ $or: [{ id }, { _id: id }] });
+  async function liveFlowOrFail(res, id) {
+    const fdb = await getFunnelDb();
+    if (!fdb) {
+      res.status(503).json({ success: false, error: 'The funnel database is not reachable, so flows cannot be edited right now.' });
+      return null;
+    }
+    const doc = await fdb.collection('funnel_flows').findOne(flowFilter(id));
+    if (!doc) {
+      res.status(404).json({ success: false, error: 'This flow is not in the funnel database, so it cannot be edited here.' });
+      return null;
+    }
+    return { fdb, doc };
+  }
+
+  app.put('/api/funnel/flows/:id/draft', async (req, res) => {
+    try {
+      const found = await liveFlowOrFail(res, req.params.id);
+      if (!found) return;
+      const draft = validateFlowDraft(req.body, found.doc);
+      await found.fdb.collection('funnel_flows').updateOne({ _id: found.doc._id }, { $set: { draft, hasDraft: true, draftUpdatedAt: new Date() } });
+      res.json({ success: true, data: { id: req.params.id, hasDraft: true, draft } });
+    } catch (err) {
+      if (err instanceof ValidationError) return res.status(400).json({ success: false, error: err.message });
+      unavailable(res, err, 'saving the draft');
+    }
+  });
+
+  app.delete('/api/funnel/flows/:id/draft', async (req, res) => {
+    try {
+      const found = await liveFlowOrFail(res, req.params.id);
+      if (!found) return;
+      await found.fdb.collection('funnel_flows').updateOne({ _id: found.doc._id }, { $unset: { draft: '', draftUpdatedAt: '' }, $set: { hasDraft: false } });
+      res.json({ success: true, data: { id: req.params.id, hasDraft: false } });
+    } catch (err) {
+      unavailable(res, err, 'discarding the draft');
+    }
+  });
+
   // GET /api/funnel/graph?from=&to=&includeHistorical=  -> numbers for the Membership Funnel chart + the strict cohort funnel
   app.get('/api/funnel/graph', async (req, res) => {
     const window = windowFrom(req, res);
@@ -490,7 +678,8 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
         promo: { offerB, offerC },
         promoPlaceholder: { offerB: isPlaceholder(SOURCES.promoOffers.offerB), offerC: isPlaceholder(SOURCES.promoOffers.offerC) },
         includeHistorical: req.query.includeHistorical === 'true',
-        offersMeasured: offers !== null
+        offersMeasured: offers !== null,
+        definition: await readDefinition()
       });
       res.json({
         success: true,
@@ -540,7 +729,7 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
           ]);
           if (docs.length > 0) {
             const flows = docs
-              .map(({ _id, draft, ...f }) => ({ ...f, id: f.id ?? String(_id), hasDraft: !!f.hasDraft }))
+              .map(({ _id, ...f }) => ({ ...f, id: f.id ?? String(_id), hasDraft: !!f.draft || !!f.hasDraft }))
               .sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
             return res.json({
               success: true,
