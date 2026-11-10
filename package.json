@@ -16,7 +16,8 @@
     "db:restore:local": "node scripts/restore_to_local_mongo.js",
     "db:restore:full": "node scripts/restore_to_local_mongo.js --full",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {
     "@xyflow/react": "^12.12.1",

@@ -145,6 +145,77 @@ export function fetchFunnelTrends(from: Date | null, to: Date): Promise<FunnelTr
   return get<FunnelTrends>(`/api/funnel/trends?${range(from, to)}`);
 }
 
+/** A step of the membership funnel on the Performance tab. `count` null = not measured (see `why`). */
+export interface PerformanceStep {
+  id: string;
+  kind: 'stage' | 'message' | 'promo';
+  /** Templates a message step sends. */
+  templates?: string[];
+  count: number | null;
+  pctOfTop?: number | null;
+  pctOfTotal?: number | null;
+  why?: string;
+}
+
+/** One WhatsApp template judged on one goal. Rates are null when they cannot be measured. */
+export interface TemplatePerformance {
+  templateId: string;
+  /** A stage id, 'promo' (promo code redeemed, not measurable yet) or 'none'. */
+  goal: string;
+  sent: number;
+  recipients: number;
+  /** Recipients who are not in the funnel (no portal sign-up), so their outcome is unknown. Left out of the rate. */
+  untracked: number;
+  /** Recipients who had already reached the goal before the message. Left out of the rate. */
+  alreadyReached: number | null;
+  eligible: number | null;
+  /** Eligible recipients whose attribution window has fully passed. The rate is converted / matured. */
+  matured: number | null;
+  converted: number | null;
+  /** Conversions among all eligible recipients, including those still inside their window. */
+  convertedSoFar: number | null;
+  rate: number | null;
+  /** false = too few matured recipients to judge. */
+  enough: boolean;
+  deliveredPct: number | null;
+  readPct: number | null;
+  why?: string;
+}
+
+export interface AbTest {
+  flowId: string;
+  flowName: string;
+  stepId: string;
+  stepName: string;
+  goal: string;
+  variants: { key: string; templateId: string; weight: number; stats: TemplatePerformance | null }[];
+  verdict: 'leader' | 'no_clear_winner' | 'too_few' | 'no_goal' | 'not_measured';
+  leader: string | null;
+}
+
+export interface FunnelPerformance {
+  window: { from: string; to: string };
+  attributionDays: number;
+  minMatured: number;
+  sources: { messages: boolean; receipts: boolean; funnelDb: boolean; flows: 'live' | 'seed'; eventsAsOf: string };
+  hero: {
+    tracked: number;
+    cohortSize: number;
+    members: number;
+    memberPct: number | null;
+    best: { templateId: string; goal: string; rate: number; matured: number } | null;
+    dropOff: { from: StageId; to: StageId; count: number; pctLost: number | null } | null;
+  };
+  snapshot: { total: number; expiredUnredeemed: number; steps: PerformanceStep[] };
+  reached: { cohortSize: number; steps: PerformanceStep[] };
+  templates: TemplatePerformance[];
+  abTests: AbTest[];
+}
+
+export function fetchFunnelPerformance(from: Date | null, to: Date): Promise<FunnelPerformance> {
+  return get<FunnelPerformance>(`/api/funnel/performance?${range(from, to)}`);
+}
+
 export function fetchFlows(): Promise<FlowsResponse> {
   return get<FlowsResponse>('/api/funnel/flows');
 }

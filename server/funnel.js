@@ -11,6 +11,7 @@
 // Anything that cannot be measured is null, never an estimate.
 import { MongoClient } from 'mongodb';
 import { SEED_FLOWS } from './funnelSeed.js';
+import { buildPerformance } from './funnelPerformance.js';
 
 const DAY = 86_400_000;
 
@@ -1111,6 +1112,50 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
       });
     } catch (err) {
       unavailable(res, err, 'the membership funnel');
+    }
+  });
+
+  // GET /api/funnel/performance?from=&to=  -> the Performance tab: where customers are right now, every step reached,
+  // and how each WhatsApp template converts to its goal. Read-only; rules are in funnelPerformance.js.
+  app.get('/api/funnel/performance', async (req, res) => {
+    const window = windowFrom(req, res);
+    if (!window) return;
+    try {
+      const [{ events, at }, fdb, definition] = await Promise.all([stageEvents(), getFunnelDb(), readDefinition()]);
+
+      let messages = null;
+      let flows = SEED_FLOWS;
+      let flowSource = 'seed';
+      if (fdb) {
+        try {
+          const rows = await fdb.collection('funnel_messages').find({}).project({ phone: 1, contactKey: 1, templateId: 1, flowId: 1, status: 1, createdAt: 1, _id: 0 }).toArray();
+          messages = rows.map((m) => ({ contactKey: pickPhone(m.contactKey, m.phone), templateId: m.templateId, flowId: m.flowId ?? null, status: m.status, timestamp: toMs(m.createdAt) }));
+        } catch {
+          messages = null;
+        }
+        try {
+          const docs = await fdb.collection('funnel_flows').find({}).project({ draft: 0 }).toArray();
+          if (docs.length > 0) {
+            flows = docs.map(({ _id, ...f }) => ({ ...f, id: f.id ?? String(_id), steps: Array.isArray(f.steps) ? f.steps : [] })).sort((a, b) => (a.number ?? 999) - (b.number ?? 999));
+            flowSource = 'live';
+          }
+        } catch {
+          /* keep the seeded definitions */
+        }
+      }
+
+      const data = buildPerformance({
+        events,
+        messages,
+        flows,
+        window,
+        now: new Date(),
+        freeWashExpiryDay: definition.freeWashExpiryDay,
+        chainStages: buildCohortFunnel(events, window).stages
+      });
+      res.json({ success: true, data: { ...data, sources: { ...data.sources, funnelDb: fdb !== null, flows: flowSource, eventsAsOf: new Date(at).toISOString() } } });
+    } catch (err) {
+      unavailable(res, err, 'the performance numbers');
     }
   });
 

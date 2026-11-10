@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, Pencil, RefreshCw, X } from 'lucide-react';
-import { fetchDefinition, fetchFlows, fetchFunnelGraph, fetchFunnelTrends, type CohortStage, type FlowsResponse, type FunnelDefinition, type FunnelGraphStats, type FunnelTrends, type StageId } from './funnelApi';
+import { fetchDefinition, fetchFlows, fetchFunnelGraph, fetchFunnelPerformance, fetchFunnelTrends, type CohortStage, type FlowsResponse, type FunnelDefinition, type FunnelGraphStats, type FunnelPerformance, type FunnelTrends, type StageId } from './funnelApi';
 import { DefinitionEditor } from './DefinitionEditor';
 import { MF_NODES, MF_NODE_FLOW, WHY_TEXT, deriveWhen, isApprovedTemplate } from './funnelGraph';
 import { delayBefore } from './flowTiming';
 import { MembershipFlowChart, stepStateOf } from './MembershipFlowChart';
 import { FunnelTrendChart, STAGE_META } from './FunnelTrendChart';
 import { FlowsPanel } from './FlowsPanel';
+import { PerformancePanel } from './PerformancePanel';
 
-type Tab = 'funnel' | 'flows' | 'trends';
+type Tab = 'funnel' | 'performance' | 'flows' | 'trends';
 type Preset = '7' | '30' | '90' | 'launch' | 'all';
 
 const DAY = 86_400_000;
@@ -137,6 +138,8 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
   const [preset, setPreset] = useState<Preset>('30');
   const [stats, setStats] = useState<FunnelGraphStats | null>(null);
   const [trends, setTrends] = useState<FunnelTrends | null>(null);
+  const [perf, setPerf] = useState<FunnelPerformance | null>(null);
+  const [perfError, setPerfError] = useState<string | null>(null);
   const [flows, setFlows] = useState<FlowsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -154,13 +157,16 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
       if (blank) {
         setStats(null);
         setTrends(null);
+        setPerf(null);
       }
       setLoading(true);
       const from = presetFrom(preset);
       const to = new Date();
-      const [g, t, f, d] = await Promise.allSettled([fetchFunnelGraph(from, to, false), fetchFunnelTrends(from, to), fetchFlows(), fetchDefinition()]);
+      const [g, t, f, d, p] = await Promise.allSettled([fetchFunnelGraph(from, to, false), fetchFunnelTrends(from, to), fetchFlows(), fetchDefinition(), fetchFunnelPerformance(from, to)]);
       setStats(g.status === 'fulfilled' ? g.value : null);
       setTrends(t.status === 'fulfilled' ? t.value : null);
+      setPerf(p.status === 'fulfilled' ? p.value : null);
+      setPerfError(p.status === 'rejected' ? (p.reason as Error).message : null);
       if (f.status === 'fulfilled') setFlows(f.value);
       if (d.status === 'fulfilled') setDefinition(d.value);
       setError(g.status === 'rejected' ? (g.reason as Error).message : null);
@@ -205,6 +211,7 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'funnel', label: 'Funnel' },
+    { id: 'performance', label: 'Performance' },
     { id: 'flows', label: `Flows${flows ? ` (${flows.flows.length})` : ''}` },
     { id: 'trends', label: 'Daily trends' }
   ];
@@ -365,6 +372,19 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
             </div>
           </>
         )}
+
+        {tab === 'performance' &&
+          (perfError && !error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-2 text-sm text-red-800">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold">Could not load the performance numbers. None are shown rather than wrong ones.</div>
+                <div className="text-xs mt-0.5">{perfError}</div>
+              </div>
+            </div>
+          ) : (
+            !error && <PerformancePanel data={perf} labels={labels} />
+          ))}
 
         {tab === 'trends' && (
           <Card
