@@ -92,6 +92,7 @@ def main():
     sftp.put(str(ROOT_DIR / "server" / "index.js"), f"{REMOTE_APP_DIR}/server/index.js")
     sftp.put(str(ROOT_DIR / "server" / "funnel.js"), f"{REMOTE_APP_DIR}/server/funnel.js")
     sftp.put(str(ROOT_DIR / "server" / "funnelSeed.js"), f"{REMOTE_APP_DIR}/server/funnelSeed.js")
+    sftp.put(str(ROOT_DIR / "server" / "funnelPerformance.js"), f"{REMOTE_APP_DIR}/server/funnelPerformance.js")
     sftp.put(str(ROOT_DIR / "package.json"), f"{REMOTE_APP_DIR}/package.json")
     
     env_content = """PORT=3001
@@ -243,6 +244,16 @@ WantedBy=multi-user.target
         usage_flow = next((f for f in flows_list if 'usage' in f.get('id', '')), None)
         if usage_flow:
             print(f"      ✓ Usage nudge flow trigger: {usage_flow.get('trigger')}")
+
+    # Verify Performance API
+    api_perf_url = "https://whatsapp.rush.com.sa/api/funnel/performance"
+    r_perf = requests.get(api_perf_url, timeout=15)
+    print(f"      GET {api_perf_url} -> Status {r_perf.status_code}")
+    if r_perf.status_code == 200:
+        perf_data = r_perf.json()
+        stages = perf_data.get('data', {}).get('stages', [])
+        tpls = perf_data.get('data', {}).get('templates', [])
+        print(f"      ✓ /api/funnel/performance returned {len(stages)} stage counts, {len(tpls)} templates")
 
     # Verify Graph API
     r_graph = requests.get(api_graph_url, timeout=15)
