@@ -31,9 +31,14 @@ const SOURCES = {
       { 'audit.createdByName': 'Portal signup' }
     ]
   },
-  freeWashCouponReadableCodes: ['DSC-00074', 'DSC-00080', 'DSC-00655', 'DSC-00665'],
-  // Offers B and C are tracked by promo code. These are still the funnel project's placeholders: they match nothing.
-  promoOffers: { offerB: ['WALLET50-PLACEHOLDER'], offerC: ['INTERIOR-PLACEHOLDER'], offerD: ['INTERIOR-MONTH-PLACEHOLDER'] },
+  freeWashCouponReadableCodes: ['DSC-00074', 'DSC-00080', 'DSC-00655', 'DSC-00665', 'DSC-00666', 'DSC-00720'],
+  // 4 Offers after Free Wash (4-way split: A=100 SAR, B=50 SAR Wallet, C=Free Interior, D=Free IC Combo Sub)
+  promoOffers: {
+    offerA: ['DSC-00667', 'RUSH100'],
+    offerB: ['DSC-00082', 'WALLET50'],
+    offerC: ['DSC-00721', 'FREE_INTERIOR', 'DSC-00055', 'FREE INT'],
+    offerD: ['DSC-00722', 'FREEIC-SUB', 'DSC-00668', 'RUSH249']
+  },
   promoPlaceholderMarker: 'PLACEHOLDER',
   activeStatuses: ['active'],
   cteStatus: 'cancelled_voluntary',
@@ -284,7 +289,29 @@ function buildMembershipGraph({ events, messages, window, now, promo, promoPlace
   const notRedeemedBy7 = matured(FREE_WASH_EXPIRY_DAY).filter((c) => !within(c, 'free_wash_redeemed', FREE_WASH_EXPIRY_DAY)).length;
   const unredeemedTotal = cohort.length - redeemedTotal;
 
-  const offersSent = offersMeasured ? cohort.filter((c) => c.at('offer_sent') !== undefined).length : null;
+  let templateSent = null;
+  if (messages) {
+    templateSent = {};
+    for (const m of messages) {
+      const t = toMs(m.createdAt);
+      if (!DELIVERED_OR_BETTER.has(m.status) || Number.isNaN(t) || t < fromMs || t >= toMsV) continue;
+      templateSent[m.templateId] = (templateSent[m.templateId] ?? 0) + 1;
+    }
+  }
+
+  const offerTemplatesTotal = templateSent
+    ? (templateSent['100_sar_a'] || 0) +
+      (templateSent['50_sar_a'] || 0) +
+      (templateSent['free_interior'] || 0) +
+      (templateSent['free_interior_membership'] || 0)
+    : 0;
+
+  const offersSent = offerTemplatesTotal > 0
+    ? offerTemplatesTotal
+    : offersMeasured
+      ? cohort.filter((c) => c.at('offer_sent') !== undefined).length
+      : null;
+
   const members = cohort.filter((c) => c.at('subscribed') !== undefined).length;
   const renewed = cohort.filter((c) => c.at('first_full_renewal') !== undefined).length;
 
@@ -306,16 +333,6 @@ function buildMembershipGraph({ events, messages, window, now, promo, promoPlace
     e25: renewed,
     e29: null
   };
-
-  let templateSent = null;
-  if (messages) {
-    templateSent = {};
-    for (const m of messages) {
-      const t = toMs(m.createdAt);
-      if (!DELIVERED_OR_BETTER.has(m.status) || Number.isNaN(t) || t < fromMs || t >= toMsV) continue;
-      templateSent[m.templateId] = (templateSent[m.templateId] ?? 0) + 1;
-    }
-  }
 
   const why = { ...UNMEASURED };
   if (!offersMeasured) why.offers = 'mfWhyNoFunnelDb';
@@ -640,29 +657,31 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
     return building;
   }
 
-  /** offer_sent events from the funnel's own database. null = it could not be read. */
-  async function offerEvents() {
+  /** All stage events (offer_sent, free_wash_redeemed, signed_up, etc.) from the funnel's own database. null = it could not be read. */
+  async function funnelDbEvents() {
     try {
       const fdb = await getFunnelDb();
       if (!fdb) return null;
-      const rows = await fdb.collection('funnel_events').find({ stageId: 'offer_sent' }).project({ contactKey: 1, contactPhone: 1, timestamp: 1, _id: 0 }).toArray();
+      const rows = await fdb.collection('funnel_events').find({}).project({ stageId: 1, contactKey: 1, contactPhone: 1, timestamp: 1, _id: 0 }).toArray();
       return rows
-        .map((r) => ({ stageId: 'offer_sent', contactKey: r.contactKey ?? r.contactPhone, timestamp: toMs(r.timestamp) }))
-        .filter((e) => e.contactKey && Number.isFinite(e.timestamp));
+        .map((r) => ({ stageId: r.stageId, contactKey: pickPhone(r.contactKey, r.contactPhone), timestamp: toMs(r.timestamp) }))
+        .filter((e) => e.stageId && e.contactKey && Number.isFinite(e.timestamp));
     } catch {
       return null;
     }
   }
 
+  const YESTERDAY_START = new Date('2026-11-09T21:00:00.000Z'); // Tuesday 10 Nov 2026 00:00 AST: funnel baseline
+
   function windowFrom(req, res) {
-    const from = parseDate(req.query.from);
+    let from = req.query.from === 'yesterday' ? YESTERDAY_START : parseDate(req.query.from);
     const to = parseDate(req.query.to);
     if (from === 'invalid' || to === 'invalid') {
       res.status(400).json({ success: false, error: 'from and to must be dates like 2026-10-01' });
       return null;
     }
     const now = new Date();
-    const window = { from: from ?? new Date(now.getTime() - 30 * DAY), to: to ?? new Date(now.getTime() + DAY) };
+    const window = { from: from ?? YESTERDAY_START, to: to ?? new Date(now.getTime() + DAY) };
     if (window.from >= window.to) {
       res.status(400).json({ success: false, error: 'from must be before to' });
       return null;
@@ -1072,7 +1091,7 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
     try {
       const now = new Date();
       const db = getSourceDb();
-      const [{ events, at }, offers, fdb] = await Promise.all([stageEvents(), offerEvents(), getFunnelDb()]);
+      const [{ events, at }, fEvents, fdb] = await Promise.all([stageEvents(), funnelDbEvents(), getFunnelDb()]);
 
       let messages = null;
       if (fdb) {
@@ -1083,30 +1102,120 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
         }
       }
 
-      const countPromo = (codes) =>
-        codes.length === 0
-          ? null
-          : db.collection(SOURCES.collections.couponRedemptions).countDocuments({ couponReadableCode: { $in: codes }, redeemedAt: { $gte: window.from, $lt: window.to } });
-      const [offerB, offerC, offerD] = await Promise.all([countPromo(SOURCES.promoOffers.offerB), countPromo(SOURCES.promoOffers.offerC), countPromo(SOURCES.promoOffers.offerD)]);
+      const OFFER_TEMPLATES = {
+        offerA: ['100_sar_a'],
+        offerB: ['50_sar_a', '50_sar_reminder_a', '50_sar_reminder_b'],
+        offerC: ['free_interior', 'free_interior_wash_reminder', 'free_interior_subscription_reminder'],
+        offerD: ['free_interior_membership', 'free_interior_subscription_reminder']
+      };
+
+      const countAttributedPromo = async (offerKey, codes) => {
+        if (!codes || codes.length === 0) return null;
+        if (!fdb) return null;
+        const templates = OFFER_TEMPLATES[offerKey] || [];
+        if (templates.length === 0) return 0;
+
+        try {
+          // 1. Find all messages sent for this offer up to window.to
+          const msgs = await fdb.collection('funnel_messages').find({
+            templateId: { $in: templates },
+            status: { $in: ['sent', 'delivered', 'read'] },
+            createdAt: { $lt: window.to }
+          }).project({ phone: 1, createdAt: 1 }).toArray();
+
+          if (msgs.length === 0) return 0;
+
+          // 2. Map phone numbers to customerCodes
+          const phones = [...new Set(msgs.map((m) => m.phone).filter(Boolean))];
+          const contacts = await fdb.collection('funnel_contacts').find({
+            phone: { $in: phones }
+          }).project({ phone: 1, customerCode: 1 }).toArray();
+
+          const phoneToCode = new Map();
+          for (const c of contacts) {
+            const p = pickPhone(c.phone);
+            if (p && c.customerCode) phoneToCode.set(p, c.customerCode);
+          }
+
+          const unmappedPhones = phones.filter((p) => !phoneToCode.has(pickPhone(p)));
+          if (unmappedPhones.length > 0) {
+            const custs = await db.collection(SOURCES.collections.customers).find({
+              phone: { $in: unmappedPhones }
+            }).project({ phone: 1, normalizedPhone: 1, readableCode: 1 }).toArray();
+            for (const c of custs) {
+              const p = pickPhone(c.normalizedPhone, c.phone);
+              if (p && c.readableCode) phoneToCode.set(p, c.readableCode);
+            }
+          }
+
+          // 3. Earliest message sent per customerCode
+          const customerFirstSent = new Map();
+          for (const m of msgs) {
+            const p = pickPhone(m.phone);
+            const code = phoneToCode.get(p);
+            if (!code) continue;
+            const sentAt = new Date(m.createdAt).getTime();
+            const existing = customerFirstSent.get(code);
+            if (existing === undefined || sentAt < existing) {
+              customerFirstSent.set(code, sentAt);
+            }
+          }
+
+          if (customerFirstSent.size === 0) return 0;
+
+          // 4. Query coupon redemptions for these customerCodes within the window
+          const redemptions = await db.collection(SOURCES.collections.couponRedemptions).find({
+            couponReadableCode: { $in: codes },
+            customerCode: { $in: Array.from(customerFirstSent.keys()) },
+            redeemedAt: { $gte: window.from, $lt: window.to }
+          }).project({ customerCode: 1, redeemedAt: 1 }).toArray();
+
+          // 5. Enforce post-message attribution: redeemedAt >= message sentAt
+          let attributedCount = 0;
+          for (const r of redemptions) {
+            const sentAt = customerFirstSent.get(r.customerCode);
+            if (sentAt !== undefined && new Date(r.redeemedAt).getTime() >= sentAt) {
+              attributedCount++;
+            }
+          }
+
+          return attributedCount;
+        } catch (err) {
+          console.error(`[Funnel] Error counting attributed promo for ${offerKey}:`, err);
+          return 0;
+        }
+      };
+
+      const [offerA, offerB, offerC, offerD] = await Promise.all([
+        countAttributedPromo('offerA', SOURCES.promoOffers.offerA),
+        countAttributedPromo('offerB', SOURCES.promoOffers.offerB),
+        countAttributedPromo('offerC', SOURCES.promoOffers.offerC),
+        countAttributedPromo('offerD', SOURCES.promoOffers.offerD)
+      ]);
       const isPlaceholder = (codes) => codes.some((c) => c.includes(SOURCES.promoPlaceholderMarker));
 
-      const all = offers ? events.concat(offers) : events;
+      const all = fEvents ? events.concat(fEvents) : events;
       const graph = buildMembershipGraph({
         events: all,
         messages,
         window,
         now,
-        promo: { offerB, offerC, offerD },
-        promoPlaceholder: { offerB: isPlaceholder(SOURCES.promoOffers.offerB), offerC: isPlaceholder(SOURCES.promoOffers.offerC), offerD: isPlaceholder(SOURCES.promoOffers.offerD) },
+        promo: { offerA, offerB, offerC, offerD },
+        promoPlaceholder: {
+          offerA: isPlaceholder(SOURCES.promoOffers.offerA),
+          offerB: isPlaceholder(SOURCES.promoOffers.offerB),
+          offerC: isPlaceholder(SOURCES.promoOffers.offerC),
+          offerD: isPlaceholder(SOURCES.promoOffers.offerD)
+        },
         includeHistorical: req.query.includeHistorical === 'true',
-        offersMeasured: offers !== null,
+        offersMeasured: fEvents !== null,
         definition: await readDefinition()
       });
       res.json({
         success: true,
         data: {
           ...graph,
-          cohort: buildCohortFunnel(events, window),
+          cohort: buildCohortFunnel(all, window),
           sources: { funnelDb: fdb !== null, messages: messages !== null, eventsAsOf: new Date(at).toISOString() }
         }
       });
@@ -1121,7 +1230,8 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
     const window = windowFrom(req, res);
     if (!window) return;
     try {
-      const [{ events, at }, fdb, definition] = await Promise.all([stageEvents(), getFunnelDb(), readDefinition()]);
+      const [{ events, at }, fEvents, fdb, definition] = await Promise.all([stageEvents(), funnelDbEvents(), getFunnelDb(), readDefinition()]);
+      const all = fEvents ? events.concat(fEvents) : events;
 
       let messages = null;
       let flows = SEED_FLOWS;
@@ -1145,13 +1255,13 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
       }
 
       const data = buildPerformance({
-        events,
+        events: all,
         messages,
         flows,
         window,
         now: new Date(),
         freeWashExpiryDay: definition.freeWashExpiryDay,
-        chainStages: buildCohortFunnel(events, window).stages
+        chainStages: buildCohortFunnel(all, window).stages
       });
       res.json({ success: true, data: { ...data, sources: { ...data.sources, funnelDb: fdb !== null, flows: flowSource, eventsAsOf: new Date(at).toISOString() } } });
     } catch (err) {
@@ -1168,8 +1278,9 @@ export function registerFunnelRoutes(app, { getSourceDb }) {
       if (window.to.getTime() > now + DAY) window.to = new Date(now + DAY);
       const clipped = window.to.getTime() - window.from.getTime() > MAX_TREND_DAYS * DAY;
       if (clipped) window.from = new Date(window.to.getTime() - MAX_TREND_DAYS * DAY);
-      const { events } = await stageEvents();
-      res.json({ success: true, data: { ...buildTrends(events, window), clipped } });
+      const [{ events }, fEvents] = await Promise.all([stageEvents(), funnelDbEvents()]);
+      const all = fEvents ? events.concat(fEvents) : events;
+      res.json({ success: true, data: { ...buildTrends(all, window), clipped } });
     } catch (err) {
       unavailable(res, err, 'the trends');
     }
