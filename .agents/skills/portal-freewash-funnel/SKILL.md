@@ -107,22 +107,54 @@ batch = selected_new + selected_old  # Exactly 100
 
 ---
 
-## 6. Day 5 Reminder & Exit Cadence (Rule 10)
+## 6. Atlas POS Snapshot Synchronization (`CMP-00033` & `DSC-00666`)
 
-Under **Rule 10 (`rush-funnel-rules`)**:
-1. **Day 0**: Customer receives `firstwash` voucher.
-2. **If Redeemed ($\ge 1$ wash)**: Advances to Post-Wash Conversion Cadence (Stage 3).
-3. **If Unredeemed on Day 5**: Receives exactly **one reminder** (`freewash_redemption_reminder`):
-   > *"يا هلا! ⏰🚗 باقي 48 ساعة بس على كود FIRSTWASH! مر رش واش وعط موترك لمعة وحماية النانو + تنظيف داخلي مجاناً. ✨"*
-4. **If Still Unredeemed after Expiry**: **STRICT EXIT**. Zero automated sequences, promotions, or discounts are ever sent to unredeemed leads.
+To ensure customers can redeem their free wash at the branch POS:
+1. Dispatched customer codes must be synchronized into the active campaign snapshot on **MongoDB Atlas**:
+   - Campaign: `CMP-00033` (`rushwash_crm_campaigns`)
+   - Coupon: `DSC-00666` (`rushwash_discounts`)
+2. Validity window is set to exactly **7 days** from dispatch date (`00:00:00 AST` on dispatch day to `23:59:59 AST` on Day 7).
+3. Script: `python -X utf8 scripts/update_cmp00033_snapshot.py both`
 
 ---
 
-## 7. Operational Commands
+## 7. Mandatory Chatwoot Synchronization (CRITICAL)
+
+All outbound WhatsApp messages sent to customers must be immediately synchronized into **Chatwoot**:
+- **Why**: Customer support agents in Chatwoot must see the full campaign history and the exact message text received by the customer.
+- **Payload Attributes**:
+  - `to_phone`: Customer's E.164 phone number
+  - `content`: Exact `firstwash` Arabic text
+  - `customer_name`: Customer name formatted with vehicle license plate, e.g. `Valued Customer (8289AAB)`
+  - `campaign_name`: `portal_freewash_firstwash`
+  - `message_id`: Unifonic outbound message ID
+- **Execution**: Run `python -X utf8 scripts/sync_freewash_sent_to_chatwoot.py` immediately following dispatch.
+
+---
+
+## 8. Lifecycle Tracking & Day 7 Atlas Removal (Rule 10)
+
+Under **Rule 10 (`rush-funnel-rules`)**:
+1. **Day 0 (Welcome)**: Customer receives `firstwash` voucher and is added to the tracking ledger.
+2. **If Redeemed ($\ge 1$ wash)**: Customer is marked as `REDEEMED` in `portal_freewash_tracking_ledger.csv` and advances to Post-Wash Conversion (Stage 3).
+3. **If Unredeemed on Day 5**: Receives exactly **one reminder** (`freewash_redemption_reminder`):
+   > *"يا هلا! ⏰🚗 باقي 48 ساعة بس على كود FIRSTWASH! مر رش واش وعط موترك لمعة وحماية النانو + تنظيف داخلي مجاناً. ✨"*
+4. **If Unredeemed on Day 7 (Strict Expiry & Removal)**:
+   - **Atlas Snapshot Removal**: Customer code is pulled from `audienceSnapshotCustomerCodes` in `CMP-00033` on MongoDB Atlas, deactivating the voucher at the POS.
+   - **Funnel Exit**: Status marked as `EXPIRED_REMOVED`. The customer strictly exits the funnel with zero future promotions or discounts.
+   - **Command**: `python -X utf8 scripts/track_and_expire_freewash_funnel.py --apply-removals`
+
+---
+
+## 9. Operational Commands Quick Reference
 
 | Action | Command |
 | :--- | :--- |
 | **Inspect Cohort (Dry-Run)** | `python -X utf8 scripts/run_daily_freewash_funnel.py` |
-| **Inspect Exported CSV** | Check `exports/dry_run_freewash_today_100.csv` |
-| **Check Sent Log** | Check `exports/portal_freewash_sent_log.csv` |
+| **Update Atlas POS Snapshot** | `python -X utf8 scripts/update_cmp00033_snapshot.py both` |
 | **Live Dispatch (After Sign-off)** | `python -X utf8 scripts/run_daily_freewash_funnel.py --dispatch --confirm` |
+| **Sync to Chatwoot** | `python -X utf8 scripts/sync_freewash_sent_to_chatwoot.py` |
+| **Audit Redemptions & Expirations** | `python -X utf8 scripts/track_and_expire_freewash_funnel.py` |
+| **Execute Day 7 Removals from Atlas** | `python -X utf8 scripts/track_and_expire_freewash_funnel.py --apply-removals` |
+| **Inspect Tracking Ledger** | Check `exports/portal_freewash_tracking_ledger.csv` |
+
