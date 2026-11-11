@@ -80,8 +80,9 @@ def main():
     )
     print("      SSH connection established.")
 
-    # 1. Create remote app directory
-    run_ssh(client, f"mkdir -p {REMOTE_APP_DIR}/server {REMOTE_APP_DIR}/dist")
+    # 1. Create remote app directory and backup
+    run_ssh(client, f"mkdir -p {REMOTE_APP_DIR}/server {REMOTE_APP_DIR}/dist {REMOTE_APP_DIR}/backups")
+    run_ssh(client, f"cp -r {REMOTE_APP_DIR}/server {REMOTE_APP_DIR}/backups/server_$(date +%Y%m%d_%H%M%S) 2>/dev/null || true")
 
     # 2. Upload dist folder, server files, package.json
     print("[2/6] Uploading compiled React bundle and Node backend...")
@@ -262,6 +263,19 @@ WantedBy=multi-user.target
         graph_data = r_graph.json()
         stages = graph_data.get('data', {}).get('cohort', {}).get('stages', [])
         print(f"      ✓ /api/funnel/graph returned cohort size: {graph_data.get('data', {}).get('cohortSize')}, {len(stages)} stages")
+
+    # Verify Signup -> Subscription Funnel API
+    api_signup_funnel = "https://whatsapp.rush.com.sa/api/funnel/signup-subscription?window=30"
+    r_signup = requests.get(api_signup_funnel, timeout=25)
+    print(f"      GET {api_signup_funnel} -> Status {r_signup.status_code}")
+    if r_signup.status_code == 200:
+        signup_data = r_signup.json()
+        steps = signup_data.get('steps', [])
+        print(f"      ✓ /api/funnel/signup-subscription returned {len(steps)} steps:")
+        for s in steps:
+            print(f"        - {s.get('label')}: {s.get('users')} users")
+    else:
+        print(f"      ! /api/funnel/signup-subscription response: {r_signup.text[:200]}")
 
     print("\n[6/6] SUCCESS: The React Funnel & Flows frontend is now fully deployed and live at https://whatsapp.rush.com.sa/funnel")
 

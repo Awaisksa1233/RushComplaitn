@@ -5,7 +5,8 @@ import {
   Users, 
   Gauge,
   FileText,
-  ShieldAlert
+  ShieldAlert,
+  Filter
 } from 'lucide-react';
 import { 
   Granularity, 
@@ -22,12 +23,14 @@ import { WashUsageDashboard } from '../charts/WashUsageDashboard';
 import { SalesTeamPerformance } from '../sales/SalesTeamPerformance';
 import { KpiGuideView } from './KpiGuideView';
 import { RcaMasterView } from './RcaMasterView';
+import { SignupConversionFunnel } from '../charts/SignupConversionFunnel';
 
 export type AnalyticsSubTab = 
   | 'sales' 
   | 'memberships' 
   | 'team' 
   | 'usage'
+  | 'funnel'
   | 'kpi_guide'
   | 'rca';
 
@@ -63,6 +66,7 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
     { id: 'memberships', label: 'Membership, Churn & Retention', icon: UserCheck, badge: 'Retention' },
     { id: 'team', label: 'Sales Team', icon: Users },
     { id: 'usage', label: 'Wash Usage & Fleet', icon: Gauge },
+    { id: 'funnel', label: 'Signup Funnel', icon: Filter, badge: 'New' },
     { id: 'kpi_guide', label: 'KPI Guide (.md)', icon: FileText, badge: 'Docs' },
     { id: 'rca', label: 'RCA Master (.md)', icon: ShieldAlert, badge: 'RCA v2.0' },
   ];
@@ -183,7 +187,14 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
         </div>
       )}
 
-      {/* 5. KPI CALCULATION GUIDE (.MD) */}
+      {/* 5. SIGNUP → SUBSCRIPTION FUNNEL */}
+      {activeSubTab === 'funnel' && (
+        <div className="animate-in fade-in duration-150">
+          <SignupConversionFunnel />
+        </div>
+      )}
+
+      {/* 6. KPI CALCULATION GUIDE (.MD) */}
       {activeSubTab === 'kpi_guide' && (
         <KpiGuideView />
       )}

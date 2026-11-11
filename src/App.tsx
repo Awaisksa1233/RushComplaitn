@@ -100,7 +100,7 @@ export function App() {
         setActiveDomain('analytics');
       }
       const sub = new URLSearchParams(window.location.search).get('sub');
-      if (sub && ['sales', 'memberships', 'team', 'usage', 'kpi_guide', 'rca'].includes(sub)) {
+      if (sub && ['sales', 'memberships', 'team', 'usage', 'funnel', 'kpi_guide', 'rca'].includes(sub)) {
         setAnalyticsSubTab(sub as AnalyticsSubTab);
       }
     }
