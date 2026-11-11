@@ -150,7 +150,25 @@ Under **Rule 10 (`rush-funnel-rules`)**:
 
 ---
 
-## 9. Operational Commands Quick Reference
+## 9. Funnel Database (`rush_funnel`) Synchronization (CRITICAL)
+
+To ensure the Membership Funnel dashboard (`https://whatsapp.rush.com.sa/funnel`) displays accurate metrics:
+1. Every dispatch and redemption event must be synced to the dedicated funnel database `rush_funnel`:
+   - **Local DB**: `mongodb://127.0.0.1:27017/rush_funnel`
+   - **VPS DB**: `mongodb://127.0.0.1:27018/rush_funnel`
+2. **Collections Updated**:
+   - `funnel_messages`: Logs every sent message with `templateId: 'firstwash'`, `flowId: 'mf-signup-coupon'`, `status: 'sent'`.
+   - `funnel_contacts`: Stores contacts, plates, customer code, and stages reached.
+   - `funnel_events`: Stores `signed_up` entry events and `free_wash_redeemed` events for customers who washed.
+3. **Execution Script**:
+   ```powershell
+   python -X utf8 scripts/sync_freewash_funnel_to_funnel_db.py
+   python -X utf8 scripts/deploy_and_sync_vps_funnel.py
+   ```
+
+---
+
+## 10. Operational Commands Quick Reference
 
 | Action | Command |
 | :--- | :--- |
@@ -158,6 +176,7 @@ Under **Rule 10 (`rush-funnel-rules`)**:
 | **Update Atlas POS Snapshot** | `python -X utf8 scripts/update_cmp00033_snapshot.py both` |
 | **Live Dispatch (After Sign-off)** | `python -X utf8 scripts/run_daily_freewash_funnel.py --dispatch --confirm` |
 | **Sync to Chatwoot** | `python -X utf8 scripts/sync_freewash_sent_to_chatwoot.py` |
+| **Sync to Funnel DB (Local & VPS)** | `python -X utf8 scripts/deploy_and_sync_vps_funnel.py` |
 | **Audit Redemptions & Expirations** | `python -X utf8 scripts/track_and_expire_freewash_funnel.py` |
 | **Execute Day 7 Removals from Atlas** | `python -X utf8 scripts/track_and_expire_freewash_funnel.py --apply-removals` |
 | **Inspect Tracking Ledger** | Check `exports/portal_freewash_tracking_ledger.csv` |
