@@ -200,7 +200,14 @@ def audit_and_track(apply_removals: bool = False):
                 user_washes.extend([(dt, norm_p) for dt in wash_by_plate[norm_p]])
 
         # Filter washes that happened on or after sent date
-        valid_redemptions = [w for w in user_washes if w[0] and (w[0].tzinfo or timezone.utc) >= sent_at_ast - timedelta(days=1)]
+        valid_redemptions = []
+        for w in user_washes:
+            if not w[0]:
+                continue
+            w_dt = w[0] if w[0].tzinfo else w[0].replace(tzinfo=timezone.utc)
+            w_ast = w_dt.astimezone(AST_TZ)
+            if w_ast >= sent_at_ast - timedelta(days=1):
+                valid_redemptions.append((w_ast, w[1]))
 
         status = "PENDING"
         first_wash_date = ""

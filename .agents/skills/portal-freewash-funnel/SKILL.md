@@ -113,8 +113,12 @@ To ensure customers can redeem their free wash at the branch POS:
 1. Dispatched customer codes must be synchronized into the active campaign snapshot on **MongoDB Atlas**:
    - Campaign: `CMP-00033` (`rushwash_crm_campaigns`)
    - Coupon: `DSC-00666` (`rushwash_discounts`)
-2. Validity window is set to exactly **7 days** from dispatch date (`00:00:00 AST` on dispatch day to `23:59:59 AST` on Day 7).
-3. Script: `python -X utf8 scripts/update_cmp00033_snapshot.py both`
+2. **Rolling 7-Day Active Snapshot Policy (CRITICAL)**:
+   - The campaign snapshot array in Atlas (`audienceSnapshotCustomerCodes`) must maintain a **rolling union of all active customer codes dispatched within their 7-day window**.
+   - When adding a new daily batch (e.g. today's 100), **NEVER overwrite or drop previous batches** that are still within their 7-day validity window (e.g. yesterday's 100 + today's 100 = 200 active codes).
+   - Customers remain in the active snapshot until their 7th day expires unredeemed or they redeem their wash.
+3. Validity window is set to span the full active window (from the earliest active batch date `00:00:00 AST` to `23:59:59 AST` on Day 7 of the latest batch).
+4. Script: `python -X utf8 scripts/update_cmp00033_snapshot.py both`
 
 ---
 

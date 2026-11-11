@@ -29,19 +29,28 @@ AST = timezone(timedelta(hours=3))
 CAMPAIGN_CODE = "CMP-00033"
 COUPON_CODE = "DSC-00666"
 
-# Load the exact 100 customer codes from today's batch CSV
-BATCH_CSV = PROJECT_ROOT / "exports" / "dry_run_freewash_today_100.csv"
-if BATCH_CSV.exists():
-    with open(BATCH_CSV, mode="r", encoding="utf-8-sig") as f:
-        NEW_CODES_100 = [row["Customer Code"].strip() for row in csv.DictReader(f) if row.get("Customer Code")]
+# Load all active customer codes from the persistent sent log (yesterday + today)
+SENT_LOG = PROJECT_ROOT / "exports" / "portal_freewash_sent_log.csv"
+if SENT_LOG.exists():
+    with open(SENT_LOG, mode="r", encoding="utf-8-sig") as f:
+        NEW_CODES_100 = list(dict.fromkeys([
+            row["Customer Code"].strip() for row in csv.DictReader(f)
+            if row.get("Customer Code") and row.get("Status") == "SENT"
+        ]))
 else:
-    print(f"[!] Error: {BATCH_CSV} not found!")
-    sys.exit(1)
+    BATCH_CSV = PROJECT_ROOT / "exports" / "dry_run_freewash_today_100.csv"
+    if BATCH_CSV.exists():
+        with open(BATCH_CSV, mode="r", encoding="utf-8-sig") as f:
+            NEW_CODES_100 = [row["Customer Code"].strip() for row in csv.DictReader(f) if row.get("Customer Code")]
+    else:
+        print(f"[!] Error: neither {SENT_LOG} nor {BATCH_CSV} found!")
+        sys.exit(1)
 
-print(f"[*] Loaded {len(NEW_CODES_100)} customer codes from {BATCH_CSV.name}")
+print(f"[*] Loaded {len(NEW_CODES_100)} active customer codes for {CAMPAIGN_CODE}")
 
-# Validity: 2026-11-11 00:00:00 AST (2026-11-10 21:00:00 UTC) to 2026-11-18 23:59:59.999 AST (2026-11-18 20:59:59.999 UTC)
-LIVE_FROM_UTC = datetime(2026, 11, 10, 21, 0, 0)
+# Validity covering rolling 7-day window:
+# From 2026-11-10 00:00:00 AST (2026-11-09 21:00:00 UTC) to 2026-11-18 23:59:59.999 AST (2026-11-18 20:59:59.999 UTC)
+LIVE_FROM_UTC = datetime(2026, 11, 9, 21, 0, 0)
 LIVE_UNTIL_UTC = datetime(2026, 11, 18, 20, 59, 59, 999000)
 
 def fmt_dt(dt):
