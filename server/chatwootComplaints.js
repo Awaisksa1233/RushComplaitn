@@ -11,10 +11,14 @@
 import 'dotenv/config';
 
 const CHATWOOT_BASE_URL = process.env.CHATWOOT_BASE_URL || 'https://chatwoot.rush.com.sa';
-const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || 'SnfMedNytvf54baCJBAPYbob';
+const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || '';
 const CHATWOOT_ACCOUNT_ID = process.env.CHATWOOT_ACCOUNT_ID || '1';
 const CHATWOOT_INBOX_ID = parseInt(process.env.CHATWOOT_INBOX_ID || '1', 10);
 const APP_PUBLIC_URL = process.env.PUBLIC_APP_URL || 'https://whatsapp.rush.com.sa';
+
+if (!CHATWOOT_API_TOKEN) {
+  console.warn('[Chatwoot Complaints] CHATWOOT_API_TOKEN is not set; Chatwoot dispatch is disabled');
+}
 
 function getHeaders() {
   return {
@@ -227,6 +231,7 @@ ${evidenceSection}
  * End-to-end Chatwoot dispatch runner for newly submitted complaints
  */
 export async function dispatchComplaintToChatwoot({ complaint, evidenceList = [] }) {
+  if (!CHATWOOT_API_TOKEN) return { success: false };
   try {
     const contact = await findOrCreateContact({
       phone: complaint.phone,

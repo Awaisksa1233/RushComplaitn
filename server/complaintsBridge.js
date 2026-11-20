@@ -11,6 +11,10 @@ import { MongoClient } from 'mongodb';
 const LOCAL_MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/rushwash';
 const DB_NAME = process.env.DB_NAME || 'rushwash';
 
+export function escapeRegex(str) {
+  return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 let cachedClient = null;
 let cachedDb = null;
 
@@ -167,14 +171,14 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
 
   // Plate match conditions
   if (plateInfo.normalizedPlate) {
-    queryConditions.push({ normalizedPlate: { $regex: plateInfo.normalizedPlate.replace('-', '.*'), $options: 'i' } });
-    queryConditions.push({ plateNumber: { $regex: plateInfo.digits, $options: 'i' } });
-    queryConditions.push({ 'vehicleSnapshot.normalizedPlate': { $regex: plateInfo.normalizedPlate.replace('-', '.*'), $options: 'i' } });
+    queryConditions.push({ normalizedPlate: { $regex: escapeRegex(plateInfo.normalizedPlate).replace('-', '.*'), $options: 'i' } });
+    if (plateInfo.digits) queryConditions.push({ plateNumber: { $regex: escapeRegex(plateInfo.digits), $options: 'i' } });
+    queryConditions.push({ 'vehicleSnapshot.normalizedPlate': { $regex: escapeRegex(plateInfo.normalizedPlate).replace('-', '.*'), $options: 'i' } });
   }
 
   // Phone match conditions
   if (phoneInfo.digits) {
-    const phoneRegex = new RegExp(phoneInfo.local || phoneInfo.digits.slice(-9));
+    const phoneRegex = new RegExp(escapeRegex(phoneInfo.local || phoneInfo.digits.slice(-9)));
     queryConditions.push({ 'customerSnapshot.phone': { $regex: phoneRegex } });
     queryConditions.push({ 'customerSnapshot.mobileNumber': { $regex: phoneRegex } });
   }
@@ -222,8 +226,7 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
       packageNameAr: canonicalPkg.nameAr,
       displayPlate,
       normalizedPlate,
-      customerName: w.customerSnapshot?.fullName || w.customerSnapshot?.name || 'عميل رش واش',
-      customerPhone: w.customerSnapshot?.phone || phoneInfo.standard
+      customerName: 'عميل رش واش'
     };
   });
 }
@@ -240,11 +243,11 @@ export async function lookupVerifiedOrders(phoneRaw, plateRaw) {
 
   const queryConditions = [];
   if (plateInfo.normalizedPlate) {
-    queryConditions.push({ normalizedPlate: { $regex: plateInfo.normalizedPlate.replace('-', '.*'), $options: 'i' } });
-    queryConditions.push({ 'vehicleSnapshot.normalizedPlate': { $regex: plateInfo.normalizedPlate.replace('-', '.*'), $options: 'i' } });
+    queryConditions.push({ normalizedPlate: { $regex: escapeRegex(plateInfo.normalizedPlate).replace('-', '.*'), $options: 'i' } });
+    queryConditions.push({ 'vehicleSnapshot.normalizedPlate': { $regex: escapeRegex(plateInfo.normalizedPlate).replace('-', '.*'), $options: 'i' } });
   }
   if (phoneInfo.digits) {
-    const phoneRegex = new RegExp(phoneInfo.local || phoneInfo.digits.slice(-9));
+    const phoneRegex = new RegExp(escapeRegex(phoneInfo.local || phoneInfo.digits.slice(-9)));
     queryConditions.push({ 'customerSnapshot.phone': { $regex: phoneRegex } });
   }
 
@@ -282,7 +285,7 @@ export async function lookupVerifiedOrders(phoneRaw, plateRaw) {
       packageNameAr: canonicalPkg.nameAr,
       status: o.status || 'paid',
       displayPlate: o.vehicleSnapshot?.displayPlate || plateInfo.displayPlate || 'N/A',
-      customerName: o.customerSnapshot?.fullName || o.customerSnapshot?.name || 'عميل رش واش'
+      customerName: 'عميل رش واش'
     };
   });
 }

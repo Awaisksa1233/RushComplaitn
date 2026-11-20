@@ -61,11 +61,31 @@ export function SupervisorDeskPage() {
     fetchComplaints();
   }, [statusFilter]);
 
+  const deskHeaders = (): Record<string, string> => {
+    let key = '';
+    try { key = sessionStorage.getItem('rush_desk_key') || ''; } catch { /* storage unavailable */ }
+    return key ? { 'x-desk-key': key } : {};
+  };
+
+  // On 401, ask the supervisor for the desk key once and retry.
+  const deskFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+    const run = () => fetch(url, { ...init, headers: { ...(init.headers as Record<string, string>), ...deskHeaders() } });
+    let res = await run();
+    if (res.status === 401) {
+      const entered = window.prompt('أدخل مفتاح مكتب المشرف (Desk key)');
+      if (entered) {
+        try { sessionStorage.setItem('rush_desk_key', entered); } catch { /* ignore */ }
+        res = await run();
+      }
+    }
+    return res;
+  };
+
   const fetchComplaints = async () => {
     setIsLoading(true);
     try {
       const url = `/api/complaints/desk/list?status=${statusFilter}&search=${encodeURIComponent(search)}`;
-      const res = await fetch(url);
+      const res = await deskFetch(url);
       const data = await res.json();
       if (data.success && data.complaints) {
         setComplaints(data.complaints);
@@ -85,7 +105,7 @@ export function SupervisorDeskPage() {
     setIsResolving(true);
     setResolutionSuccess(null);
     try {
-      const res = await fetch(`/api/complaints/desk/${encodeURIComponent(selectedTicket.ticketCode)}/resolve`, {
+      const res = await deskFetch(`/api/complaints/desk/${encodeURIComponent(selectedTicket.ticketCode)}/resolve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
