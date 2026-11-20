@@ -1,3 +1,5 @@
+import { getComplaintsApiUrl } from '../../services/complaintsClient';
+
 export type Role = 'admin' | 'supervisor';
 export interface AdminUser { id: string; username: string; displayName: string; role: Role; active?: boolean; lastLoginAt?: number | null }
 
@@ -24,7 +26,7 @@ export const setToken = (t: string) => { try { t ? sessionStorage.setItem(KEY, t
 export class ApiError extends Error { constructor(public status: number, message: string) { super(message); } }
 
 export async function api<T = any>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(`/api/admin${path}`, {
+  const res = await fetch(getComplaintsApiUrl(`/api/admin${path}`), {
     method: init.method || 'GET',
     headers: { 'Content-Type': 'application/json', ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}) },
     body: init.body === undefined ? undefined : JSON.stringify(init.body)

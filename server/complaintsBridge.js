@@ -268,7 +268,6 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
 
     const displayPlate = w.vehicleSnapshot?.displayPlate || w.plateNumber || plateInfo.displayPlate || 'N/A';
     const normalizedPlate = w.normalizedPlate || w.vehicleSnapshot?.normalizedPlate || plateInfo.normalizedPlate;
-    const customerName = w.customerSnapshot?.name || 'عميل رش واش';
 
     return {
       washId: String(w._id),
@@ -291,7 +290,7 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
       ],
       displayPlate,
       normalizedPlate,
-      customerName
+      customerName: 'عميل رش واش' // never return the stored customer name on this unauthenticated endpoint
     };
   });
 }
