@@ -265,9 +265,14 @@ export default {
 
     // 3. Static SPA Assets from ./dist
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      const response = await env.ASSETS.fetch(request);
+      if (response.status === 404 && request.method === 'GET' && !url.pathname.includes('.')) {
+        const indexUrl = new URL('/index.html', request.url);
+        return env.ASSETS.fetch(new Request(indexUrl.toString(), request));
+      }
+      return response;
     }
 
-    return new Response('RUSH Complaints Worker Running', { status: 200 });
+    return new Response('RUSH Complaints Worker Running (Assets Not Found)', { status: 404 });
   }
 };
