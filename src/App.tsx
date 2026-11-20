@@ -33,6 +33,7 @@ import { AnalyticsHub, AnalyticsSubTab } from './components/analytics/AnalyticsH
 import { FunnelPage } from './components/funnel/FunnelPage';
 import { CustomerComplaintPage } from './components/complaints/CustomerComplaintPage';
 import { ComplaintTrackerPage } from './components/complaints/ComplaintTrackerPage';
+import { SupervisorDeskPage } from './components/complaints/SupervisorDeskPage';
 
 export function App() {
   // Path / Route state (handles /cancel, /v1, and /)
@@ -44,8 +45,11 @@ export function App() {
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         return '/cancel';
       }
-      if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
-        return p.startsWith('/complaint') ? p : '/complaint';
+      if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
+        return '/supervisor';
+      }
+      if (p.startsWith('/dashboard') || h.startsWith('#/dashboard') || h === '#dashboard' || q === 'dashboard') {
+        return '/dashboard';
       }
       if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
         return '/funnel';
@@ -53,8 +57,12 @@ export function App() {
       if (p.startsWith('/v1') || h.startsWith('#/v1') || h === '#v1' || q === 'v1') {
         return p.startsWith('/v1') ? p : '/v1/';
       }
+      if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
+        return p.startsWith('/complaint') ? p : '/complaint';
+      }
     }
-    return '/';
+    // Default to the Complaints WebApp for this deployment
+    return '/complaint';
   });
 
   // Listen to browser navigation changes
@@ -65,14 +73,19 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         setCurrentPath('/cancel');
-      } else if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
-        setCurrentPath(p.startsWith('/complaint') ? p : '/complaint');
+      } else if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
+        setCurrentPath('/supervisor');
+      } else if (p.startsWith('/dashboard') || h.startsWith('#/dashboard') || h === '#dashboard' || q === 'dashboard') {
+        setCurrentPath('/dashboard');
       } else if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
         setCurrentPath('/funnel');
       } else if (p.startsWith('/v1') || h.startsWith('#/v1') || h === '#v1' || q === 'v1') {
         setCurrentPath(p.startsWith('/v1') ? p : '/v1/');
+      } else if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
+        setCurrentPath(p.startsWith('/complaint') ? p : '/complaint');
       } else {
-        setCurrentPath(p || '/');
+        // Root path "/" defaults to complaint intake flow
+        setCurrentPath('/complaint');
       }
     };
     window.addEventListener('popstate', handleLocationChange);
@@ -210,19 +223,25 @@ export function App() {
   };
 
   if (currentPath === '/cancel') {
-    return <CustomerCancelPage onBackToDashboard={() => navigate('/')} />;
+    return <CustomerCancelPage onBackToDashboard={() => navigate('/dashboard')} />;
   }
 
   if (currentPath.match(/^\/complaint\/[A-Za-z0-9-_]+/)) {
     return <ComplaintTrackerPage />;
   }
 
-  if (currentPath.startsWith('/complaint') || currentPath.startsWith('/claim')) {
-    return <CustomerComplaintPage />;
+  if (currentPath.startsWith('/supervisor') || currentPath.startsWith('/desk')) {
+    return <SupervisorDeskPage />;
   }
 
   if (isFunnel) {
-    return <FunnelPage onBack={() => navigate('/')} />;
+    return <FunnelPage onBack={() => navigate('/dashboard')} />;
+  }
+
+  // For this complaints app deployment: default page is the customer complaint flow
+  // Executive dashboard is accessible at /dashboard or /v1
+  if (!currentPath.startsWith('/dashboard') && !currentPath.startsWith('/v1')) {
+    return <CustomerComplaintPage />;
   }
 
   return (

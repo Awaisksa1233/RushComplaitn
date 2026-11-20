@@ -296,7 +296,14 @@ export function CustomerComplaintPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <a 
+              href="/supervisor"
+              className="text-[11px] px-2 py-1 rounded border border-[#E5E7EB] bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center gap-1 font-medium"
+              title="لوحة إشراف الفرع"
+            >
+              <span>{isAr ? 'المشرف' : 'Desk'}</span>
+            </a>
             <button 
               type="button" 
               onClick={() => setIsEditingContext(!isEditingContext)}
