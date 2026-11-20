@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { MongoClient } from 'mongodb';
 import { registerFunnelRoutes } from './funnel.js';
 import complaintsRouter from './routes/complaintsRoutes.js';
+import adminRouter from './admin/adminRoutes.js';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -102,6 +103,8 @@ registerFunnelRoutes(app, { getSourceDb: () => (isMongoConnected ? mongoDb : nul
 
 // Customer Complaints & Claims (Cloudflare D1 & VPS Bridge): /api/complaints/*
 app.use('/api/complaints', complaintsRouter);
+// Admin & Supervisor dashboard API (named users, role-based)
+app.use('/api/admin', adminRouter);
 
 // 1. Health & Connection Status
 app.get('/api/health', async (req, res) => {

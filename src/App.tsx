@@ -34,6 +34,7 @@ import { FunnelPage } from './components/funnel/FunnelPage';
 import { CustomerComplaintPage } from './components/complaints/CustomerComplaintPage';
 import { ComplaintTrackerPage } from './components/complaints/ComplaintTrackerPage';
 import { SupervisorDeskPage } from './components/complaints/SupervisorDeskPage';
+import { AdminDashboardPage } from './components/admin/AdminDashboardPage';
 
 export function App() {
   // Path / Route state (handles /cancel, /v1, and /)
@@ -44,6 +45,9 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         return '/cancel';
+      }
+      if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin') {
+        return '/admin';
       }
       if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
         return '/supervisor';
@@ -73,6 +77,8 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         setCurrentPath('/cancel');
+      } else if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin') {
+        setCurrentPath('/admin');
       } else if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
         setCurrentPath('/supervisor');
       } else if (p.startsWith('/dashboard') || h.startsWith('#/dashboard') || h === '#dashboard' || q === 'dashboard') {
@@ -230,6 +236,9 @@ export function App() {
     return <ComplaintTrackerPage />;
   }
 
+  if (currentPath.startsWith('/admin')) {
+    return <AdminDashboardPage />;
+  }
   if (currentPath.startsWith('/supervisor') || currentPath.startsWith('/desk')) {
     return <SupervisorDeskPage />;
   }
