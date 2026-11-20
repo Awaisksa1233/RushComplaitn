@@ -56,8 +56,11 @@ export function SupervisorDeskPage() {
 
   // Quick WhatsApp message
   const [quickMsg, setQuickMsg] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    document.title = 'رش واش — لوحة المشرف';
+    document.documentElement.lang = 'ar';
     fetchComplaints();
   }, [statusFilter]);
 
@@ -86,6 +89,9 @@ export function SupervisorDeskPage() {
     try {
       const url = `/api/complaints/desk/list?status=${statusFilter}&search=${encodeURIComponent(search)}`;
       const res = await deskFetch(url);
+      if (res.status === 401) { setLoadError('مفتاح المكتب غير صحيح'); return; }
+      if (!res.ok) { setLoadError('تعذر تحميل البلاغات، حاول مرة أخرى'); return; }
+      setLoadError(null);
       const data = await res.json();
       if (data.success && data.complaints) {
         setComplaints(data.complaints);
@@ -95,6 +101,7 @@ export function SupervisorDeskPage() {
       }
     } catch (err) {
       console.warn('Fetch complaints error:', err);
+      setLoadError('تعذر الاتصال بالخادم');
     } finally {
       setIsLoading(false);
     }
@@ -115,7 +122,13 @@ export function SupervisorDeskPage() {
         })
       });
       const data = await res.json();
+      if (!res.ok) {
+        setResolutionSuccess(null);
+        setLoadError(data.error || 'تعذر حفظ القرار');
+        return;
+      }
       if (data.success) {
+        setLoadError(null);
         setResolutionSuccess(`تم اتخاذ القرار بنجاح للبلاغ #${selectedTicket.ticketCode}`);
         fetchComplaints();
       }
@@ -140,9 +153,9 @@ export function SupervisorDeskPage() {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-base text-white">لوحة إشراف البلاغات</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#C91E2F] text-white font-bold">الخرج</span>
+                <span className="text-xs px-1.5 py-0.5 rounded bg-[#C91E2F] text-white font-bold">الخرج</span>
               </div>
-              <p className="text-[11px] text-gray-400">تفريغ الكاميرات والتنسيق عبر واتساب</p>
+              <p className="text-xs text-gray-400">تفريغ الكاميرات والتنسيق عبر واتساب</p>
             </div>
           </div>
 
@@ -169,7 +182,7 @@ export function SupervisorDeskPage() {
             <Search className="w-3.5 h-3.5 text-gray-400 absolute right-2.5 top-2.5" />
           </div>
 
-          <div className="flex items-center gap-1 text-[11px] overflow-x-auto pb-0.5">
+          <div className="flex items-center gap-1 text-xs overflow-x-auto pb-0.5">
             {[
               { id: 'all', label: 'الكل' },
               { id: 'new', label: 'جديدة' },
@@ -204,21 +217,21 @@ export function SupervisorDeskPage() {
                       : 'border-[#232329] bg-[#181820] hover:border-gray-600'
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[10px] text-gray-400">
+                  <div className="flex items-center justify-between text-xs text-gray-400">
                     <span className="font-bold text-white">#{c.ticketCode}</span>
-                    <span className="px-1.5 py-0.2 rounded text-[9px] bg-red-950 text-red-300 font-bold">
+                    <span className="px-1.5 py-0.2 rounded text-xs bg-red-950 text-red-300 font-bold">
                       {c.category === 'damage' ? 'ضرر' : 'ملاحظة'}
                     </span>
                   </div>
                   <div className="font-bold text-white text-xs mt-1 truncate">{c.vehiclePlate}</div>
-                  <div className="text-[10px] text-gray-400 truncate mt-0.5">{c.customerName || c.phone}</div>
+                  <div className="text-xs text-gray-400 truncate mt-0.5">{c.customerName || c.phone}</div>
                 </div>
               );
             })}
           </div>
         ) : (
           <div className="p-6 text-center text-xs text-gray-500">
-            {isLoading ? 'جاري تحميل البلاغات...' : 'لا توجد بلاغات مسجلة حالياً.'}
+            {isLoading ? 'جاري تحميل البلاغات...' : (loadError || 'لا توجد بلاغات مسجلة حالياً.')}
           </div>
         )}
 
@@ -230,32 +243,32 @@ export function SupervisorDeskPage() {
             <div className="rounded-xl bg-[#181822] border border-[#2A2A36] p-3.5 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-black text-[#C91E2F]">#{selectedTicket.ticketCode}</span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">
+                <span className="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-800">
                   {selectedTicket.status}
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-300 pt-1">
                 <div>
-                  <span className="text-[10px] text-gray-500 block">المركبة</span>
+                  <span className="text-xs text-gray-500 block">المركبة</span>
                   <strong className="text-white text-sm">{selectedTicket.vehiclePlate}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-500 block">الجوال</span>
+                  <span className="text-xs text-gray-500 block">الجوال</span>
                   <a href={`tel:${selectedTicket.phone}`} className="text-white hover:underline">{selectedTicket.phone}</a>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-500 block">وقت الغسيل</span>
-                  <span className="text-gray-300 text-[11px]">{selectedTicket.createdAtAST}</span>
+                  <span className="text-xs text-gray-500 block">وقت الغسيل</span>
+                  <span className="text-gray-300 text-xs">{selectedTicket.createdAtAST}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-500 block">التصنيف</span>
-                  <span className="text-white text-[11px]">{selectedTicket.category}</span>
+                  <span className="text-xs text-gray-500 block">التصنيف</span>
+                  <span className="text-white text-xs">{selectedTicket.category}</span>
                 </div>
               </div>
 
               <div className="bg-[#101017] rounded-lg p-2.5 text-xs text-gray-300 border border-[#232329] mt-2">
-                <span className="text-[10px] text-gray-500 block mb-1">وصف العميل:</span>
+                <span className="text-xs text-gray-500 block mb-1">وصف العميل:</span>
                 <p className="leading-relaxed">{selectedTicket.description}</p>
               </div>
             </div>
@@ -299,7 +312,7 @@ export function SupervisorDeskPage() {
               <div className="space-y-3">
                 {/* Simulated DVR Video Screen */}
                 <div className="rounded-xl overflow-hidden bg-black border border-[#2A2A36] relative aspect-video flex flex-col justify-between p-3">
-                  <div className="flex items-center justify-between text-[10px] text-gray-400 z-10">
+                  <div className="flex items-center justify-between text-xs text-gray-400 z-10">
                     <span className="flex items-center gap-1 bg-red-600 text-white px-1.5 py-0.2 rounded font-bold">
                       <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                       DVR REC
@@ -311,7 +324,7 @@ export function SupervisorDeskPage() {
 
                   <div className="text-center my-auto">
                     <Video className="w-10 h-10 text-gray-600 mx-auto" />
-                    <span className="text-[11px] text-gray-400 block mt-1">تسجيل كاميرا النفق متزامن مع لحظة الغسيل</span>
+                    <span className="text-xs text-gray-400 block mt-1">تسجيل كاميرا النفق متزامن مع لحظة الغسيل</span>
                   </div>
 
                   {/* Camera Angle Selector */}
@@ -326,7 +339,7 @@ export function SupervisorDeskPage() {
                         key={cam.id}
                         type="button"
                         onClick={() => setActiveCamera(cam.id as any)}
-                        className={`text-[10px] px-2 py-0.5 rounded transition ${
+                        className={`text-xs px-2 py-0.5 rounded transition ${
                           activeCamera === cam.id ? 'bg-[#C91E2F] text-white font-bold' : 'bg-black/70 text-gray-400'
                         }`}
                       >
@@ -339,19 +352,19 @@ export function SupervisorDeskPage() {
                 {/* Telematics Sensors Grid */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="p-2.5 rounded-lg bg-[#181822] border border-[#2A2A36]">
-                    <span className="text-[10px] text-gray-500 block">سرعة النفق (Speed)</span>
+                    <span className="text-xs text-gray-500 block">سرعة النفق (Speed)</span>
                     <span className="font-bold text-white text-sm">2.1 كم/س (طبيعي)</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#181822] border border-[#2A2A36]">
-                    <span className="text-[10px] text-gray-500 block">ضغط مضخات الماء</span>
+                    <span className="text-xs text-gray-500 block">ضغط مضخات الماء</span>
                     <span className="font-bold text-white text-sm">75 بار (مطابق)</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#181822] border border-[#2A2A36]">
-                    <span className="text-[10px] text-gray-500 block">توزيع صابون نانو</span>
+                    <span className="text-xs text-gray-500 block">توزيع صابون نانو</span>
                     <span className="font-bold text-emerald-400 text-sm">سليم 100%</span>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[#181822] border border-[#2A2A36]">
-                    <span className="text-[10px] text-gray-500 block">دوران الفرش</span>
+                    <span className="text-xs text-gray-500 block">دوران الفرش</span>
                     <span className="font-bold text-emerald-400 text-sm">متزن (0 عزم شاذ)</span>
                   </div>
                 </div>
@@ -385,14 +398,14 @@ export function SupervisorDeskPage() {
                       href={`https://wa.me/${selectedTicket.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`مرحباً معك مشرف فرع رش واش بالخرج بخصوص بلاغكم برقم #${selectedTicket.ticketCode}`)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold"
+                      className="px-2 py-0.5 rounded bg-emerald-600 text-white text-xs font-bold"
                     >
                       فتح في واتساب
                     </a>
                   </div>
 
                   <div className="space-y-2 py-2">
-                    <div className="p-2 rounded-lg bg-[#193225] text-emerald-100 text-[11px] leading-relaxed max-w-[85%] mr-auto">
+                    <div className="p-2 rounded-lg bg-[#193225] text-emerald-100 text-xs leading-relaxed max-w-[85%] mr-auto">
                       تم إرسال رسالة التأكيد الآلية للعميل برقم التذكرة ورابط المتابعة.
                     </div>
                   </div>
@@ -400,7 +413,7 @@ export function SupervisorDeskPage() {
 
                 {/* Quick Reply Presets */}
                 <div className="space-y-1.5">
-                  <span className="text-[11px] font-bold text-gray-400">ردود سريعة جاهزة:</span>
+                  <span className="text-xs font-bold text-gray-400">ردود سريعة جاهزة:</span>
                   {[
                     'مرحباً، تم فحص كاميرات النفق بدقة ونود التنسيق معكم لإعادة الغسيل فوراً.',
                     'يرجى التفضل بزيارة مشرف الفرع بالخرج لإجراء المعاينة والتعويض الفوري.',
@@ -410,7 +423,7 @@ export function SupervisorDeskPage() {
                       key={i}
                       type="button"
                       onClick={() => setQuickMsg(msg)}
-                      className="w-full text-right p-2 rounded-lg bg-[#181822] border border-[#2A2A36] text-[11px] text-gray-300 hover:border-gray-500 transition"
+                      className="w-full text-right p-2 rounded-lg bg-[#181822] border border-[#2A2A36] text-xs text-gray-300 hover:border-gray-500 transition"
                     >
                       {msg}
                     </button>
@@ -462,7 +475,7 @@ export function SupervisorDeskPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-gray-400 mb-1">ملاحظات المشرف وتفاصيل القرار:</label>
+                    <label className="block text-xs text-gray-400 mb-1">ملاحظات المشرف وتفاصيل القرار:</label>
                     <textarea
                       rows={3}
                       value={resolutionNotes}

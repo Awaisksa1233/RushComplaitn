@@ -57,6 +57,11 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
   const [isAppending, setIsAppending] = useState(false);
 
   useEffect(() => {
+    document.title = 'رش واش — متابعة البلاغ';
+    document.documentElement.lang = 'ar';
+  }, []);
+
+  useEffect(() => {
     // If ticketCode not passed via prop, extract from URL: /complaint/C-2026-XXXX
     let code = ticketCode;
     if (!code && typeof window !== 'undefined') {
@@ -148,7 +153,7 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
             </a>
             <div>
               <span className="font-bold text-base text-[#111111]">متابعة حالة البلاغ</span>
-              <p className="text-[11px] text-gray-500">رش واش · فرع الخرج</p>
+              <p className="text-xs text-gray-500">رش واش · فرع الخرج</p>
             </div>
           </div>
           <a
@@ -198,14 +203,14 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
               <div className="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl p-4 space-y-2 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>رقم البلاغ</span>
-                  <span className="text-[11px] text-gray-300">{complaint.createdAtAST}</span>
+                  <span className="text-xs text-gray-300">{complaint.createdAtAST}</span>
                 </div>
                 <div className="text-2xl font-black tracking-wider text-white">
                   #{complaint.ticketCode}
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-gray-700/60 text-xs">
                   <span className="text-gray-300">المركبة: <strong className="text-white">{complaint.vehiclePlate}</strong></span>
-                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#C91E2F] text-white">
+                  <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#C91E2F] text-white">
                     {complaint.statusAr}
                   </span>
                 </div>
@@ -220,7 +225,7 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
                     const isDone = status === 'completed';
                     return (
                       <div key={s.key} className="flex items-start gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-[10px] font-bold ${
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold ${
                           isDone ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-400'
                         }`}>
                           {isDone ? '✓' : idx + 1}
@@ -229,7 +234,7 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
                           <div className={`text-xs font-bold ${isDone ? 'text-gray-900' : 'text-gray-400'}`}>
                             {s.label}
                           </div>
-                          <div className="text-[11px] text-gray-500 mt-0.5">
+                          <div className="text-xs text-gray-500 mt-0.5">
                             {s.desc}
                           </div>
                         </div>
@@ -247,11 +252,11 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
                   <div className="space-y-2">
                     {complaint.notes.map((n, i) => (
                       <div key={i} className="p-2.5 rounded-lg bg-gray-50 border border-gray-100 text-xs space-y-1">
-                        <div className="flex items-center justify-between text-[10px] text-gray-400">
+                        <div className="flex items-center justify-between text-xs text-gray-400">
                           <span className="font-bold text-gray-700">{n.authorName}</span>
                           <span>{n.createdAtAST}</span>
                         </div>
-                        <p className="text-gray-800 text-[11px] leading-relaxed">{n.noteText}</p>
+                        <p className="text-gray-800 text-xs leading-relaxed">{n.noteText}</p>
                       </div>
                     ))}
                   </div>

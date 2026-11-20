@@ -99,6 +99,11 @@ export function CustomerComplaintPage() {
 
   // Parse query params on mount
   useEffect(() => {
+    document.title = isAr ? 'رش واش — تقديم بلاغ' : 'RUSH Car Wash — Submit a complaint';
+    document.documentElement.lang = isAr ? 'ar' : 'en';
+  }, [isAr]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const b = params.get('branch');
@@ -290,24 +295,17 @@ export function CustomerComplaintPage() {
                 <span className="font-bold text-lg tracking-tight text-[#111111]">رش واش</span>
                 <span className="text-xs px-1.5 py-0.5 rounded bg-[#FDE8EA] text-[#C91E2F] font-bold">RUSH</span>
               </div>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-xs text-gray-500">
                 {branch === 'al-kharj' ? 'فرع الخرج' : 'فرع الوطن'} · {bay === 'tunnel-1' ? 'مسار النفق 1' : bay}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <a 
-              href="/supervisor"
-              className="text-[11px] px-2 py-1 rounded border border-[#E5E7EB] bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center gap-1 font-medium"
-              title="لوحة إشراف الفرع"
-            >
-              <span>{isAr ? 'المشرف' : 'Desk'}</span>
-            </a>
             <button 
               type="button" 
               onClick={() => setIsEditingContext(!isEditingContext)}
-              className="text-xs px-2 py-1 rounded border border-[#E5E7EB] bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center gap-1"
+              className="text-xs px-3 py-2 rounded border border-[#E5E7EB] bg-gray-50 text-gray-700 hover:bg-gray-100 flex items-center gap-1"
             >
               <MapPin className="w-3 h-3 text-[#C91E2F]" />
               <span>{isAr ? 'الموقع' : 'Location'}</span>
@@ -315,7 +313,7 @@ export function CustomerComplaintPage() {
             <button
               type="button"
               onClick={() => setLang(l => l === 'ar' ? 'en' : 'ar')}
-              className="text-xs font-semibold px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
+              className="text-xs font-semibold px-3 py-2 rounded bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
               {isAr ? 'EN' : 'عربي'}
             </button>
@@ -348,7 +346,7 @@ export function CustomerComplaintPage() {
 
         {/* Step Progress Pill Indicator */}
         <div className="px-4 pt-3 pb-1">
-          <div className="flex items-center justify-between text-[11px] font-medium text-gray-400 border-b border-gray-100 pb-2">
+          <div className="flex items-center justify-between text-xs font-medium text-gray-400 border-b border-gray-100 pb-2">
             <span className={submittedTicket ? 'text-gray-400' : 'text-[#C91E2F] font-bold'}>
               {isAr ? '1. التحقق' : '1. Verify'}
             </span>
@@ -387,7 +385,7 @@ export function CustomerComplaintPage() {
                 <div className="text-2xl font-black text-[#C91E2F] tracking-wider">
                   #{submittedTicket.ticketCode}
                 </div>
-                <div className="text-[11px] text-gray-400">
+                <div className="text-xs text-gray-400">
                   {submittedTicket.createdAtAST}
                 </div>
               </div>
@@ -434,7 +432,7 @@ export function CustomerComplaintPage() {
                   <h3 className="text-xs font-bold text-[#C91E2F]">
                     {isAr ? 'ضمان رضا عملاء رش واش 100%' : '100% Customer Satisfaction Guarantee'}
                   </h3>
-                  <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
                     {isAr 
                       ? 'نحن ملتزمون بأعلى معايير الخدمة. سيتم فحص كاميرات النفق بدقة وتعويضكم فوراً في حال وجود أي ملاحظة.'
                       : 'We inspect DVR footage to resolve any wash quality or vehicle issues immediately.'}
@@ -446,42 +444,48 @@ export function CustomerComplaintPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-3">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-[#C91E2F] text-white text-[11px] flex items-center justify-center font-bold">1</span>
+                    <span className="w-5 h-5 rounded-full bg-[#C91E2F] text-white text-xs flex items-center justify-center font-bold">1</span>
                     {isAr ? 'بيانات العميل والمركبة' : 'Customer & Vehicle Identification'}
                   </span>
-                  <span className="text-[10px] text-gray-400">{isAr ? 'التحقق الآلي' : 'Auto Verification'}</span>
+                  <span className="text-xs text-gray-400">{isAr ? 'التحقق الآلي' : 'Auto Verification'}</span>
                 </div>
 
                 {/* Plate & Phone Grid */}
                 <div className="space-y-2.5">
                   <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       {isAr ? 'رقم لوحة المركبة *' : 'Vehicle License Plate *'}
                     </label>
                     <div className="relative">
                       <input
                         type="text"
                         required
+                        dir="ltr"
+                        autoComplete="off"
+                        autoCapitalize="characters"
                         value={plate}
                         onChange={e => setPlate(e.target.value)}
-                        placeholder={isAr ? 'مثال: أ ب ج 1234 أو 1234 JBA' : 'e.g. 1234 JBA'}
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
+                        placeholder="1234 ABC"
+                        className="w-full px-3 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1">
                       {isAr ? 'رقم الجوال *' : 'Mobile Phone Number *'}
                     </label>
                     <div className="relative">
                       <input
                         type="tel"
                         required
+                        dir="ltr"
+                        inputMode="tel"
+                        autoComplete="tel"
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
                         placeholder="05XXXXXXXX"
-                        className="w-full px-3 py-2 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
+                        className="w-full px-3 py-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
                       />
                     </div>
                   </div>
@@ -490,7 +494,7 @@ export function CustomerComplaintPage() {
                     type="button"
                     onClick={() => handleVerify()}
                     disabled={isVerifying || (!phone && !plate)}
-                    className="w-full py-2 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-black transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    className="w-full py-3 rounded-lg bg-gray-900 text-white text-sm font-bold hover:bg-black transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                   >
                     {isVerifying ? (
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -508,7 +512,7 @@ export function CustomerComplaintPage() {
                       <AlertTriangle className="w-4 h-4 text-amber-600" />
                       <span>{isAr ? 'يوجد بلاغ نشط لهذه المركبة بالفعل' : 'Active Ticket Exists'}</span>
                     </div>
-                    <p className="text-[11px] text-amber-900">
+                    <p className="text-xs text-amber-900">
                       {isAr 
                         ? `البلاغ رقم #${existingTicket.ticketCode} (${existingTicket.statusAr}) تم تسجيله بتاريخ ${existingTicket.createdAtAST}.`
                         : `Ticket #${existingTicket.ticketCode} is currently ${existingTicket.status}.`}
@@ -516,7 +520,7 @@ export function CustomerComplaintPage() {
                     <div className="flex items-center gap-2 pt-1">
                       <a
                         href={`/complaint/${existingTicket.ticketCode}`}
-                        className="flex-1 py-1.5 rounded bg-amber-600 text-white font-bold text-center text-[10px] hover:bg-amber-700"
+                        className="flex-1 py-1.5 rounded bg-amber-600 text-white font-bold text-center text-xs hover:bg-amber-700"
                       >
                         {isAr ? 'متابعة البلاغ' : 'Track Status'}
                       </a>
@@ -524,7 +528,7 @@ export function CustomerComplaintPage() {
                         href={`https://wa.me/966500000000?text=${encodeURIComponent(`أستفسر عن بلاغي #${existingTicket.ticketCode}`)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex-1 py-1.5 rounded bg-emerald-600 text-white font-bold text-center text-[10px] hover:bg-emerald-700"
+                        className="flex-1 py-1.5 rounded bg-emerald-600 text-white font-bold text-center text-xs hover:bg-emerald-700"
                       >
                         {isAr ? 'محادثة واتساب' : 'WhatsApp'}
                       </a>
@@ -535,7 +539,7 @@ export function CustomerComplaintPage() {
                 {/* Verified Washes List (last 7 days) */}
                 {verifiedWashes.length > 0 && (
                   <div className="space-y-1.5 pt-2">
-                    <span className="text-[11px] font-bold text-gray-700 block">
+                    <span className="text-xs font-bold text-gray-700 block">
                       {isAr ? 'تم العثور على الغسلات التالية (آخر 7 أيام):' : 'Matched Washes (Last 7 Days):'}
                     </span>
                     {verifiedWashes.map(w => (
@@ -550,9 +554,9 @@ export function CustomerComplaintPage() {
                       >
                         <div>
                           <div className="font-bold text-gray-900">{w.packageNameAr} · {w.branchAr}</div>
-                          <div className="text-[10px] text-gray-500 mt-0.5">{w.washDateASTArabic} · {w.laneAr}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{w.washDateASTArabic} · {w.laneAr}</div>
                         </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                        <span className={`text-xs px-2 py-0.5 rounded font-bold ${
                           selectedWash?.washId === w.washId ? 'bg-[#C91E2F] text-white' : 'bg-gray-100 text-gray-600'
                         }`}>
                           {selectedWash?.washId === w.washId ? (isAr ? 'محدد' : 'Selected') : (isAr ? 'اختيار' : 'Select')}
@@ -568,7 +572,7 @@ export function CustomerComplaintPage() {
                     <button
                       type="button"
                       onClick={() => setIsManualEntry(!isManualEntry)}
-                      className="text-[11px] text-[#C91E2F] hover:underline font-semibold"
+                      className="text-xs text-[#C91E2F] hover:underline font-semibold"
                     >
                       {isAr ? 'لم تجد غسلتك؟ المتابعة بإدخال يدوي دون حظر' : 'Cannot find wash? Proceed with manual entry'}
                     </button>
@@ -580,14 +584,14 @@ export function CustomerComplaintPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
                 <div className="flex items-center justify-between border-b border-gray-100 pb-2">
                   <span className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-full bg-[#C91E2F] text-white text-[11px] flex items-center justify-center font-bold">2</span>
+                    <span className="w-5 h-5 rounded-full bg-[#C91E2F] text-white text-xs flex items-center justify-center font-bold">2</span>
                     {isAr ? 'تفاصيل الملاحظة أو الضرر' : 'Complaint Details'}
                   </span>
                 </div>
 
                 {/* Category Chips */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                     {isAr ? 'تصنيف البلاغ *' : 'Category *'}
                   </label>
                   <div className="flex flex-wrap gap-1.5">
@@ -596,7 +600,7 @@ export function CustomerComplaintPage() {
                         key={c.key}
                         type="button"
                         onClick={() => setCategory(c.key as any)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                        className={`px-3.5 py-2.5 rounded-lg text-sm font-semibold transition ${
                           category === c.key
                             ? 'bg-[#C91E2F] text-white shadow-sm'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -611,7 +615,7 @@ export function CustomerComplaintPage() {
                 {/* Vehicle Part Chips (if category is damage or quality) */}
                 {(category === 'damage' || category === 'quality') && (
                   <div>
-                    <label className="block text-[11px] font-semibold text-gray-700 mb-1.5">
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                       {isAr ? 'الجزء المتأثر بالمركبة (حدد كل ما ينطبق) *' : 'Affected Vehicle Parts *'}
                     </label>
                     <div className="flex flex-wrap gap-1.5">
@@ -622,7 +626,7 @@ export function CustomerComplaintPage() {
                             key={p.key}
                             type="button"
                             onClick={() => togglePart(p.key)}
-                            className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition ${
+                            className={`px-3 py-2 rounded-md text-xs font-medium border transition ${
                               isSelected
                                 ? 'border-[#C91E2F] bg-[#FDE8EA] text-[#C91E2F]'
                                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -638,7 +642,7 @@ export function CustomerComplaintPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">
                     {isAr ? 'وصف المشكلة بدقة لمراجعة الكاميرات *' : 'Detailed Description *'}
                   </label>
                   <textarea
@@ -649,17 +653,17 @@ export function CustomerComplaintPage() {
                     placeholder={isAr 
                       ? 'يرجى كتابة ما حدث بدقة (مثال: لاحظت خدش في الصدام بعد الخروج من النفق)'
                       : 'Describe what happened to help us inspect DVR recordings...'}
-                    className="w-full p-2.5 text-xs rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
+                    className="w-full p-3 text-base rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#C91E2F]"
                   />
                 </div>
 
                 {/* Evidence Upload (Cloudflare R2) */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-[11px] font-semibold text-gray-700">
+                    <label className="text-xs font-semibold text-gray-700">
                       {isAr ? 'إرفاق صور أو فيديو للضرر (اختياري - حتى 5 ملفات)' : 'Attach Photos/Video (Up to 5)'}
                     </label>
-                    <span className="text-[10px] text-gray-400">15MB Max</span>
+                    <span className="text-xs text-gray-400">15MB Max</span>
                   </div>
 
                   {/* Dropzone */}
@@ -676,7 +680,7 @@ export function CustomerComplaintPage() {
                       <span className="text-xs font-semibold text-gray-700">
                         {isAr ? 'اضغط لالتقاط صورة أو اختيار ملفات' : 'Tap to take photo or upload files'}
                       </span>
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-xs text-gray-400">
                         {isAr ? 'الصور تساعدنا في إنهاء البلاغ بسرعة' : 'Photos speed up video investigation'}
                       </span>
                     </div>
@@ -690,14 +694,14 @@ export function CustomerComplaintPage() {
                           {f.fileType.startsWith('image') ? (
                             <img src={f.previewUrl} alt={f.fileName} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                            <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
                               VIDEO
                             </div>
                           )}
                           <button
                             type="button"
                             onClick={() => setEvidenceList(evidenceList.filter((_, i) => i !== idx))}
-                            className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 text-white flex items-center justify-center text-[10px]"
+                            className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 text-white flex items-center justify-center text-xs"
                           >
                             ×
                           </button>
@@ -724,7 +728,7 @@ export function CustomerComplaintPage() {
                     {isAr ? 'إرسال البلاغ والمتابعة عبر واتساب 💬' : 'Submit & Track via WhatsApp 💬'}
                   </span>
                 </button>
-                <p className="text-[10px] text-gray-400 text-center leading-tight">
+                <p className="text-xs text-gray-400 text-center leading-tight">
                   {isAr 
                     ? 'سيتم ربط بلاغكم برقم الجوال وفتح محادثة خدمة عملاء رسمية عبر تطبيق واتساب'
                     : 'A WhatsApp service ticket will be initiated directly with branch supervision.'}
