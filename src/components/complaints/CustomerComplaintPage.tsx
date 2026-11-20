@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getComplaintsApiUrl } from '../../services/complaintsClient';
 import { 
   Car, 
   ShieldCheck, 
@@ -125,7 +126,7 @@ export function CustomerComplaintPage() {
     setSelectedOrder(null);
 
     try {
-      const res = await fetch('/api/complaints/verify', {
+      const res = await fetch(getComplaintsApiUrl('/api/complaints/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, plate, branch })
@@ -175,7 +176,7 @@ export function CustomerComplaintPage() {
         }
 
         // Request upload URL from backend
-        const res = await fetch('/api/complaints/upload-url', {
+        const res = await fetch(getComplaintsApiUrl('/api/complaints/upload-url'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -231,7 +232,7 @@ export function CustomerComplaintPage() {
         evidence: evidenceList
       };
 
-      const res = await fetch('/api/complaints/submit', {
+      const res = await fetch(getComplaintsApiUrl('/api/complaints/submit'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

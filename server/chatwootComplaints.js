@@ -23,7 +23,8 @@ if (!CHATWOOT_API_TOKEN) {
 function getHeaders() {
   return {
     'api_access_token': CHATWOOT_API_TOKEN,
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RUSH-Complaints/1.0'
   };
 }
 
