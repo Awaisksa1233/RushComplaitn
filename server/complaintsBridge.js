@@ -205,11 +205,70 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
     .limit(5)
     .toArray();
 
+  // Pre-fetch linked subscriptions to resolve exact combo tiers (e.g. Nano + Interior)
+  const subCodes = rawWashes.map(w => w.subscriptionReadableCode).filter(Boolean);
+  const subMap = new Map();
+  if (subCodes.length > 0) {
+    try {
+      const subs = await db.collection('rushwash_subscriptions')
+        .find({ readableCode: { $in: subCodes } })
+        .toArray();
+      for (const s of subs) {
+        if (s.readableCode) subMap.set(s.readableCode, s);
+      }
+    } catch (e) {
+      console.warn('[Complaints Bridge] Subscription lookup warning:', e.message);
+    }
+  }
+
   return rawWashes.map(w => {
     const washDateObj = w.createdAt || (w.washDate ? new Date(w.washDate) : new Date());
-    const canonicalPkg = getCanonicalPackage(w.planType || w.packageName || 'Fresh');
+    const sub = w.subscriptionReadableCode ? subMap.get(w.subscriptionReadableCode) : null;
+    
+    // Explicit detection for both exterior tunnel wash and interior detailing
+    const hasExterior = w.exteriorStatus === 'done' 
+      || ['AG-01', 'AG-02', '01', 'CS-01', 'EL-01'].includes(w.laneReadableCode) 
+      || w.planType === 'exterior_wash'
+      || w.entryPath === 'auto-gate';
+    const hasInterior = w.interiorStatus === 'done' 
+      || w.planType === 'interior_cleaning' 
+      || w.includesInterior === true;
+
+    let tier = 'Fresh';
+    let nameEn = '';
+    let nameAr = '';
+
+    if (sub && (sub.packageNameEn || sub.packageNameAr)) {
+      nameEn = sub.packageNameEn || '';
+      nameAr = sub.packageNameAr || nameEn;
+      const low = nameEn.toLowerCase();
+      if (low.includes('nano') || (nameAr && nameAr.includes('نانو'))) {
+        tier = 'Nano';
+      } else if (low.includes('shiny') || (nameAr && nameAr.includes('شايني'))) {
+        tier = 'Shiny';
+      } else if (low.includes('interior') && !hasExterior) {
+        tier = 'Interior';
+      } else {
+        tier = 'Fresh';
+      }
+    } else if (hasExterior && hasInterior) {
+      tier = 'Fresh';
+      nameEn = 'Full Wash (Exterior + Interior)';
+      nameAr = 'غسيل شامل (خارجي + داخلي)';
+    } else if (hasInterior && !hasExterior) {
+      tier = 'Interior';
+      nameEn = 'Interior Clean';
+      nameAr = 'تنظيف داخلي';
+    } else {
+      const canonicalPkg = getCanonicalPackage(w.planType || w.packageName || 'Fresh');
+      tier = canonicalPkg.tier;
+      nameEn = canonicalPkg.nameEn;
+      nameAr = canonicalPkg.nameAr;
+    }
+
     const displayPlate = w.vehicleSnapshot?.displayPlate || w.plateNumber || plateInfo.displayPlate || 'N/A';
     const normalizedPlate = w.normalizedPlate || w.vehicleSnapshot?.normalizedPlate || plateInfo.normalizedPlate;
+    const customerName = w.customerSnapshot?.name || 'عميل رش واش';
 
     return {
       washId: String(w._id),
@@ -220,13 +279,19 @@ export async function lookupVerifiedWashes(phoneRaw, plateRaw) {
       branch: 'Al Kharj', // Strictly single active branch
       branchAr: 'فرع الخرج',
       lane: w.laneReadableCode || 'Tunnel 1',
-      laneAr: 'مسار النفق 1',
-      packageTier: canonicalPkg.tier,
-      packageNameEn: canonicalPkg.nameEn,
-      packageNameAr: canonicalPkg.nameAr,
+      laneAr: w.laneReadableCode?.startsWith('AG') ? `مسار النفق (${w.laneReadableCode})` : (w.laneReadableCode || 'مسار النفق'),
+      packageTier: tier,
+      packageNameEn: nameEn,
+      packageNameAr: nameAr,
+      hasExterior,
+      hasInterior,
+      services: [
+        ...(hasExterior ? ['exterior'] : []),
+        ...(hasInterior ? ['interior'] : [])
+      ],
       displayPlate,
       normalizedPlate,
-      customerName: 'عميل رش واش'
+      customerName
     };
   });
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getComplaintsApiUrl } from '../../services/complaintsClient';
 import { 
   Car, 
   ShieldCheck, 
@@ -28,6 +29,10 @@ interface VerifiedWash {
   laneAr: string;
   packageTier: string;
   packageNameAr: string;
+  packageNameEn?: string;
+  hasExterior?: boolean;
+  hasInterior?: boolean;
+  services?: string[];
   displayPlate: string;
   normalizedPlate: string;
   customerName: string;
@@ -125,7 +130,7 @@ export function CustomerComplaintPage() {
     setSelectedOrder(null);
 
     try {
-      const res = await fetch('/api/complaints/verify', {
+      const res = await fetch(getComplaintsApiUrl('/api/complaints/verify'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, plate, branch })
@@ -175,7 +180,7 @@ export function CustomerComplaintPage() {
         }
 
         // Request upload URL from backend
-        const res = await fetch('/api/complaints/upload-url', {
+        const res = await fetch(getComplaintsApiUrl('/api/complaints/upload-url'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -231,7 +236,7 @@ export function CustomerComplaintPage() {
         evidence: evidenceList
       };
 
-      const res = await fetch('/api/complaints/submit', {
+      const res = await fetch(getComplaintsApiUrl('/api/complaints/submit'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -553,7 +558,19 @@ export function CustomerComplaintPage() {
                         }`}
                       >
                         <div>
-                          <div className="font-bold text-gray-900">{w.packageNameAr} · {w.branchAr}</div>
+                          <div className="font-bold text-gray-900 flex items-center gap-1.5 flex-wrap">
+                            <span>{w.packageNameAr} · {w.branchAr}</span>
+                            {w.hasExterior && (
+                              <span className="bg-blue-50 text-blue-700 text-[10px] px-1.5 py-0.5 rounded font-semibold border border-blue-200">
+                                {isAr ? 'خارجي' : 'Exterior'}
+                              </span>
+                            )}
+                            {w.hasInterior && (
+                              <span className="bg-purple-50 text-purple-700 text-[10px] px-1.5 py-0.5 rounded font-semibold border border-purple-200">
+                                {isAr ? 'داخلي' : 'Interior'}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500 mt-0.5">{w.washDateASTArabic} · {w.laneAr}</div>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded font-bold ${

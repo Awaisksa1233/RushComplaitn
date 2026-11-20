@@ -30,7 +30,23 @@ const CATEGORIES = ['damage', 'quality', 'billing', 'delay', 'staff'];
 const RESOLUTION_TYPES = ['rewash', 'refund', 'rejected'];
 const DESK_STATUSES = [...ACTIVE_STATUSES, 'resolved', 'rejected'];
 const MAX_EVIDENCE = 10;
-const R2_PUBLIC_DOMAIN = (process.env.R2_PUBLIC_DOMAIN || 'https://media.rush.com.sa').replace(/\/+$/, '');
+const R2_PUBLIC_DOMAIN = (process.env.R2_PUBLIC_DOMAIN || 'https://r2.rush.com.sa').replace(/\/+$/, '');
+
+function isAllowedMediaUrl(url) {
+  if (typeof url !== 'string') return false;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    // Allow Cloudflare R2 public domains, custom domains, or configured domain
+    return host.endsWith('.r2.dev') ||
+           host.endsWith('.r2.cloudflarestorage.com') ||
+           host === 'r2.rush.com.sa' ||
+           host === 'media.rush.com.sa' ||
+           url.startsWith(R2_PUBLIC_DOMAIN + '/');
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Supervisor desk auth. Set COMPLAINTS_DESK_KEY; clients send it as `x-desk-key`.
@@ -58,11 +74,11 @@ function fail(res, label, err, message) {
   return res.status(500).json({ error: message });
 }
 
-/** Keep only evidence that points at our own R2 domain, with bounded sizes. */
+/** Keep only evidence that points at allowed R2 / media domains, with bounded sizes. */
 function sanitizeEvidence(list, now) {
   if (!Array.isArray(list)) return [];
   return list.slice(0, MAX_EVIDENCE)
-    .filter(e => e && typeof e.r2Url === 'string' && e.r2Url.startsWith(R2_PUBLIC_DOMAIN + '/'))
+    .filter(e => e && typeof e.r2Url === 'string' && isAllowedMediaUrl(e.r2Url))
     .map(e => ({
       fileKey: String(e.fileKey || '').slice(0, 200),
       fileName: String(e.fileName || '').slice(0, 200),

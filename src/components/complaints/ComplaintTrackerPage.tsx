@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getComplaintsApiUrl } from '../../services/complaintsClient';
 import { 
   Car, 
   CheckCircle2, 
@@ -82,7 +83,7 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/complaints/${encodeURIComponent(code)}`);
+      const res = await fetch(getComplaintsApiUrl(`/api/complaints/${encodeURIComponent(code)}`));
       const data = await res.json();
       if (data.success && data.complaint) {
         setComplaint(data.complaint);
@@ -102,7 +103,7 @@ export function ComplaintTrackerPage({ ticketCode: propTicketCode }: { ticketCod
 
     setIsAppending(true);
     try {
-      const res = await fetch(`/api/complaints/${encodeURIComponent(ticketCode)}/append`, {
+      const res = await fetch(getComplaintsApiUrl(`/api/complaints/${encodeURIComponent(ticketCode)}/append`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ noteText: newNote.trim(), author: 'customer' })

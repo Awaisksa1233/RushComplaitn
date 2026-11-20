@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getComplaintsApiUrl } from '../../services/complaintsClient';
 import { 
   Car, 
   ShieldAlert, 
@@ -72,7 +73,8 @@ export function SupervisorDeskPage() {
 
   // On 401, ask the supervisor for the desk key once and retry.
   const deskFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
-    const run = () => fetch(url, { ...init, headers: { ...(init.headers as Record<string, string>), ...deskHeaders() } });
+    const fullUrl = getComplaintsApiUrl(url);
+    const run = () => fetch(fullUrl, { ...init, headers: { ...(init.headers as Record<string, string>), ...deskHeaders() } });
     let res = await run();
     if (res.status === 401) {
       const entered = window.prompt('أدخل مفتاح مكتب المشرف (Desk key)');
