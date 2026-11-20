@@ -33,7 +33,6 @@ import { AnalyticsHub, AnalyticsSubTab } from './components/analytics/AnalyticsH
 import { FunnelPage } from './components/funnel/FunnelPage';
 import { CustomerComplaintPage } from './components/complaints/CustomerComplaintPage';
 import { ComplaintTrackerPage } from './components/complaints/ComplaintTrackerPage';
-import { SupervisorDeskPage } from './components/complaints/SupervisorDeskPage';
 import { AdminDashboardPage } from './components/admin/AdminDashboardPage';
 
 export function App() {
@@ -46,11 +45,8 @@ export function App() {
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         return '/cancel';
       }
-      if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin') {
+      if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin' || p.startsWith('/supervisor') || p.startsWith('/desk') || h.startsWith('#/supervisor') || q === 'supervisor') {
         return '/admin';
-      }
-      if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
-        return '/supervisor';
       }
       if (p.startsWith('/dashboard') || h.startsWith('#/dashboard') || h === '#dashboard' || q === 'dashboard') {
         return '/dashboard';
@@ -77,10 +73,8 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         setCurrentPath('/cancel');
-      } else if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin') {
+      } else if (p.startsWith('/admin') || h.startsWith('#/admin') || q === 'admin' || p.startsWith('/supervisor') || p.startsWith('/desk') || h.startsWith('#/supervisor') || q === 'supervisor') {
         setCurrentPath('/admin');
-      } else if (p.startsWith('/supervisor') || h.startsWith('#/supervisor') || h === '#supervisor' || q === 'supervisor' || p.startsWith('/desk')) {
-        setCurrentPath('/supervisor');
       } else if (p.startsWith('/dashboard') || h.startsWith('#/dashboard') || h === '#dashboard' || q === 'dashboard') {
         setCurrentPath('/dashboard');
       } else if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
@@ -238,9 +232,6 @@ export function App() {
 
   if (currentPath.startsWith('/admin')) {
     return <AdminDashboardPage />;
-  }
-  if (currentPath.startsWith('/supervisor') || currentPath.startsWith('/desk')) {
-    return <SupervisorDeskPage />;
   }
 
   if (isFunnel) {

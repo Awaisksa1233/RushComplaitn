@@ -1,14 +1,12 @@
 /**
  * RUSH Car Wash (رش واش) - Complaints API Router
  * 
- * Endpoints for Customer Complaints WebApp & Branch Supervisor Desk:
+ * Endpoints for Customer Complaints WebApp:
  * - POST /api/complaints/verify
  * - POST /api/complaints/upload-url
  * - POST /api/complaints/submit
  * - GET  /api/complaints/:ticketCode
  * - POST /api/complaints/:ticketCode/append
- * - GET  /api/complaints/desk/list
- * - POST /api/complaints/desk/:ticketCode/resolve
  */
 
 import express from 'express';
@@ -19,16 +17,13 @@ import {
   lookupVerifiedWashes, 
   lookupVerifiedOrders,
   formatRiyadhAST,
-  formatRiyadhASTArabic,
-  escapeRegex
+  formatRiyadhASTArabic
 } from '../complaintsBridge.js';
 import { dispatchComplaintToChatwoot } from '../chatwootComplaints.js';
 import crypto from 'node:crypto';
 
 const ACTIVE_STATUSES = ['new', 'in_review', 'investigating'];
 const CATEGORIES = ['damage', 'quality', 'billing', 'delay', 'staff'];
-const RESOLUTION_TYPES = ['rewash', 'refund', 'rejected'];
-const DESK_STATUSES = [...ACTIVE_STATUSES, 'resolved', 'rejected'];
 const MAX_EVIDENCE = 10;
 const R2_PUBLIC_DOMAIN = (process.env.R2_PUBLIC_DOMAIN || 'https://r2.rush.com.sa').replace(/\/+$/, '');
 
@@ -46,26 +41,6 @@ function isAllowedMediaUrl(url) {
   } catch {
     return false;
   }
-}
-
-/**
- * Supervisor desk auth. Set COMPLAINTS_DESK_KEY; clients send it as `x-desk-key`.
- * Without a key configured, the desk is only open outside production.
- */
-function requireDeskAuth(req, res, next) {
-  const expected = process.env.COMPLAINTS_DESK_KEY;
-  if (!expected) {
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(503).json({ error: 'Supervisor desk is not configured' });
-    }
-    return next();
-  }
-  const given = Buffer.from(String(req.get('x-desk-key') || ''));
-  const want = Buffer.from(expected);
-  if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-  next();
 }
 
 /** Never leak internal error messages to clients. */
@@ -492,109 +467,6 @@ router.post('/:ticketCode/append', async (req, res) => {
     });
   } catch (err) {
     return fail(res, '/append', err, 'Failed to append note');
-  }
-});
-
-/**
- * 6. Branch Supervisor Operations Desk: List all complaints
- */
-router.get('/desk/list', requireDeskAuth, async (req, res) => {
-  try {
-    const { status, category, search } = req.query;
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 200);
-    const db = await getLocalDb();
-
-    const query = {};
-    if (status && status !== 'all') {
-      if (!DESK_STATUSES.includes(String(status))) return res.status(400).json({ error: 'Invalid status' });
-      query.status = String(status);
-    }
-    if (category && category !== 'all') {
-      if (!CATEGORIES.includes(String(category))) return res.status(400).json({ error: 'Invalid category' });
-      query.category = String(category);
-    }
-    if (search) {
-      const cleanSearch = escapeRegex(String(search).trim().slice(0, 50));
-      query.$or = [
-        { ticketCode: { $regex: cleanSearch, $options: 'i' } },
-        { normalizedPlate: { $regex: cleanSearch, $options: 'i' } },
-        { vehiclePlate: { $regex: cleanSearch, $options: 'i' } },
-        { phone: { $regex: cleanSearch } }
-      ];
-    }
-
-    const complaints = await db.collection('rushwash_complaints')
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .toArray();
-
-    return res.json({
-      success: true,
-      count: complaints.length,
-      complaints
-    });
-  } catch (err) {
-    return fail(res, '/desk/list', err, 'Failed to list complaints');
-  }
-});
-
-/**
- * 7. Branch Supervisor Operations Desk: Resolve Ticket
- */
-router.post('/desk/:ticketCode/resolve', requireDeskAuth, async (req, res) => {
-  try {
-    const { ticketCode } = req.params;
-    const { resolutionType, resolutionNotes, resolvedBy = 'supervisor' } = req.body || {};
-
-    if (!RESOLUTION_TYPES.includes(resolutionType)) {
-      return res.status(400).json({ error: 'resolutionType is required (rewash | refund | rejected)' });
-    }
-
-    const db = await getLocalDb();
-    const now = new Date();
-    const resolvedAtAST = formatRiyadhAST(now);
-
-    const newStatus = resolutionType === 'rejected' ? 'rejected' : 'resolved';
-
-    const updateRes = await db.collection('rushwash_complaints').findOneAndUpdate(
-      { ticketCode: ticketCode.toUpperCase(), status: { $in: ACTIVE_STATUSES } },
-      {
-        $set: {
-          status: newStatus,
-          resolutionType,
-          resolutionNotes: String(resolutionNotes || '').slice(0, 2000),
-          resolvedBy: String(resolvedBy).slice(0, 100),
-          resolvedAt: resolvedAtAST,
-          updatedAt: now.getTime()
-        },
-        $push: {
-          notes: {
-            author: 'staff',
-            authorName: 'مشرف الفرع (Supervisor)',
-            noteText: `تم اتخاذ القرار: ${resolutionType === 'rewash' ? 'إصدار غسيل تعويضي' : (resolutionType === 'refund' ? 'استرداد مالي' : 'رفض البلاغ')}. التفاصيل: ${resolutionNotes || 'تم التحقق من كاميرات النفق'}`,
-            isPrivate: false,
-            createdAtAST: resolvedAtAST,
-            createdAt: now.getTime()
-          }
-        }
-      },
-      { returnDocument: 'after' }
-    );
-
-    const updated = updateRes?.ticketCode ? updateRes : updateRes?.value;
-    if (!updated) {
-      return res.status(404).json({ error: 'Active ticket not found (it may already be resolved)' });
-    }
-
-    return res.json({
-      success: true,
-      ticketCode,
-      status: newStatus,
-      resolvedAt: resolvedAtAST
-    });
-  } catch (err) {
-    return fail(res, '/desk/resolve', err, 'Failed to resolve complaint');
   }
 });
 
