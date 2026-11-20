@@ -8,21 +8,24 @@ import { MembershipFlowChart, stepStateOf } from './MembershipFlowChart';
 import { FunnelTrendChart, STAGE_META } from './FunnelTrendChart';
 import { FlowsPanel } from './FlowsPanel';
 import { PerformancePanel } from './PerformancePanel';
+import { FreeWashConversionFunnel, PaidWashConversionFunnel, SignupConversionFunnel } from '../charts/ConversionFunnel';
+import { EngagementDashboard } from '../charts/EngagementDashboard';
+import { TemplatesCatalogPanel } from './TemplatesCatalogPanel';
 
-type Tab = 'funnel' | 'performance' | 'flows' | 'trends';
-type Preset = '7' | '30' | '90' | 'launch' | 'all';
+type Tab = 'funnel' | 'free_funnel' | 'paid_funnel' | 'signup_funnel' | 'engagement' | 'performance' | 'flows' | 'trends' | 'templates';
+type Preset = 'yesterday' | '7' | '30' | '90' | 'all';
 
 const DAY = 86_400_000;
 const POLL_MS = 60_000;
-const LAUNCH = new Date('2026-11-06T21:00:00Z'); // Saturday 7 Nov 2026, 00:00 Riyadh: the funnel's baseline
+const YESTERDAY = new Date('2026-11-09T21:00:00Z'); // Tuesday 10 Nov 2026, 00:00 Riyadh: funnel baseline
 const PRESETS: { id: Preset; label: string }[] = [
+  { id: 'yesterday', label: 'Since yesterday (10 Nov 2026)' },
   { id: '7', label: 'Last 7 days' },
   { id: '30', label: 'Last 30 days' },
   { id: '90', label: 'Last 90 days' },
-  { id: 'launch', label: 'Since launch (7 Nov 2026)' },
   { id: 'all', label: 'All time' }
 ];
-const presetFrom = (p: Preset): Date | null => (p === 'all' ? null : p === 'launch' ? LAUNCH : new Date(Date.now() - Number(p) * DAY));
+const presetFrom = (p: Preset): Date | null => (p === 'all' ? null : p === 'yesterday' ? YESTERDAY : new Date(Date.now() - Number(p) * DAY));
 
 const fmt = (n: number | null | undefined) => (typeof n === 'number' ? n.toLocaleString() : '—');
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : 0);
@@ -134,8 +137,26 @@ function StepDetail({ nodeId, stats, flows, onClose }: { nodeId: string; stats: 
 }
 
 export function FunnelPage({ onBack }: { onBack: () => void }) {
-  const [tab, setTab] = useState<Tab>('funnel');
-  const [preset, setPreset] = useState<Preset>('30');
+  const initialTab = useMemo<Tab>(() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get('tab');
+      if (q && ['funnel', 'free_funnel', 'paid_funnel', 'signup_funnel', 'engagement', 'performance', 'flows', 'trends'].includes(q)) {
+        return q as Tab;
+      }
+    } catch (e) {}
+    return 'funnel';
+  }, []);
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  const handleTabChange = (newTab: Tab) => {
+    setTab(newTab);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', newTab);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {}
+  };
+  const [preset, setPreset] = useState<Preset>('yesterday');
   const [stats, setStats] = useState<FunnelGraphStats | null>(null);
   const [trends, setTrends] = useState<FunnelTrends | null>(null);
   const [perf, setPerf] = useState<FunnelPerformance | null>(null);
@@ -209,11 +230,16 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
   const templateNames = useMemo(() => Array.from(new Set(MF_NODES.flatMap((n) => n.variants?.map((v) => v.template) ?? []))), []);
   const approved = templateNames.filter(isApprovedTemplate).length;
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'funnel', label: 'Funnel' },
+  const tabs: { id: Tab; label: string; badge?: string }[] = [
+    { id: 'funnel', label: 'Lifecycle Flow' },
+    { id: 'free_funnel', label: 'Free Wash Funnel', badge: 'Cohort' },
+    { id: 'paid_funnel', label: 'Paid Wash Funnel', badge: 'Cohort' },
+    { id: 'signup_funnel', label: 'Signup Funnel' },
+    { id: 'engagement', label: 'Nudges & Reminders' },
     { id: 'performance', label: 'Performance' },
     { id: 'flows', label: `Flows${flows ? ` (${flows.flows.length})` : ''}` },
-    { id: 'trends', label: 'Daily trends' }
+    { id: 'trends', label: 'Daily trends' },
+    { id: 'templates', label: 'Templates Catalog', badge: '35 Approved' }
   ];
 
   return (
@@ -252,21 +278,36 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
                 <Calendar className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <ChevronDown className="w-3 h-3 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
+              <button
+                onClick={() => setTab('templates')}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-all"
+                title="View & Refresh WhatsApp Templates"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Update Templates</span>
+              </button>
               <button onClick={() => void load(false)} disabled={loading} title="Refresh" className="p-1.5 text-slate-500 hover:text-slate-800 bg-white border border-[#e5e5e5] hover:border-slate-300 rounded-lg disabled:opacity-50">
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-[#c91e2f]' : ''}`} />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 pt-2.5" role="tablist">
+          <div className="flex items-center gap-1.5 pt-2.5 overflow-x-auto no-scrollbar" role="tablist">
             {tabs.map((t) => (
               <button
                 key={t.id}
                 role="tab"
                 aria-selected={tab === t.id}
-                onClick={() => setTab(t.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${tab === t.id ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-[#f2f2f2]'}`}
+                onClick={() => handleTabChange(t.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${tab === t.id ? 'bg-black text-white' : 'text-slate-600 hover:text-black hover:bg-[#f2f2f2]'}`}
               >
-                {t.label}
+                <span>{t.label}</span>
+                {t.badge && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold ${
+                    tab === t.id ? 'bg-white/20 text-white' : 'bg-rose-50 text-[#c91e2f]'
+                  }`}>
+                    {t.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -373,6 +414,30 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
           </>
         )}
 
+        {tab === 'free_funnel' && (
+          <div className="animate-in fade-in duration-150">
+            <FreeWashConversionFunnel />
+          </div>
+        )}
+
+        {tab === 'paid_funnel' && (
+          <div className="animate-in fade-in duration-150">
+            <PaidWashConversionFunnel />
+          </div>
+        )}
+
+        {tab === 'signup_funnel' && (
+          <div className="animate-in fade-in duration-150">
+            <SignupConversionFunnel />
+          </div>
+        )}
+
+        {tab === 'engagement' && (
+          <div className="animate-in fade-in duration-150">
+            <EngagementDashboard />
+          </div>
+        )}
+
         {tab === 'performance' &&
           (perfError && !error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-2 text-sm text-red-800">
@@ -396,6 +461,12 @@ export function FunnelPage({ onBack }: { onBack: () => void }) {
         )}
 
         {tab === 'flows' && (flows ? <FlowsPanel data={flows} onChanged={() => void load(false)} freeWashExpiryDay={expiryDay} /> : <div className="h-72 rounded-2xl bg-white border border-[#e5e5e5] animate-pulse" />)}
+
+        {tab === 'templates' && (
+          <div className="animate-in fade-in duration-150">
+            <TemplatesCatalogPanel />
+          </div>
+        )}
       </main>
     </>
   );

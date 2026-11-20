@@ -48,10 +48,12 @@ export const MF_NODES: MfNode[] = [
     id: 's1issue', kind: 'step', stage: 1, title: 'Free wash issuance', when: 'Right after sign-up', x: 0, y: 110,
     variants: [v('Instant app QR / WhatsApp push', 'firstwash'), v('SMS deep link + expiry countdown', 'firstwash_bulk')]
   },
+  { id: 's1hold', kind: 'end', stage: 1, title: 'Unsent / Hold', x: -280, y: 190, tone: 'neutral' },
   {
     id: 's1remind', kind: 'step', stage: 1, title: 'Free wash reminder', when: 'Day 5, if not redeemed', x: 340, y: 290,
     variants: [v('Copy / offer A', 'freewash_redemption_reminder'), v('Copy / offer B', 'redemption_reminder_b')]
   },
+  { id: 's1remind_hold', kind: 'end', stage: 1, title: 'Unsent / Hold', x: 620, y: 190, tone: 'neutral' },
   { id: 's1dead', kind: 'end', title: 'Stage 1 dead / exit', x: 840, y: 310, tone: 'danger' },
 
   {
@@ -100,7 +102,7 @@ export const MF_NODES: MfNode[] = [
   },
 
   {
-    id: 'rr', kind: 'step', stage: 4, title: 'Renewal reminder: savings recap', when: '7 days before every renewal (day 23)', x: -300, y: 2080,
+    id: 'rr', kind: 'step', stage: 4, title: 'Renewal reminder: savings recap', when: '5 days before every renewal (day 25)', x: -300, y: 2080,
     variants: [v('Copy A', 'renewal_reminder_a'), v('Copy B', 'renewal_reminder_a')]
   },
   { id: 'rd', kind: 'milestone', title: 'Renewal day', x: -260, y: 2460 },
@@ -119,8 +121,10 @@ const e = (id: string, from: string, fromSide: MfSide, to: string, toSide: MfSid
 
 export const MF_EDGES: MfEdge[] = [
   e('e1', 'signup', 'bottom', 's1issue', 'top', '', 'neutral'),
+  e('e_s1_hold', 's1issue', 'left', 's1hold', 'right', 'Message not sent', 'neutral'),
   e('e2', 's1issue', 'right', 's1remind', 'top', 'Not redeemed by day 5', 'neutral'),
   e('e3', 's1issue', 'bottom', 'offers', 'top', 'Redeemed within 5 days', 'success'),
+  e('e_remind_hold', 's1remind', 'top', 's1remind_hold', 'bottom', 'Reminder not sent', 'neutral'),
   e('e4', 's1remind', 'right', 's1dead', 'left', 'Not redeemed by day 7', 'danger'),
   e('e5', 's1remind', 'left', 'offers', 'top', 'Redeemed', 'success'),
 
@@ -228,6 +232,8 @@ export const APPROVED_TEMPLATES: Record<string, { language: 'ar' | 'en'; categor
   '96_sar_media': { language: 'ar', category: 'marketing' },
   family_plan: { language: 'ar', category: 'marketing' },
   winback_25: { language: 'ar', category: 'marketing' },
+  winback_rain_25: { language: 'en', category: 'marketing' },
+  winback_winter_b: { language: 'en', category: 'marketing' },
   national_day_offer_summary_utility: { language: 'ar', category: 'utility' },
   national_day_offer_summary: { language: 'ar', category: 'marketing' },
   al_jamea: { language: 'ar', category: 'marketing' },

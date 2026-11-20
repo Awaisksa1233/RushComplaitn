@@ -25,7 +25,7 @@ export interface FunnelGraphStats {
   edges: Record<string, number | null>;
   /** Messages sent per WhatsApp template in the window. null = the funnel database could not be read. */
   templateSent: Record<string, number> | null;
-  promoRedemptions: { offerB: number | null; offerC: number | null };
+  promoRedemptions: { offerA?: number | null; offerB: number | null; offerC: number | null; offerD?: number | null };
   why: Record<string, string>;
   cohort: { cohortSize: number; stages: CohortStage[] };
   sources: { funnelDb: boolean; messages: boolean; eventsAsOf: string };

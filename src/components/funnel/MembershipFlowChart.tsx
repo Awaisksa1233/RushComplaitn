@@ -121,7 +121,7 @@ function TermNode({ data }: NodeProps<Node<NodeData>>) {
 }
 
 const nodeTypes = { step: StepNode, term: TermNode };
-const OPENING_VIEW = ['signup', 's1issue', 's1remind', 's1dead', 'offers', 'exitB', 'exitC', 'remB'].map((id) => ({ id }));
+const OPENING_VIEW = ['signup', 's1issue', 's1hold', 's1remind', 's1remind_hold', 's1dead', 'offers', 'exitB', 'exitC', 'remB'].map((id) => ({ id }));
 
 export function stepStateOf(nodeId: string, flows: FlowConfig[] | null): StepState {
   const ref = MF_NODE_FLOW[nodeId];
@@ -176,10 +176,11 @@ export function MembershipFlowChart({ stats, flows, onSelect, selectedId, remind
             selected: selectedId === n.id,
             variants: list?.map((v, i, all): VariantView => {
               const offerCol = n.id === 'offers' && all.length > 1 && i > 0;
-              const promo = offerCol ? (i === 1 ? stats?.promoRedemptions.offerB : stats?.promoRedemptions.offerC) : undefined;
-              const why = offerCol && stats ? stats.why[i === 1 ? 'offerB' : 'offerC'] : undefined;
+              const promoKey = i === 1 ? 'offerB' : i === 2 ? 'offerC' : i === 3 ? 'offerD' : undefined;
+              const promo = offerCol && promoKey ? stats?.promoRedemptions[promoKey] : undefined;
+              const why = offerCol && stats && promoKey ? stats.why[promoKey] : undefined;
               return {
-                letter: all.length > 1 ? 'ABC'[i] : undefined,
+                letter: all.length > 1 ? 'ABCD'[i] : undefined,
                 label: v.label,
                 template: v.template,
                 approved: isApprovedTemplate(v.template),

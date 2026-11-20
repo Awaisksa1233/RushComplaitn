@@ -6,7 +6,9 @@ import {
   Gauge,
   FileText,
   ShieldAlert,
-  Filter
+  Filter,
+  Gift,
+  BellRing
 } from 'lucide-react';
 import { 
   Granularity, 
@@ -23,7 +25,8 @@ import { WashUsageDashboard } from '../charts/WashUsageDashboard';
 import { SalesTeamPerformance } from '../sales/SalesTeamPerformance';
 import { KpiGuideView } from './KpiGuideView';
 import { RcaMasterView } from './RcaMasterView';
-import { SignupConversionFunnel } from '../charts/SignupConversionFunnel';
+import { SignupConversionFunnel, PaidWashConversionFunnel, FreeWashConversionFunnel } from '../charts/ConversionFunnel';
+import { EngagementDashboard } from '../charts/EngagementDashboard';
 
 export type AnalyticsSubTab = 
   | 'sales' 
@@ -31,6 +34,9 @@ export type AnalyticsSubTab =
   | 'team' 
   | 'usage'
   | 'funnel'
+  | 'free_funnel'
+  | 'paid_funnel'
+  | 'engagement'
   | 'kpi_guide'
   | 'rca';
 
@@ -67,6 +73,9 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
     { id: 'team', label: 'Sales Team', icon: Users },
     { id: 'usage', label: 'Wash Usage & Fleet', icon: Gauge },
     { id: 'funnel', label: 'Signup Funnel', icon: Filter, badge: 'New' },
+    { id: 'free_funnel', label: 'Free Wash Funnel', icon: Gift, badge: 'New' },
+    { id: 'paid_funnel', label: 'Paid Wash Funnel', icon: Filter, badge: 'New' },
+    { id: 'engagement', label: 'Nudges & Reminders', icon: BellRing, badge: 'New' },
     { id: 'kpi_guide', label: 'KPI Guide (.md)', icon: FileText, badge: 'Docs' },
     { id: 'rca', label: 'RCA Master (.md)', icon: ShieldAlert, badge: 'RCA v2.0' },
   ];
@@ -194,7 +203,28 @@ export const AnalyticsHub: React.FC<AnalyticsHubProps> = ({
         </div>
       )}
 
-      {/* 6. KPI CALCULATION GUIDE (.MD) */}
+      {/* FREE WASH → MEMBER FUNNEL */}
+      {activeSubTab === 'free_funnel' && (
+        <div className="animate-in fade-in duration-150">
+          <FreeWashConversionFunnel />
+        </div>
+      )}
+
+      {/* MEMBER ENGAGEMENT: NUDGES & REMINDERS */}
+      {activeSubTab === 'engagement' && (
+        <div className="animate-in fade-in duration-150">
+          <EngagementDashboard />
+        </div>
+      )}
+
+      {/* 6. PAID WASH → SUBSCRIPTION FUNNEL */}
+      {activeSubTab === 'paid_funnel' && (
+        <div className="animate-in fade-in duration-150">
+          <PaidWashConversionFunnel />
+        </div>
+      )}
+
+      {/* 7. KPI CALCULATION GUIDE (.MD) */}
       {activeSubTab === 'kpi_guide' && (
         <KpiGuideView />
       )}

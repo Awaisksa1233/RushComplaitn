@@ -16,20 +16,38 @@ export function TemplateSelector({ value, onChange, label, hint }: TemplateSelec
   const [showPreview, setShowPreview] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const selectedTemplate = useMemo(() => getTemplateById(value), [value]);
+  const [liveList, setLiveList] = useState<WhatsAppTemplateItem[]>(TEMPLATE_CATALOG);
+
+  useEffect(() => {
+    fetch('/api/funnel/templates')
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.data && res.data.length > 0) {
+          const map = new Map<string, WhatsAppTemplateItem>();
+          TEMPLATE_CATALOG.forEach((t) => map.set(t.id, t));
+          res.data.forEach((t: WhatsAppTemplateItem) => map.set(t.id, t));
+          setLiveList(Array.from(map.values()));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const selectedTemplate = useMemo(() => {
+    return liveList.find((t) => t.id === value) || getTemplateById(value);
+  }, [liveList, value]);
 
   // Filter templates based on ID, category, or body content
   const filteredTemplates = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return TEMPLATE_CATALOG;
-    return TEMPLATE_CATALOG.filter(
+    if (!q) return liveList;
+    return liveList.filter(
       (t) =>
         t.id.toLowerCase().includes(q) ||
         t.body.toLowerCase().includes(q) ||
         t.category.toLowerCase().includes(q) ||
-        t.buttons.some((b) => b.toLowerCase().includes(q))
+        (t.buttons || []).some((b) => b.toLowerCase().includes(q))
     );
-  }, [search]);
+  }, [liveList, search]);
 
   // Handle clicking outside to close the dropdown
   useEffect(() => {

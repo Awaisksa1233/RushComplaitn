@@ -31,6 +31,8 @@ import { CustomerCancelPage } from './components/cancellation/CustomerCancelPage
 import { DrilldownModal } from './components/modals/DrilldownModal';
 import { AnalyticsHub, AnalyticsSubTab } from './components/analytics/AnalyticsHub';
 import { FunnelPage } from './components/funnel/FunnelPage';
+import { CustomerComplaintPage } from './components/complaints/CustomerComplaintPage';
+import { ComplaintTrackerPage } from './components/complaints/ComplaintTrackerPage';
 
 export function App() {
   // Path / Route state (handles /cancel, /v1, and /)
@@ -41,6 +43,9 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         return '/cancel';
+      }
+      if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
+        return p.startsWith('/complaint') ? p : '/complaint';
       }
       if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
         return '/funnel';
@@ -60,6 +65,8 @@ export function App() {
       const q = new URLSearchParams(window.location.search).get('route');
       if (p.startsWith('/cancel') || h.startsWith('#/cancel') || h === '#cancel' || q === 'cancel') {
         setCurrentPath('/cancel');
+      } else if (p.startsWith('/complaint') || h.startsWith('#/complaint') || h === '#complaint' || q === 'complaint' || p.startsWith('/claim')) {
+        setCurrentPath(p.startsWith('/complaint') ? p : '/complaint');
       } else if (p.startsWith('/funnel') || h.startsWith('#/funnel') || h === '#funnel' || q === 'funnel') {
         setCurrentPath('/funnel');
       } else if (p.startsWith('/v1') || h.startsWith('#/v1') || h === '#v1' || q === 'v1') {
@@ -100,7 +107,7 @@ export function App() {
         setActiveDomain('analytics');
       }
       const sub = new URLSearchParams(window.location.search).get('sub');
-      if (sub && ['sales', 'memberships', 'team', 'usage', 'funnel', 'kpi_guide', 'rca'].includes(sub)) {
+      if (sub && ['sales', 'memberships', 'team', 'usage', 'funnel', 'free_funnel', 'paid_funnel', 'engagement', 'kpi_guide', 'rca'].includes(sub)) {
         setAnalyticsSubTab(sub as AnalyticsSubTab);
       }
     }
@@ -204,6 +211,14 @@ export function App() {
 
   if (currentPath === '/cancel') {
     return <CustomerCancelPage onBackToDashboard={() => navigate('/')} />;
+  }
+
+  if (currentPath.match(/^\/complaint\/[A-Za-z0-9-_]+/)) {
+    return <ComplaintTrackerPage />;
+  }
+
+  if (currentPath.startsWith('/complaint') || currentPath.startsWith('/claim')) {
+    return <CustomerComplaintPage />;
   }
 
   if (isFunnel) {

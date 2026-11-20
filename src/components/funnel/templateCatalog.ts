@@ -285,6 +285,28 @@ export const TEMPLATE_CATALOG: WhatsAppTemplateItem[] = [
     "buttons": [
       "لإعادة الاشتراك"
     ]
+  },
+  {
+    "id": "winback_rain_25",
+    "name": "winback_rain_25",
+    "language": "en",
+    "category": "marketing",
+    "status": "APPROVED",
+    "body": "🌧️ جدّد اشتراكك بخصم 25% ولا تشيل هم المطر!\n\n🚘 غسيل لا محدود خلال دقائق، مسار سريع ولمعة مستمرة!\n\n⚡ الخصم لمدة 3 أشهر.. ارجع لرش اليوم!",
+    "buttons": [
+      "ارجع لرش اليوم!"
+    ]
+  },
+  {
+    "id": "winback_winter_b",
+    "name": "winback_winter_b",
+    "language": "en",
+    "category": "marketing",
+    "status": "APPROVED",
+    "body": "❄️ جدّد اشتراكك واستعد للشتاء، بأسعار تبدأ من 112 ريال!\n\n🚘 غسيل لا محدود خلال دقائق، مسار سريع ولمعة مستمرة!\n\n⚡ الخصم لمدة 3 أشهر.. ارجع لرش اليوم!",
+    "buttons": [
+      "ارجع لرش اليوم!"
+    ]
   }
 ];
 
