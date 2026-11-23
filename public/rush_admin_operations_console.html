@@ -134,12 +134,12 @@
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-neutral-300 mb-1.5">Email Address</label>
-          <input id="login-email" type="email" required placeholder="admin@rush.com.sa" value="admin@rush.com.sa" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
+          <input id="login-email" type="email" required placeholder="name@rush.com.sa" autocomplete="username" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-neutral-300 mb-1.5">Password</label>
-          <input id="login-password" type="password" required placeholder="••••••••••••" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
+          <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••••••" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
         </div>
 
         <div id="login-error" class="hidden p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs"></div>
@@ -427,6 +427,29 @@
   </div>
 
   <script>
+    // ---- Safety helpers ----
+    function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function escDeep(v, skip) {
+      if (typeof v === "string") return esc(v);
+      if (Array.isArray(v)) return v.map(x => escDeep(x, skip));
+      if (v && typeof v === "object" && !(v instanceof Date)) { const o = {}; for (const k in v) o[k] = (skip && skip.includes(k)) ? v[k] : escDeep(v[k], skip); return o; }
+      return v;
+    }
+    // Surface server-side rejections (role/state/cap rules are enforced server-side) and resync the optimistic UI.
+    const _origFetch = window.fetch.bind(window);
+    window.fetch = async (url, opts) => {
+      const res = await _origFetch(url, opts);
+      try {
+        const isAdminApi = typeof url === "string" && url.startsWith("/api/admin/") && !url.startsWith("/api/admin/auth/login");
+        const method = ((opts && opts.method) || "GET").toUpperCase();
+        if (isAdminApi && res.status === 401) { setTimeout(() => handleLogout(), 0); }
+        else if (isAdminApi && !res.ok && method !== "GET") {
+          const msg = await res.clone().json().then(j => (typeof j.error === "string" ? j.error : "Action rejected by server")).catch(() => "Action rejected by server");
+          setTimeout(() => { showToast(msg); loadLiveAdminData(); }, 0);
+        }
+      } catch (e) {}
+      return res;
+    };
     // ---- System Config (Configurable by Business Owner) ----
     let sysConfig = {
       damageApprovalCapSar: 200,
@@ -927,7 +950,7 @@
                   <div class="text-neutral-600">
                     Invoice: <span class="font-mono text-[#C91E2F]">${c.damageFlow.invoiceFile ? `<a href="${c.damageFlow.invoiceFile}" target="_blank" class="font-bold underline text-[#C91E2F] hover:text-black">View Invoice ↗</a>` : `<span class="text-neutral-400">Pending customer upload</span>`}</span> ·
                     Bank: <strong>${c.damageFlow.bankName || "—"}</strong> ·
-                    IBAN: <span class="font-mono">${c.damageFlow.iban || "—"}</span>
+                    IBAN: <span class="font-mono">${c.damageFlow.iban || "—"}</span> ${c.damageFlow.iban && c.payoutStatus === "Pending Bank Transfer" ? `<button type="button" onclick="revealIban('${c.id}', this)" class="ml-1 underline text-[#C91E2F] font-bold">Reveal (logged)</button>` : ""}
                   </div>
                   ${c.damageFlow.invoiceFile && c.payoutStatus !== "Paid" ? `
                     <div class="flex gap-2 pt-1">
@@ -1089,6 +1112,17 @@
       }
     }
 
+    async function revealIban(id, btn) {
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/bank-details`, { headers: { "Authorization": `Bearer ${token}` } });
+      if (!res.ok) { showToast("Not permitted or no pending transfer"); return; }
+      const d = await res.json();
+      const span = btn.previousElementSibling;
+      if (span) span.textContent = `${d.iban} · ${d.accountHolder} · ${d.bankName}`;
+      btn.remove();
+    }
+
     function handleLogout() {
       sessionStorage.removeItem("rush_staff_token");
       adminToken = null;
@@ -1136,7 +1170,7 @@
               role: s.role === "BUSINESS_OWNER" ? "Business Owner" : s.role === "OPS_MANAGER" ? "Ops Manager" : s.role,
               branch: s.branch,
               active: s.active
-            }));
+            })).map(x => escDeep(x));
           } else {
             staffUsers = [];
           }
@@ -1210,7 +1244,7 @@
                 time: new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 text: m.text
               }))
-            }));
+            })).map(x => escDeep(x, ["resolutionNote"]));
             if (!claims.find(x => x.id === uiState.selectedId) && claims[0]) {
               uiState.selectedId = claims[0].id;
             }
@@ -1261,32 +1295,31 @@
       const role = document.getElementById("new-staff-role").value;
       const branch = document.getElementById("new-staff-branch").value;
       if (!name) return;
+      const email = prompt("Work email for " + name + ":", "");
+      if (!email) return;
+      const password = prompt("Set an initial password (min 12 chars, upper/lower/digit/symbol). Share it securely; the user should change it at first login:", "");
+      if (!password) return;
 
       const roleMap = { "Business Owner": "BUSINESS_OWNER", "Admin": "ADMIN", "Ops Manager": "OPS_MANAGER", "CSM": "CSM" };
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const res = await fetch("/api/admin/staff", {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ name, role: roleMap[role] || "CSM", branch, email: `${name.toLowerCase().replace(/\\s+/g, '.')}@rush.com.sa` })
-          });
-          if (res.ok) {
-            const created = await res.json();
-            staffUsers.push({ id: created.id, name: created.name, role, branch: created.branch, active: true });
-          } else {
-            staffUsers.push({ id: "U-" + (staffUsers.length + 1), name, role, branch, active: true });
-          }
-        } else {
-          staffUsers.push({ id: "U-" + (staffUsers.length + 1), name, role, branch, active: true });
-        }
+        const res = await fetch("/api/admin/staff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ name, role: roleMap[role] || "CSM", branch, email, password })
+        });
+        if (!res.ok) return; // wrapper already toasted the server error
+        const created = await res.json();
+        staffUsers.push(escDeep({ id: created.id, name: created.name, role, branch: created.branch, active: true }));
       } catch {
-        staffUsers.push({ id: "U-" + (staffUsers.length + 1), name, role, branch, active: true });
+        showToast("Could not reach the server");
+        return;
       }
 
       document.getElementById("new-staff-name").value = "";
       renderSettings();
-      showToast(`Added ${name} (${role})`);
+      showToast(`Added ${esc(name)} (${role})`);
     }
 
     async function toggleStaffActive(id) {

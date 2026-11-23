@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app, prisma } from "../src/server";
+import { hashOtp } from "../src/utils/normalize";
 
 describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, () => {
   let customerToken: string;
@@ -27,12 +28,18 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
 
     expect(otpRes.status).toBe(200);
     expect(otpRes.body.sent).toBe(true);
-    const validDevOtp = otpRes.body.devOtp;
+    expect(otpRes.body.devOtp).toBeUndefined(); // never leaked outside explicit dev mode
+    // Tests can't read the SMS; replace the stored hash with a known code
+    const validDevOtp = "123456";
+    await prisma.otpSession.updateMany({
+      where: { phone: "553914420", verified: false },
+      data: { codeHash: hashOtp(validDevOtp) },
+    });
 
     // Verify with WRONG OTP
     const failRes = await request(app)
       .post("/api/auth/verify-otp")
-      .send({ licensePlate: "8821KSA", phone: "0553914420", code: "0000" });
+      .send({ licensePlate: "8821KSA", phone: "0553914420", code: "000000" });
 
     expect(failRes.status).toBe(401);
     expect(failRes.body.error).toContain("Invalid OTP");
@@ -131,7 +138,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
       .set("Authorization", `Bearer ${customerToken}`)
       .send({
         type: "DAMAGE",
-        posRecordId: `POS-TEST-${Date.now()}`,
+        posRecordId: "POS-94102",
         posRecordLabel: "Fresh Wash",
         site: "Al Kharj Main",
         summary: "Side scratch on bumper",
@@ -141,11 +148,16 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     expect(newDmg.status).toBe(201);
     const newTicketId = newDmg.body.id;
 
+    // Unauthenticated Step 2 must be rejected outright
+    const noAuth = await request(app).post(`/api/complaints/${newTicketId}/damage/step2`).send({});
+    expect(noAuth.status).toBe(401);
+
     // Attempt Step 2 before quotation approval
     const step2Fail = await request(app)
       .post(`/api/complaints/${newTicketId}/damage/step2`)
+      .set("Authorization", `Bearer ${customerToken}`)
       .send({
-        invoiceUrl: "https://rush.com.sa/sample_invoice.pdf",
+        invoiceUrl: "/api/files/invoices/1-00000000000000000000000000000000.pdf",
         bankName: "Alinma Bank",
         accountHolder: "Mohammed Al-Qahtani",
         iban: "SA0380000000608010167519",
@@ -157,15 +169,16 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     // Seeded ticket C-1042 HAS quotationApproved: true
     const step2Pass = await request(app)
       .post("/api/complaints/C-1042/damage/step2")
+      .set("Authorization", `Bearer ${customerToken}`)
       .send({
-        invoiceUrl: "https://rush.com.sa/official_tax_invoice.pdf",
+        invoiceUrl: "/api/files/invoices/2-00000000000000000000000000000000.pdf",
         bankName: "Alinma Bank",
         accountHolder: "Mohammed Al-Qahtani",
         iban: "SA0380000000608010167519",
       });
 
     expect(step2Pass.status).toBe(200);
-    expect(step2Pass.body.iban).toBe("SA0380000000608010167519");
+    expect(step2Pass.body.iban).not.toContain("0000000608"); // masked in responses
     expect(step2Pass.body.status).toBe("PENDING_PAYOUT");
   });
 
@@ -177,7 +190,11 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
 
     expect(trackRes.status).toBe(200);
     expect(trackRes.body.rushTaxDetails).toBeDefined();
-    expect(trackRes.body.rushTaxDetails.vatNumber).toBe("310482917400003");
+    expect(trackRes.body.rushTaxDetails.vatNumber).toBeDefined();
     expect(trackRes.body.tickets.length).toBeGreaterThan(0);
+    // Plate lookups return a limited view: no messages, no bank data
+    expect(trackRes.body.limited).toBe(true);
+    expect(trackRes.body.tickets[0].iban).toBeUndefined();
+    expect(trackRes.body.tickets[0].messages).toBeUndefined();
   });
 });

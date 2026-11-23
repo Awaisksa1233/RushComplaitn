@@ -2,6 +2,10 @@ import { Router, Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { STAFF_JWT_SECRET } from "../config/env";
+import { staffLoginLimiter } from "../middleware/security";
+import { encryptField, decryptField, maskIban, randomCode } from "../utils/crypto";
+import { anonymiseCustomer, exportCustomerData } from "../services/retention";
 import {
   PrismaClient,
   StaffRole,
@@ -23,7 +27,25 @@ export interface StaffRequest extends Request {
   staff?: StaffPayload;
 }
 
-const STAFF_JWT_SECRET = process.env.JWT_SECRET || "rush_care_portal_jwt_sec_38210384729103847291";
+const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 12);
+const STAFF_ISSUER = "rush-care";
+const STAFF_AUDIENCE = "rush-staff";
+const PASSWORD_POLICY = z
+  .string()
+  .min(12, "Password must be at least 12 characters")
+  .max(128)
+  .refine((p) => /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) && /[^A-Za-z0-9]/.test(p), "Use upper, lower, digit and symbol");
+const PRIVILEGED: StaffRole[] = [StaffRole.BUSINESS_OWNER, StaffRole.ADMIN];
+const STAFF_PUBLIC = { id: true, name: true, email: true, phone: true, role: true, branch: true, active: true, createdAt: true } as const;
+
+function csvCell(v: unknown): string {
+  let t = v == null ? "" : String(v);
+  if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // neutralise spreadsheet formula injection
+  return `"${t.replace(/"/g, '""')}"`;
+}
+function auditLog(staff: StaffPayload | undefined, action: string, detail: string) {
+  console.warn(`[AUDIT] ${new Date().toISOString()} staff=${staff?.staffId} role=${staff?.role} action=${action} ${detail}`);
+}
 
 export function createAdminRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -80,7 +102,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
     const token = authHeader.replace("Bearer ", "").trim();
     try {
-      const decoded = jwt.verify(token, STAFF_JWT_SECRET) as StaffPayload;
+      const decoded = jwt.verify(token, STAFF_JWT_SECRET, { algorithms: ["HS256"], audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER }) as StaffPayload;
 
       const cached = staffCache.get(decoded.staffId);
       if (cached && cached.expiresAt > Date.now()) {
@@ -103,7 +125,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         branch: user.branch,
         email: user.email,
       };
-      staffCache.set(user.id, { staff: staffPayload, expiresAt: Date.now() + 60 * 1000 });
+      staffCache.set(user.id, { staff: staffPayload, expiresAt: Date.now() + 15 * 1000 });
       req.staff = staffPayload;
       next();
     } catch (err: any) {
@@ -122,15 +144,37 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return {};
   }
 
+  function requireRoles(...roles: StaffRole[]) {
+    return (req: StaffRequest, res: Response, next: NextFunction) => {
+      if (!req.staff || !roles.includes(req.staff.role)) {
+        return res.status(403).json({ error: "Your role is not permitted to perform this action" });
+      }
+      next();
+    };
+  }
+
+  /** Load a claim, enforcing branch scope (404 for out-of-scope so IDs can't be probed). */
+  async function loadClaim(req: StaffRequest, res: Response) {
+    const claim = await prisma.complaint.findUnique({ where: { id: req.params.id } });
+    if (!claim || (req.staff!.role === StaffRole.OPS_MANAGER && claim.site !== req.staff!.branch)) {
+      res.status(404).json({ error: "Ticket not found" });
+      return null;
+    }
+    return claim;
+  }
+
+  const isClosed = (c: { status: TicketStatus; payoutStatus: PayoutStatus }) =>
+    c.status === TicketStatus.RESOLVED || c.payoutStatus === PayoutStatus.PAID || c.payoutStatus === PayoutStatus.PAID_RRN;
+
   // ==========================================
   // 1. Staff Authentication
   // ==========================================
 
   // Staff login with email & password
-  router.post("/auth/login", async (req, res) => {
+  router.post("/auth/login", staffLoginLimiter, async (req, res) => {
     const schema = z.object({
-      email: z.string().email(),
-      password: z.string().min(1),
+      email: z.string().email().max(200),
+      password: z.string().min(1).max(128),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -138,18 +182,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const { email, password } = parsed.data;
-    const user = await prisma.staffUser.findUnique({ where: { email } });
+    const { password } = parsed.data;
+    const email = parsed.data.email.trim().toLowerCase();
+    const user = await prisma.staffUser.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
 
-    if (!user || !user.passwordHash) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-    if (!user.active) {
-      return res.status(403).json({ error: "Staff account is currently paused or inactive" });
-    }
-
-    const match = bcrypt.compareSync(password, user.passwordHash);
-    if (!match) {
+    // Always run a bcrypt compare so response time doesn't reveal whether the account exists
+    const match = await bcrypt.compare(password, user?.passwordHash || DUMMY_HASH);
+    if (!user || !user.passwordHash || !match || !user.active) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
@@ -161,8 +200,20 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       email: user.email,
     };
 
-    const token = jwt.sign(payload, STAFF_JWT_SECRET, { expiresIn: "12h" });
+    const token = jwt.sign(payload, STAFF_JWT_SECRET, { expiresIn: "8h", audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER });
     return res.json({ token, user: payload });
+  });
+
+  router.post("/auth/change-password", staffLoginLimiter, requireStaff, async (req: StaffRequest, res) => {
+    const parsed = z.object({ currentPassword: z.string().max(128), newPassword: PASSWORD_POLICY }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const user = await prisma.staffUser.findUnique({ where: { id: req.staff!.staffId } });
+    if (!user?.passwordHash || !(await bcrypt.compare(parsed.data.currentPassword, user.passwordHash))) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+    await prisma.staffUser.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12) } });
+    staffCache.delete(user.id);
+    return res.json({ success: true });
   });
 
   // Get current logged-in staff info
@@ -185,10 +236,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     }
 
     const schema = z.object({
-      damageApprovalCapSar: z.number().nonnegative().optional(),
+      damageApprovalCapSar: z.number().nonnegative().max(1000000).optional(),
       maxSlaHours: z.number().int().min(4).max(168).optional(),
-      vatNumber: z.string().min(5).optional(),
-      crNumber: z.string().min(4).optional(),
+      vatNumber: z.string().regex(/^3\d{14}$/, "VAT must be 15 digits starting with 3").optional(),
+      crNumber: z.string().regex(/^\d{10}$/, "CR must be 10 digits").optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -200,6 +251,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       where: { id: "default" },
       data: parsed.data,
     });
+    auditLog(req.staff, "CONFIG_UPDATE", JSON.stringify(parsed.data));
     cachedConfig = updated;
     cachedConfigExpiresAt = Date.now() + 60 * 1000;
     return res.json(updated);
@@ -327,9 +379,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     const where: any = branchScopeWhere(req.staff!, String(branch || "all"));
 
     if (status && status !== "all") {
+      if (!(status as string in TicketStatus)) return res.status(400).json({ error: "Invalid status filter" });
       where.status = status as TicketStatus;
     }
     if (type && type !== "all") {
+      if (!["UNSATISFIED", "BILLING_REFUND", "DAMAGE", "OTHER"].includes(String(type))) return res.status(400).json({ error: "Invalid type filter" });
       where.type = type as any;
     }
 
@@ -338,7 +392,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     }
 
     if (search) {
-      const q = String(search).trim();
+      const q = String(search).trim().slice(0, 60);
       where.OR = [
         { id: { contains: q, mode: "insensitive" } },
         { customer: { name: { contains: q, mode: "insensitive" } } },
@@ -395,11 +449,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         quotationUrl: c.quotationUrl,
         quotationApproved: c.quotationApproved,
         waiverSigned: c.waiverSigned,
-        waiverSignature: c.waiverSignature,
         invoiceUrl: c.invoiceUrl,
         bankName: c.bankName,
-        accountHolder: c.accountHolder,
-        iban: c.iban,
+        accountHolder: c.accountHolder ? "•••• " + String(decryptField(c.accountHolder) || "").slice(-3) : null,
+        iban: c.iban ? maskIban(c.iban) : null,
         payoutStatus: c.payoutStatus,
         rewashCode: c.rewashCode,
         rrn: c.rrn,
@@ -448,28 +501,30 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       },
     });
 
-    if (!complaint) {
+    if (!complaint || (req.staff!.role === StaffRole.OPS_MANAGER && complaint.site !== req.staff!.branch)) {
       return res.status(404).json({ error: "Ticket not found" });
     }
 
-    return res.json(complaint);
+    const { iban, accountHolder, waiverSignature, ...rest } = complaint;
+    return res.json({ ...rest, iban: iban ? maskIban(iban) : null, accountHolder: accountHolder ? "••••" : null });
   });
 
   // ==========================================
-  // 5. Claims Action Endpoints
+  // 5. Claims Action Endpoints (role-gated, branch-scoped, state-machine enforced)
   // ==========================================
 
   // Handoff Damage claim from Ops Manager -> CSM
-  router.post("/claims/:id/handoff-csm", requireStaff, async (req: StaffRequest, res) => {
-    if (!([StaffRole.OPS_MANAGER, StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[]).includes(req.staff!.role)) {
-      return res.status(403).json({ error: "Only Ops Manager, Admin, or Owner can hand off Damage claims" });
-    }
+  router.post("/claims/:id/handoff-csm", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.BUSINESS_OWNER, StaffRole.ADMIN), async (req: StaffRequest, res) => {
+    const claim = await loadClaim(req, res);
+    if (!claim) return;
+    if (claim.type !== "DAMAGE" || isClosed(claim)) return res.status(409).json({ error: "Only open Damage claims can be handed off" });
 
     const csm = await prisma.staffUser.findFirst({ where: { role: StaffRole.CSM, active: true } });
-    const csmName = csm?.name || "Omar Al-Dosari";
+    if (!csm) return res.status(409).json({ error: "No active CSM available to receive the handoff" });
+    const csmName = csm.name;
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: claim.id },
       data: {
         assignedRole: StaffRole.CSM,
         assignedStaffName: csmName,
@@ -495,13 +550,16 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return res.json({ success: true, complaint: updated });
   });
 
-  // Overdue SLA Nudge
+  // Overdue SLA Nudge (only when the ticket genuinely is overdue)
   router.post("/claims/:id/nudge", requireStaff, async (req: StaffRequest, res) => {
-    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!complaint) return res.status(404).json({ error: "Ticket not found" });
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    const config = await getSystemConfig();
+    const overdue = !isClosed(complaint) && Date.now() - complaint.createdAt.getTime() > config.maxSlaHours * 3600 * 1000;
+    if (!overdue) return res.status(409).json({ error: "Ticket is not past its SLA" });
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: complaint.id },
       data: {
         slaBreached: true,
         auditLogs: {
@@ -509,7 +567,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
             staffId: req.staff!.staffId,
             actorName: req.staff!.name,
             action: "SLA_NUDGE",
-            details: `48-hour SLA escalation reminder sent by ${req.staff!.name} to ${complaint.assignedStaffName || complaint.assignedRole}.`,
+            details: `${config.maxSlaHours}-hour SLA escalation reminder sent by ${req.staff!.name} to ${complaint.assignedStaffName || complaint.assignedRole}.`,
           },
         },
         messages: {
@@ -526,60 +584,82 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   });
 
   // Approve Unsatisfied -> Issue Rewash Pass
-  router.post("/claims/:id/unsatisfied/approve", requireStaff, async (req: StaffRequest, res) => {
-    if (!([StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM] as StaffRole[]).includes(req.staff!.role)) {
-      return res.status(403).json({ error: "Permission denied to issue rewash pass" });
+  router.post("/claims/:id/unsatisfied/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM), async (req: StaffRequest, res) => {
+    const claim = await loadClaim(req, res);
+    if (!claim) return;
+    if (claim.type !== "UNSATISFIED" || isClosed(claim)) {
+      return res.status(409).json({ error: "Rewash passes can only be issued on open wash-quality tickets" });
     }
 
-    const rewashCode = `RW-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
-      data: {
-        status: TicketStatus.RESOLVED,
-        resolutionStatus: ResolutionStatus.APPROVED,
-        resolutionNote: `Complimentary Rewash pass ${rewashCode} approved by ${req.staff!.name}.`,
-        rewashCode,
-        payoutStatus: PayoutStatus.REWASH_ISSUED,
-        auditLogs: {
-          create: {
-            staffId: req.staff!.staffId,
-            actorName: req.staff!.name,
-            action: "APPROVE_REWASH",
-            details: `Approved complimentary rewash pass ${rewashCode}`,
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const rewashCode = `RW-${randomCode(8)}`; // ~40 bits, unguessable, collision-retried
+      try {
+        const updated = await prisma.complaint.update({
+          where: { id: claim.id },
+          data: {
+            status: TicketStatus.RESOLVED,
+            resolutionStatus: ResolutionStatus.APPROVED,
+            resolutionNote: `Complimentary Rewash pass ${rewashCode} approved by ${req.staff!.name}.`,
+            rewashCode,
+            payoutStatus: PayoutStatus.REWASH_ISSUED,
+            auditLogs: {
+              create: {
+                staffId: req.staff!.staffId,
+                actorName: req.staff!.name,
+                action: "APPROVE_REWASH",
+                details: `Approved complimentary rewash pass ${rewashCode}`,
+              },
+            },
+            messages: {
+              create: {
+                sender: req.staff!.name,
+                channel: MessageChannel.WHATSAPP,
+                body: `Your complimentary Rewash pass ${rewashCode} is approved! Present it at RUSH Car Wash Al Kharj within 7 days.`,
+              },
+            },
           },
-        },
-        messages: {
-          create: {
-            sender: req.staff!.name,
-            channel: MessageChannel.WHATSAPP,
-            body: `Your complimentary Rewash pass ${rewashCode} is approved! Present it at RUSH Car Wash Al Kharj within 7 days.`,
-          },
-        },
-      },
-    });
-
-    return res.json({ success: true, rewashCode, complaint: updated });
+        });
+        return res.json({ success: true, rewashCode, complaint: updated });
+      } catch (e: any) {
+        if (e?.code === "P2002") continue;
+        throw e;
+      }
+    }
+    return res.status(503).json({ error: "Could not generate a unique rewash code, retry" });
   });
 
   // Approve Billing Refund
-  router.post("/claims/:id/billing/approve", requireStaff, async (req: StaffRequest, res) => {
-    if (!([StaffRole.ADMIN, StaffRole.BUSINESS_OWNER] as StaffRole[]).includes(req.staff!.role)) {
-      return res.status(403).json({ error: "Only Admin or Business Owner can approve card billing refunds" });
-    }
-
+  router.post("/claims/:id/billing/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
     const schema = z.object({
-      rrn: z.string().min(4),
-      amount: z.number().positive(),
+      rrn: z.string().regex(/^[A-Za-z0-9]{4,30}$/, "RRN must be 4-30 alphanumeric characters"),
+      amount: z.number().positive().max(100000),
     });
-
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Valid RRN and refund amount are required" });
     }
 
+    const claim = await loadClaim(req, res);
+    if (!claim) return;
+    if (claim.type !== "BILLING_REFUND" || isClosed(claim)) {
+      return res.status(409).json({ error: "Refund can only be approved on an open billing ticket" });
+    }
+
+    // Refund may never exceed what was paid (POS order) or what the customer claimed
+    const order = await prisma.posOrder.findUnique({ where: { id: claim.posRecordId } });
+    const ceiling = order ? Number(order.amountSar) : claim.requestedAmount != null ? Number(claim.requestedAmount) : null;
+    if (ceiling == null || parsed.data.amount > ceiling) {
+      return res.status(400).json({
+        error: ceiling == null
+          ? "No verified order amount or requested amount on file; cannot approve a refund"
+          : `Refund (SAR ${parsed.data.amount}) exceeds the verified ceiling of SAR ${ceiling}`,
+      });
+    }
+    const dupRrn = await prisma.complaint.findFirst({ where: { rrn: parsed.data.rrn, id: { not: claim.id } } });
+    if (dupRrn) return res.status(409).json({ error: "This RRN is already attached to another ticket" });
+
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: claim.id },
       data: {
         status: TicketStatus.RESOLVED,
         resolutionStatus: ResolutionStatus.APPROVED,
@@ -609,20 +689,20 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   });
 
   // Request Repair Quotation & Waiver from Customer
-  router.post("/claims/:id/damage/request-quote", requireStaff, async (req: StaffRequest, res) => {
-    const schema = z.object({
-      resolutionNote: z.string().optional(),
-    });
-    const parsed = schema.safeParse(req.body);
+  router.post("/claims/:id/damage/request-quote", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+    const parsed = z.object({ resolutionNote: z.string().max(1000).optional() }).safeParse(req.body);
     const note = parsed.success && parsed.data.resolutionNote
       ? parsed.data.resolutionNote
       : "Your damage claim has been approved for repair review. Please upload an official repair quotation and sign the liability waiver in your tracker.";
 
-    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!complaint) return res.status(404).json({ error: "Ticket not found" });
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (complaint.type !== "DAMAGE" || isClosed(complaint) || complaint.quotationApproved) {
+      return res.status(409).json({ error: "Quotation can only be requested on open Damage claims awaiting a quotation" });
+    }
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: complaint.id },
       data: {
         resolutionStatus: ResolutionStatus.APPROVED,
         status: TicketStatus.INVESTIGATING,
@@ -640,7 +720,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Hi, your damage claim ${complaint.id} has been approved for repair review. Please open your tracker to upload the official repair quotation and sign the waiver: https://crm.rush.com.sa/`,
+            body: `Hi, your damage claim ${complaint.id} has been approved for repair review. Please open your tracker to upload the official repair quotation and sign the waiver: ${process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/"}`,
           },
         },
       },
@@ -649,35 +729,47 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return res.json({ success: true, complaint: updated });
   });
 
-  // Approve Damage Quotation (Enforces SAR 200 Cap)
-  router.post("/claims/:id/damage/approve-quote", requireStaff, async (req: StaffRequest, res) => {
+  // Approve Damage Quotation (cap enforced against the customer-submitted amount stored on the ticket)
+  router.post("/claims/:id/damage/approve-quote", requireStaff, requireRoles(StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
     const config = await getSystemConfig();
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (complaint.type !== "DAMAGE" || isClosed(complaint) || complaint.quotationApproved) {
+      return res.status(409).json({ error: "No open quotation awaiting approval" });
+    }
+    if (!complaint.quotationUrl || !complaint.waiverSigned) {
+      return res.status(409).json({ error: "Customer must upload a quotation and sign the waiver first" });
+    }
 
-    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!complaint) return res.status(404).json({ error: "Ticket not found" });
+    // The amount being approved is ALWAYS the stored one; only the Business Owner may override it, and the override is audited.
+    const stored = Number(complaint.quotedAmount || 0);
+    const body = z.object({ quotedAmount: z.number().positive().max(100000).optional() }).safeParse(req.body);
+    if (!body.success) return res.status(400).json({ error: "Invalid quoted amount" });
+    if (body.data.quotedAmount !== undefined && body.data.quotedAmount !== stored && req.staff!.role !== StaffRole.BUSINESS_OWNER) {
+      return res.status(403).json({ error: "Only the Business Owner can change a customer-submitted quotation amount" });
+    }
+    const quoted = body.data.quotedAmount ?? stored;
+    if (!(quoted > 0)) return res.status(409).json({ error: "A positive quoted amount is required before approval" });
 
     const cap = Number(config.damageApprovalCapSar);
-    const quoted = Number(req.body.quotedAmount !== undefined ? req.body.quotedAmount : (complaint.quotedAmount || 0));
-
-    // Strict Cap Check: If quoted > cap, only BUSINESS_OWNER can approve
     if (quoted > cap && req.staff!.role !== StaffRole.BUSINESS_OWNER) {
       return res.status(403).json({
-        error: `Repair quotation (SAR ${quoted}) exceeds the configurable approval cap of SAR ${cap}. Only Business Owner (${req.staff!.name}) can approve this quotation.`,
+        error: `Repair quotation (SAR ${quoted}) exceeds the configurable approval cap of SAR ${cap}. Only the Business Owner can approve this quotation.`,
       });
     }
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: complaint.id },
       data: {
         quotationApproved: true,
+        quotedAmount: quoted,
         payoutStatus: PayoutStatus.AWAITING_INVOICE_IBAN,
-        ...(req.body.quotedAmount !== undefined ? { quotedAmount: quoted } : {}),
         auditLogs: {
           create: {
             staffId: req.staff!.staffId,
             actorName: req.staff!.name,
             action: "APPROVE_DAMAGE_QUOTE",
-            details: `Repair quotation of SAR ${quoted} approved by ${req.staff!.name} (${req.staff!.role}). Unlocked Step 2 for customer invoice & IBAN.`,
+            details: `Repair quotation of SAR ${quoted} (submitted: SAR ${stored}) approved by ${req.staff!.name} (${req.staff!.role}). Unlocked Step 2 for customer invoice & IBAN.`,
           },
         },
         messages: {
@@ -694,18 +786,17 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   });
 
   // Refuse Complaint
-  router.post("/claims/:id/refuse", requireStaff, async (req: StaffRequest, res) => {
-    const schema = z.object({
-      resolutionNote: z.string().min(5),
-    });
-
-    const parsed = schema.safeParse(req.body);
+  router.post("/claims/:id/refuse", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), async (req: StaffRequest, res) => {
+    const parsed = z.object({ resolutionNote: z.string().min(5).max(1000) }).safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Detailed resolution note is required when refusing a claim" });
     }
+    const claim = await loadClaim(req, res);
+    if (!claim) return;
+    if (isClosed(claim)) return res.status(409).json({ error: "Ticket is already closed or paid" });
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: claim.id },
       data: {
         status: TicketStatus.RESOLVED,
         resolutionStatus: ResolutionStatus.REFUSED,
@@ -723,7 +814,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Update on ticket ${req.params.id}: After review, we are unable to approve this claim. Reason: ${parsed.data.resolutionNote}`,
+            body: `Update on ticket ${claim.id}: After review, we are unable to approve this claim. Reason: ${parsed.data.resolutionNote}`,
           },
         },
       },
@@ -732,29 +823,37 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return res.json({ success: true, complaint: updated });
   });
 
-  // Patch Claim Fields (real-time persistence from Admin Console)
-  router.patch("/claims/:id", requireStaff, async (req: StaffRequest, res) => {
+  // Patch non-financial claim fields. Money/closure state may ONLY change through the action endpoints above.
+  router.patch("/claims/:id", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), async (req: StaffRequest, res) => {
     const schema = z.object({
-      resolutionStatus: z.nativeEnum(ResolutionStatus).optional(),
-      resolutionNote: z.string().nullable().optional(),
-      status: z.nativeEnum(TicketStatus).optional(),
-      payoutStatus: z.nativeEnum(PayoutStatus).optional(),
+      resolutionNote: z.string().max(1000).nullable().optional(),
+      status: z.enum(["SUBMITTED", "INVESTIGATING"]).optional(),
       assignedRole: z.nativeEnum(StaffRole).optional(),
-      assignedStaffName: z.string().optional(),
-      vehicleZones: z.array(z.string()).optional(),
-    });
+      assignedStaffName: z.string().max(80).optional(),
+      vehicleZones: z.array(z.string().max(60)).max(20).optional(),
+    }).strict();
 
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+      return res.status(400).json({ error: "Only resolutionNote, status (SUBMITTED/INVESTIGATING), assignment and zones can be patched; use the action endpoints for approvals and payouts" });
     }
-
-    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!complaint) return res.status(404).json({ error: "Ticket not found" });
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (isClosed(complaint)) return res.status(409).json({ error: "Ticket is closed" });
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
-      data: parsed.data,
+      where: { id: complaint.id },
+      data: {
+        ...parsed.data,
+        auditLogs: {
+          create: {
+            staffId: req.staff!.staffId,
+            actorName: req.staff!.name,
+            action: "PATCH_CLAIM",
+            details: `Fields changed by ${req.staff!.name}: ${Object.keys(parsed.data).join(", ")}`,
+          },
+        },
+      },
     });
 
     return res.json({ success: true, complaint: updated });
@@ -763,32 +862,29 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   // Post Internal or Customer Message
   router.post("/claims/:id/messages", requireStaff, async (req: StaffRequest, res) => {
     const schema = z.object({
-      body: z.string().min(1),
+      body: z.string().min(1).max(2000),
       channel: z.nativeEnum(MessageChannel).default(MessageChannel.INTERNAL),
     });
-
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Valid message text is required" });
     }
+    const claim = await loadClaim(req, res);
+    if (!claim) return;
 
     const message = await prisma.message.create({
-      data: {
-        complaintId: req.params.id,
-        sender: req.staff!.name,
-        channel: parsed.data.channel,
-        body: parsed.data.body,
-      },
+      data: { complaintId: claim.id, sender: req.staff!.name, channel: parsed.data.channel, body: parsed.data.body },
     });
-
     return res.json(message);
   });
 
   // ==========================================
-  // 6. Finance & Bank Transfer Disbursement
+  // 6. Finance & Bank Transfer Disbursement (Owner/Admin only)
   // ==========================================
 
-  router.get("/finance", requireStaff, async (req: StaffRequest, res) => {
+  const financeRoles = [StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[];
+
+  router.get("/finance", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
     const complaints = await prisma.complaint.findMany({
       where: {
         OR: [
@@ -799,51 +895,70 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       },
       include: { customer: true },
       orderBy: { updatedAt: "desc" },
+      take: 1000,
     });
 
-    const financeList = complaints.map((c) => ({
-      id: c.id,
-      customer: {
-        name: c.customer.name,
-        phone: c.customer.phone,
-        plate: c.customer.licensePlate,
-      },
-      branch: c.site,
-      type: c.type,
-      amountSar: Number(c.approvedAmount || c.requestedAmount || c.quotedAmount || 0),
-      payoutStatus: c.payoutStatus,
-      iban: c.iban || "—",
-      bankName: c.bankName || "—",
-      accountHolder: c.accountHolder || "—",
-      rrn: c.rrn || "—",
-      rewashCode: c.rewashCode || "—",
-      transferRef: c.transferRef || "—",
-      updatedAt: c.updatedAt,
-    }));
+    return res.json(
+      complaints.map((c) => ({
+        id: c.id,
+        customer: { name: c.customer.name, phone: c.customer.phone, plate: c.customer.licensePlate },
+        branch: c.site,
+        type: c.type,
+        amountSar: Number(c.approvedAmount || c.requestedAmount || c.quotedAmount || 0),
+        payoutStatus: c.payoutStatus,
+        iban: maskIban(c.iban),
+        bankName: c.bankName || "—",
+        accountHolder: c.accountHolder ? "•••• " + String(decryptField(c.accountHolder) || "").slice(-3) : "—",
+        rrn: c.rrn || "—",
+        rewashCode: c.rewashCode || "—",
+        transferRef: c.transferRef || "—",
+        updatedAt: c.updatedAt,
+      }))
+    );
+  });
 
-    return res.json(financeList);
+  // Reveal full bank details for a pending transfer — audited, rate limited, pending-transfer tickets only
+  router.get("/finance/:id/bank-details", requireStaff, requireRoles(...financeRoles), staffLoginLimiter, async (req: StaffRequest, res) => {
+    const c = await loadClaim(req, res);
+    if (!c) return;
+    if (c.payoutStatus !== PayoutStatus.PENDING_BANK_TRANSFER || !c.iban) {
+      return res.status(409).json({ error: "No pending bank transfer for this ticket" });
+    }
+    auditLog(req.staff, "REVEAL_BANK_DETAILS", `ticket=${c.id}`);
+    await prisma.auditLog.create({
+      data: { complaintId: c.id, staffId: req.staff!.staffId, actorName: req.staff!.name, action: "REVEAL_BANK_DETAILS", details: "Full IBAN viewed for payout" },
+    });
+    return res.json({
+      id: c.id,
+      iban: decryptField(c.iban),
+      accountHolder: decryptField(c.accountHolder),
+      bankName: c.bankName,
+      amountSar: Number(c.approvedAmount || c.quotedAmount || 0),
+    });
   });
 
   // Mark Bank Transfer Paid
-  router.post("/finance/:id/mark-paid", requireStaff, async (req: StaffRequest, res) => {
-    const schema = z.object({
-      transferRef: z.string().min(3),
-    });
-
-    const parsed = schema.safeParse(req.body);
+  router.post("/finance/:id/mark-paid", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
+    const parsed = z.object({ transferRef: z.string().regex(/^[A-Za-z0-9\-_]{3,40}$/) }).safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Transfer reference (e.g. TRF-994012) is required" });
     }
 
-    const complaint = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!complaint) return res.status(404).json({ error: "Ticket not found" });
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (complaint.payoutStatus !== PayoutStatus.PENDING_BANK_TRANSFER || !complaint.iban || !complaint.quotationApproved) {
+      return res.status(409).json({ error: "Ticket is not awaiting a bank transfer (needs approved quotation, invoice and IBAN)" });
+    }
+    const amount = Number(complaint.approvedAmount || complaint.quotedAmount || 0);
+    if (!(amount > 0)) return res.status(409).json({ error: "No approved amount on this ticket" });
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: complaint.id },
       data: {
         status: TicketStatus.RESOLVED,
         resolutionStatus: ResolutionStatus.APPROVED,
         payoutStatus: PayoutStatus.PAID,
+        approvedAmount: amount,
         transferRef: parsed.data.transferRef,
         resolutionNote: `Bank transfer executed. Ref: ${parsed.data.transferRef}. Logged by ${req.staff!.name}.`,
         auditLogs: {
@@ -851,7 +966,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
             staffId: req.staff!.staffId,
             actorName: req.staff!.name,
             action: "MARK_PAID",
-            details: `Bank transfer marked paid. Ref: ${parsed.data.transferRef} by ${req.staff!.name}.`,
+            details: `Bank transfer of SAR ${amount} marked paid. Ref: ${parsed.data.transferRef} by ${req.staff!.name}.`,
           },
         },
         messages: {
@@ -867,42 +982,31 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return res.json({ success: true, complaint: updated });
   });
 
-  // Export Finance CSV (RFC-4180)
-  router.get("/finance/export.csv", requireStaff, async (_req, res) => {
+  // Export Finance CSV (RFC-4180, formula-injection safe, IBAN masked, access logged)
+  router.get("/finance/export.csv", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
     const complaints = await prisma.complaint.findMany({
       include: { customer: true },
       orderBy: { createdAt: "desc" },
+      take: 10000,
     });
+    auditLog(req.staff, "EXPORT_FINANCE_CSV", `rows=${complaints.length}`);
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename=rush_finance_export_${Date.now()}.csv`);
 
     const rows = [
-      ["Ticket ID", "Branch", "Type", "Status", "Payout Status", "Customer", "Phone", "Plate", "Amount (SAR)", "IBAN", "Bank", "Transfer Ref / RRN", "Rewash Code", "Staff In Charge", "Date"].join(",")
+      ["Ticket ID", "Branch", "Type", "Status", "Payout Status", "Customer", "Phone", "Plate", "Amount (SAR)", "IBAN (masked)", "Bank", "Transfer Ref / RRN", "Rewash Code", "Staff In Charge", "Date"].map(csvCell).join(","),
     ];
-
     for (const c of complaints) {
       const amt = Number(c.approvedAmount || c.requestedAmount || c.quotedAmount || 0);
-      const ref = c.transferRef || c.rrn || "";
-      rows.push([
-        c.id,
-        `"${c.site}"`,
-        c.type,
-        c.status,
-        c.payoutStatus,
-        `"${c.customer.name}"`,
-        c.customer.phone,
-        `"${c.customer.licensePlate}"`,
-        amt.toFixed(2),
-        `"${c.iban || ''}"`,
-        `"${c.bankName || ''}"`,
-        `"${ref}"`,
-        `"${c.rewashCode || ''}"`,
-        `"${c.assignedStaffName || ''}"`,
-        `"${c.createdAt.toISOString()}"`
-      ].join(","));
+      rows.push(
+        [
+          c.id, c.site, c.type, c.status, c.payoutStatus, c.customer.name, c.customer.phone, c.customer.licensePlate,
+          amt.toFixed(2), c.iban ? maskIban(c.iban) : "", c.bankName || "", c.transferRef || c.rrn || "", c.rewashCode || "",
+          c.assignedStaffName || "", c.createdAt.toISOString(),
+        ].map(csvCell).join(",")
+      );
     }
-
     return res.send(rows.join("\r\n"));
   });
 
@@ -910,93 +1014,117 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   // 7. Staff Directory & RBAC Controls
   // ==========================================
 
-  router.get("/staff", requireStaff, async (_req, res) => {
-    const staff = await prisma.staffUser.findMany({
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        branch: true,
-        active: true,
-        createdAt: true,
-      },
-    });
+  router.get("/staff", requireStaff, requireRoles(...PRIVILEGED), async (_req, res) => {
+    const staff = await prisma.staffUser.findMany({ orderBy: { createdAt: "asc" }, select: STAFF_PUBLIC });
     return res.json(staff);
   });
 
-  router.post("/staff", requireStaff, async (req: StaffRequest, res) => {
-    if (!([StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[]).includes(req.staff!.role)) {
-      return res.status(403).json({ error: "Only Owner or Admin can add staff users" });
-    }
+  /** ADMINs may manage only non-privileged staff; only the Business Owner manages ADMIN/OWNER accounts. */
+  function canManage(actor: StaffPayload, targetRole: StaffRole, newRole?: StaffRole) {
+    if (actor.role === StaffRole.BUSINESS_OWNER) return true;
+    if (actor.role !== StaffRole.ADMIN) return false;
+    return !PRIVILEGED.includes(targetRole) && !(newRole && PRIVILEGED.includes(newRole));
+  }
 
+  router.post("/staff", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
     const schema = z.object({
-      name: z.string().min(2),
-      email: z.string().email(),
-      phone: z.string().optional(),
+      name: z.string().min(2).max(80),
+      email: z.string().email().max(200),
+      phone: z.string().max(20).optional(),
       role: z.nativeEnum(StaffRole),
-      branch: z.string().default("RUSH Al Kharj"),
-      password: z.string().min(6).default("RushCare@2026!"),
+      branch: z.string().max(80).default("RUSH Al Kharj"),
+      password: PASSWORD_POLICY, // required: no default/shared credentials
     });
 
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
+    if (!canManage(req.staff!, parsed.data.role, parsed.data.role)) {
+      return res.status(403).json({ error: "Only the Business Owner can create Admin or Owner accounts" });
+    }
 
     const { password, ...staffData } = parsed.data;
+    staffData.email = staffData.email.trim().toLowerCase();
 
-    const existing = await prisma.staffUser.findUnique({
-      where: { email: staffData.email },
-    });
+    const existing = await prisma.staffUser.findFirst({ where: { email: { equals: staffData.email, mode: "insensitive" } } });
     if (existing) {
       return res.status(400).json({ error: "Staff user with this email already exists" });
     }
 
-    const passwordHash = bcrypt.hashSync(password, 10);
-
     const created = await prisma.staffUser.create({
-      data: {
-        ...staffData,
-        passwordHash,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        role: true,
-        branch: true,
-        active: true,
-        createdAt: true,
-      },
+      data: { ...staffData, passwordHash: await bcrypt.hash(password, 12) },
+      select: STAFF_PUBLIC,
     });
+    auditLog(req.staff, "STAFF_CREATE", `new=${created.id} role=${created.role}`);
     return res.json(created);
   });
 
-  router.patch("/staff/:id", requireStaff, async (req: StaffRequest, res) => {
-    if (!([StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[]).includes(req.staff!.role)) {
-      return res.status(403).json({ error: "Only Owner or Admin can update staff users" });
-    }
-
+  router.patch("/staff/:id", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
     const schema = z.object({
       role: z.nativeEnum(StaffRole).optional(),
-      branch: z.string().optional(),
+      branch: z.string().max(80).optional(),
       active: z.boolean().optional(),
-    });
+    }).strict();
 
     const parsed = schema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: parsed.error.flatten() });
     }
 
-    const updated = await prisma.staffUser.update({
-      where: { id: req.params.id },
-      data: parsed.data,
-    });
+    const target = await prisma.staffUser.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: "Staff user not found" });
+    if (target.id === req.staff!.staffId && (parsed.data.role !== undefined || parsed.data.active !== undefined)) {
+      return res.status(403).json({ error: "You cannot change your own role or active status" });
+    }
+    if (!canManage(req.staff!, target.role, parsed.data.role)) {
+      return res.status(403).json({ error: "Only the Business Owner can modify Admin or Owner accounts" });
+    }
+    if (target.role === StaffRole.BUSINESS_OWNER && (parsed.data.active === false || (parsed.data.role && parsed.data.role !== StaffRole.BUSINESS_OWNER))) {
+      const owners = await prisma.staffUser.count({ where: { role: StaffRole.BUSINESS_OWNER, active: true } });
+      if (owners <= 1) return res.status(409).json({ error: "Cannot demote or deactivate the last active Business Owner" });
+    }
+
+    const updated = await prisma.staffUser.update({ where: { id: target.id }, data: parsed.data, select: STAFF_PUBLIC });
+    staffCache.delete(target.id);
+    auditLog(req.staff, "STAFF_UPDATE", `target=${target.id} ${JSON.stringify(parsed.data)}`);
     return res.json(updated);
+  });
+
+  router.post("/staff/:id/reset-password", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
+    const parsed = z.object({ newPassword: PASSWORD_POLICY }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
+    const target = await prisma.staffUser.findUnique({ where: { id: req.params.id } });
+    if (!target) return res.status(404).json({ error: "Staff user not found" });
+    if (!canManage(req.staff!, target.role)) return res.status(403).json({ error: "Not permitted for this account" });
+    await prisma.staffUser.update({ where: { id: target.id }, data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12) } });
+    staffCache.delete(target.id);
+    auditLog(req.staff, "STAFF_PASSWORD_RESET", `target=${target.id}`);
+    return res.json({ success: true });
+  });
+
+  // ==========================================
+  // 8. Data-subject requests (PDPL) — Business Owner only, audited
+  // ==========================================
+
+  router.get("/customers/:id/export", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+    const data = await exportCustomerData(prisma, req.params.id);
+    if (!data) return res.status(404).json({ error: "Customer not found" });
+    auditLog(req.staff, "CUSTOMER_EXPORT", `customer=${req.params.id}`);
+    return res.json(data);
+  });
+
+  router.post("/customers/:id/anonymise", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+    const open = await prisma.complaint.count({ where: { customerId: req.params.id, status: { not: TicketStatus.RESOLVED } } });
+    if (open) return res.status(409).json({ error: "Customer has open tickets; resolve them first" });
+    const ok = await anonymiseCustomer(prisma, req.params.id);
+    if (!ok) return res.status(404).json({ error: "Customer not found" });
+    await prisma.complaint.updateMany({
+      where: { customerId: req.params.id },
+      data: { summary: "[removed on customer request]", mediaUrls: [], iban: null, accountHolder: null, bankName: null, bankSmsText: null, bankSmsUrl: null, cardLast4: null, waiverSignature: null },
+    });
+    auditLog(req.staff, "CUSTOMER_ANONYMISE", `customer=${req.params.id}`);
+    return res.json({ success: true });
   });
 
   return router;

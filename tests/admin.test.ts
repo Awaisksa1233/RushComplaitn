@@ -3,7 +3,10 @@ import request from "supertest";
 import { app, prisma } from "../src/server";
 import { StaffRole } from "@prisma/client";
 
-describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => {
+// Ephemeral fixture credential for throw-away test users (deleted in afterAll). The real owner login comes from env.
+const TEST_PW = "Tst-Only!Fixture-9xQ2";
+
+describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWORD)("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => {
   let ownerToken: string;
   let adminToken: string;
   let opsToken: string;
@@ -56,13 +59,13 @@ describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => 
     // 1b. Reject unknown email
     const resUnknown = await request(app)
       .post("/api/admin/auth/login")
-      .send({ email: "unknown@rush.com.sa", password: "RushCare@2026!" });
+      .send({ email: "unknown@rush.com.sa", password: TEST_PW });
     expect(resUnknown.status).toBe(401);
 
     // 1c. Successfully authenticate primary admin
     const resOwner = await request(app)
       .post("/api/admin/auth/login")
-      .send({ email: "admin@rush.com.sa", password: "RushCare@2026!" });
+      .send({ email: process.env.TEST_OWNER_EMAIL!, password: process.env.TEST_OWNER_PASSWORD! });
     expect(resOwner.status).toBe(200);
     expect(resOwner.body.token).toBeDefined();
     expect(resOwner.body.user.email).toBe("admin@rush.com.sa");
@@ -78,7 +81,7 @@ describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => 
         email: adminEmail,
         role: StaffRole.ADMIN,
         branch: "RUSH Al Kharj",
-        password: "RushCare@2026!",
+        password: TEST_PW,
       });
     expect(resCreateAdmin.status).toBe(200);
     createdStaffIds.push(resCreateAdmin.body.id);
@@ -91,7 +94,7 @@ describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => 
         email: opsEmail,
         role: StaffRole.OPS_MANAGER,
         branch: "RUSH Al Kharj",
-        password: "RushCare@2026!",
+        password: TEST_PW,
       });
     expect(resCreateOps.status).toBe(200);
     createdStaffIds.push(resCreateOps.body.id);
@@ -104,7 +107,7 @@ describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => 
         email: csmEmail,
         role: StaffRole.CSM,
         branch: "RUSH Al Kharj",
-        password: "RushCare@2026!",
+        password: TEST_PW,
       });
     expect(resCreateCsm.status).toBe(200);
     createdStaffIds.push(resCreateCsm.body.id);
@@ -112,19 +115,19 @@ describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => 
     // 1e. Login as each created staff member
     const resAdminLogin = await request(app)
       .post("/api/admin/auth/login")
-      .send({ email: adminEmail, password: "RushCare@2026!" });
+      .send({ email: adminEmail, password: TEST_PW });
     expect(resAdminLogin.status).toBe(200);
     adminToken = resAdminLogin.body.token;
 
     const resOpsLogin = await request(app)
       .post("/api/admin/auth/login")
-      .send({ email: opsEmail, password: "RushCare@2026!" });
+      .send({ email: opsEmail, password: TEST_PW });
     expect(resOpsLogin.status).toBe(200);
     opsToken = resOpsLogin.body.token;
 
     const resCsmLogin = await request(app)
       .post("/api/admin/auth/login")
-      .send({ email: csmEmail, password: "RushCare@2026!" });
+      .send({ email: csmEmail, password: TEST_PW });
     expect(resCsmLogin.status).toBe(200);
     csmToken = resCsmLogin.body.token;
   }, 45000);

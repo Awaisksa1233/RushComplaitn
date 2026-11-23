@@ -1,8 +1,8 @@
 import { MongoClient, ObjectId, Db } from "mongodb";
-import { normalizePlate, normalizePhone } from "../utils/normalize";
+import { normalizePlate, normalizePhone, escapeRegex } from "../utils/normalize";
 
 const MONGO_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/rushwash";
-const ENABLE_LOCAL_MONGO = process.env.ENABLE_LOCAL_MONGO !== "false";
+const ENABLE_LOCAL_MONGO = process.env.ENABLE_LOCAL_MONGO === "true";
 
 let client: MongoClient | null = null;
 let db: Db | null = null;
@@ -18,7 +18,7 @@ async function getDb(): Promise<Db | null> {
     });
     await client.connect();
     db = client.db("rushwash");
-    console.log("[MongoDB Local Adapter] Connected to local MongoDB at mongodb://127.0.0.1:27017/rushwash (Read-Only)");
+    console.log("[MongoDB Local Adapter] Connected (read-only)");
     return db;
   } catch (err: any) {
     console.warn("[MongoDB Local Adapter] Local MongoDB offline or unreachable:", err.message);
@@ -51,8 +51,8 @@ export async function findCustomerInMongo(
         { normalizedPlate: normPl },
         { displayPlate: normPl },
         { plateNumber: normPl },
-        { normalizedPlate: new RegExp(`^${normPl}$`, "i") },
-        { displayPlate: new RegExp(`^${normPl}$`, "i") },
+        { normalizedPlate: new RegExp(`^${escapeRegex(normPl)}$`, "i") },
+        { displayPlate: new RegExp(`^${escapeRegex(normPl)}$`, "i") },
       ],
     });
 
@@ -73,14 +73,13 @@ export async function findCustomerInMongo(
     }
 
     // 2. Fallback: Search by phone if plate alone didn't resolve customer
-    const phoneRegex = new RegExp(`${normPhone}$`);
+    const phoneRegex = new RegExp(`${escapeRegex(normPhone)}$`);
     const customers = await database
       .collection("rushwash_customers")
       .find({
         $or: [
           { phone: phoneRegex },
           { normalizedPhone: phoneRegex },
-          { readableCode: rawPhone.trim() },
         ],
       })
       .toArray();
@@ -128,7 +127,7 @@ export async function getWashesFromMongo(
       { normalizedPlate: normPl },
       { plateNumber: normPl },
       { "vehicleSnapshot.displayPlate": normPl },
-      { normalizedPlate: new RegExp(`^${normPl}$`, "i") },
+      { normalizedPlate: new RegExp(`^${escapeRegex(normPl)}$`, "i") },
     ];
 
     if (mongoCustomerId && ObjectId.isValid(mongoCustomerId)) {
@@ -274,7 +273,7 @@ export async function getOrdersFromMongo(
     const orClauses: any[] = [
       { normalizedPlate: normPl },
       { "vehicleSnapshot.displayPlate": normPl },
-      { normalizedPlate: new RegExp(`^${normPl}$`, "i") },
+      { normalizedPlate: new RegExp(`^${escapeRegex(normPl)}$`, "i") },
     ];
 
     if (mongoCustomerId && ObjectId.isValid(mongoCustomerId)) {
