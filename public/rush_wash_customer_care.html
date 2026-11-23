@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl" class="notranslate" translate="no">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rush Wash | Customer Care</title>
+  <meta name="google" content="notranslate" />
+  <title>RUSH رش واش | Customer Care</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
     tailwind.config = {
@@ -46,91 +47,91 @@
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #D4D4D4; border-radius: 9999px; }
   </style>
 </head>
-<body class="bg-white text-black antialiased min-h-screen">
+<body class="bg-white text-black antialiased min-h-screen notranslate" translate="no">
 
-  <div id="portal-root" class="min-h-screen bg-[#F7F7F8] flex flex-col justify-start items-center sm:py-8">
+  <div id="portal-root" class="min-h-screen bg-[#F7F7F8] flex flex-col justify-start items-center sm:py-8 notranslate" translate="no">
 
     <main class="w-full max-w-xl bg-white sm:rounded-3xl shadow-sm sm:border sm:border-neutral-200/80 p-4 sm:p-8 flex flex-col justify-between min-h-screen sm:min-h-0 space-y-5">
       <div class="w-full space-y-5">
         <!-- Sleek Brand & Language Header -->
         <header class="flex items-center justify-between border-b border-neutral-100 pb-4">
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-xs">
+            <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-xs shrink-0">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-6 h-4">
                 <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
                 <path fill-rule="evenodd" d="M349.6 195.55A10.65 10.65 0 1 1 349.6 216.85A10.65 10.65 0 1 1 349.6 195.55ZM349.6 197.7A8.5 8.5 0 1 0 349.6 214.7A8.5 8.5 0 1 0 349.6 197.7Z"/>
                 <path fill-rule="evenodd" d="M345.9 201.05H349.95C352.35 201.05 353.65 202.25 353.65 204.2C353.65 205.55 352.95 206.5 351.65 206.95L354.15 211.2H351.65L349.45 207.35H348.1V211.2H345.9ZM348.1 202.95V205.5H349.7C350.8 205.5 351.4 205.05 351.4 204.2C351.4 203.35 350.8 202.95 349.7 202.95Z"/>
               </svg>
             </div>
-            <div class="leading-none">
-              <span class="font-extrabold tracking-widest text-base italic text-black">RUSH</span>
-              <span class="text-xs font-bold text-neutral-800 ml-1">رش واش</span>
-              <span class="block text-[10px] font-semibold text-neutral-400 mt-1">Customer Care · خدمة العملاء</span>
+            <div class="leading-none notranslate" translate="no">
+              <span class="font-extrabold tracking-widest text-base italic text-black notranslate">RUSH</span>
+              <span class="text-xs font-bold text-neutral-800 ml-1 notranslate">رش واش</span>
+              <span id="brand-sub" class="block text-[10px] font-semibold text-neutral-400 mt-1 notranslate">خدمة العملاء · Customer Care</span>
             </div>
           </div>
 
-          <button id="lang-btn" type="button" onclick="toggleLang()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 border border-neutral-200 text-xs font-semibold text-black transition">
-            <span class="text-[#C91E2F] font-bold">AR</span>
-            <span>العربية</span>
+          <button id="lang-btn" type="button" onclick="toggleLang()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 border border-neutral-200 text-xs font-semibold text-black transition notranslate" translate="no">
+            <span class="text-[#C91E2F] font-bold">EN</span>
+            <span>English</span>
           </button>
         </header>
 
         <!-- Top Bar: Mode Switcher -->
-        <div class="w-full inline-flex items-center bg-[#F4F4F5] p-1 rounded-full border border-neutral-200 text-xs font-semibold">
-          <button id="tab-file" type="button" onclick="switchMode('file')" class="flex-1 py-2 text-center rounded-full bg-black text-white shadow-xs transition">File Complaint</button>
-          <button id="tab-track" type="button" onclick="switchMode('track')" class="flex-1 py-2 text-center rounded-full text-neutral-600 hover:text-black transition">Track Complaint</button>
+        <div class="w-full inline-flex items-center bg-[#F4F4F5] p-1 rounded-full border border-neutral-200 text-xs font-semibold notranslate" translate="no">
+          <button id="tab-file" type="button" onclick="switchMode('file')" class="flex-1 py-2 text-center rounded-full bg-black text-white shadow-xs transition">تقديم بلاغ</button>
+          <button id="tab-track" type="button" onclick="switchMode('track')" class="flex-1 py-2 text-center rounded-full text-neutral-600 hover:text-black transition">تتبع البلاغ</button>
         </div>
 
         <!-- Minimal Progress Dots (File Mode) -->
-        <div id="stepper" class="flex items-center gap-2 text-[11px] font-semibold">
+        <div id="stepper" class="flex items-center gap-2 text-[11px] font-semibold notranslate" translate="no">
           <div id="step-ind-1" class="flex items-center gap-1.5 text-black">
             <span class="w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]">1</span>
-            <span>Verify</span>
+            <span>المركبة</span>
           </div>
           <div class="h-px flex-1 bg-neutral-200"></div>
           <div id="step-ind-2" class="flex items-center gap-1.5 text-neutral-400">
             <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">2</span>
-            <span>OTP</span>
+            <span>رمز التحقق</span>
           </div>
           <div class="h-px flex-1 bg-neutral-200"></div>
           <div id="step-ind-3" class="flex items-center gap-1.5 text-neutral-400">
             <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">3</span>
-            <span>Visit</span>
+            <span>اختيار الزيارة</span>
           </div>
           <div class="h-px flex-1 bg-neutral-200"></div>
           <div id="step-ind-4" class="flex items-center gap-1.5 text-neutral-400">
             <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">4</span>
-            <span>Details</span>
+            <span>تفاصيل البلاغ</span>
           </div>
         </div>
 
         <!-- ================= STEP 1: WELCOME TO RUSH (Plate + +966 Phone) ================= -->
-        <div id="step-1" class="space-y-5">
+        <div id="step-1" class="space-y-5 notranslate" translate="no">
           <div>
-            <h2 id="s1-title" class="text-2xl font-extrabold tracking-tight text-black">Welcome to Rush</h2>
-            <p id="s1-sub" class="text-sm text-neutral-500 mt-1">Enter your license plate and mobile number to get started.</p>
+            <h2 id="s1-title" class="text-2xl font-extrabold tracking-tight text-black notranslate">مرحباً بك في رش واش</h2>
+            <p id="s1-sub" class="text-sm text-neutral-500 mt-1 notranslate">أدخل رقم اللوحة ورقم الجوال للبدء.</p>
           </div>
 
           <form onsubmit="verifyPlateAndPhone(event)" class="space-y-4">
             <div>
-              <label id="step1-plate-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">License plate *</label>
-              <input id="inp-plate" type="text" required placeholder="ABC 1234" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm uppercase font-mono font-semibold tracking-wider focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none transition" />
+              <label id="step1-plate-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم اللوحة *</label>
+              <input id="inp-plate" type="text" required placeholder="أ ب ج 1234" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm uppercase font-mono font-semibold tracking-wider focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none transition notranslate" translate="no" />
             </div>
 
             <div>
-              <label id="step1-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Mobile number *</label>
+              <label id="step1-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم الجوال *</label>
               <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] focus-within:border-[#C91E2F] overflow-hidden transition" dir="ltr">
-                <span class="inline-flex items-center gap-1.5 px-3.5 bg-[#F4F4F5] border-r border-neutral-200 text-sm font-semibold text-neutral-700 shrink-0">
+                <span class="inline-flex items-center gap-1.5 px-3.5 bg-[#F4F4F5] border-r border-neutral-200 text-sm font-semibold text-neutral-700 shrink-0 notranslate" translate="no">
                   <span>🇸🇦</span>
                   <span>+966</span>
                 </span>
-                <input id="inp-phone" type="tel" required placeholder="50 000 0000" class="w-full px-3.5 py-3 text-sm font-medium focus:outline-none" />
+                <input id="inp-phone" type="tel" required placeholder="50 000 0000" class="w-full px-3.5 py-3 text-sm font-medium focus:outline-none notranslate" translate="no" />
               </div>
             </div>
 
             <div id="step1-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
 
-            <button id="btn-step1" type="submit" class="w-full py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Continue</button>
+            <button id="btn-step1" type="submit" class="w-full py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition notranslate" translate="no">إرسال رمز التحقق</button>
           </form>
         </div>
 
@@ -434,25 +435,33 @@
       appState.lang = lang;
       try { localStorage.setItem("rush_portal_lang", lang); } catch (e) {}
       const isAr = lang === "ar";
+      document.documentElement.setAttribute("lang", isAr ? "ar" : "en");
+      document.documentElement.setAttribute("dir", isAr ? "rtl" : "ltr");
       document.getElementById("portal-root").setAttribute("dir", isAr ? "rtl" : "ltr");
 
       // Header language button
       const btnHtml = isAr
-        ? `<span class="text-[#C91E2F] font-bold">EN</span><span>English</span>`
+        ? `<span class="text-[#C91E2F] font-bold">EN</span><span class="font-sans">English</span>`
         : `<span class="text-[#C91E2F] font-bold">AR</span><span>العربية</span>`;
       const langBtn = document.getElementById("lang-btn");
       if (langBtn) langBtn.innerHTML = btnHtml;
       const langBtnMobile = document.getElementById("lang-btn-mobile");
       if (langBtnMobile) langBtnMobile.innerHTML = btnHtml;
 
+      // Header Brand Subtitle
+      const brandSub = document.getElementById("brand-sub");
+      if (brandSub) brandSub.textContent = isAr ? "خدمة العملاء · Customer Care" : "Customer Care · خدمة العملاء";
+
       // Mode tabs
       const tabFile = document.getElementById("tab-file");
-      if (tabFile) tabFile.textContent = isAr ? "تقديم بلاغ" : "File Complaint";
+      if (tabFile) tabFile.textContent = isAr ? "تقديم بلاغ جديد" : "Submit Complaint";
       const tabTrack = document.getElementById("tab-track");
-      if (tabTrack) tabTrack.textContent = isAr ? "تتبع البلاغ" : "Track Complaint";
+      if (tabTrack) tabTrack.textContent = isAr ? "تتبع بلاغ سابق" : "Track Complaint";
 
       // Stepper
-      const labels = isAr ? ["التحقق", "الرمز", "الزيارة", "التفاصيل"] : ["Verify", "OTP", "Visit", "Details"];
+      const labels = isAr 
+        ? ["المركبة", "رمز التحقق", "اختيار الزيارة", "تفاصيل البلاغ"] 
+        : ["Vehicle", "OTP Code", "Select Visit", "Complaint Details"];
       [1, 2, 3, 4].forEach((s, idx) => {
         const el = document.getElementById(`step-ind-${s}`)?.querySelector("span:last-child");
         if (el) el.textContent = labels[idx];
@@ -460,7 +469,7 @@
 
       // Step 1
       const s1Title = document.getElementById("s1-title");
-      if (s1Title) s1Title.textContent = isAr ? "مرحباً بك في رش واش" : "Welcome to Rush";
+      if (s1Title) s1Title.textContent = isAr ? "مرحباً بك في رش واش" : "Welcome to Rush Wash";
       const s1Sub = document.getElementById("s1-sub");
       if (s1Sub) s1Sub.textContent = isAr ? "أدخل رقم اللوحة ورقم الجوال للبدء." : "Enter your license plate and mobile number to get started.";
       const s1PlateLbl = document.getElementById("step1-plate-label");
@@ -470,7 +479,10 @@
       const s1PhoneLbl = document.getElementById("step1-phone-label");
       if (s1PhoneLbl) s1PhoneLbl.textContent = isAr ? "رقم الجوال *" : "Mobile number *";
       const bStep1 = document.getElementById("btn-step1");
-      if (bStep1) { bStep1.textContent = isAr ? "متابعة" : "Continue"; bStep1.dataset.originalHtml = bStep1.innerHTML; }
+      if (bStep1) { 
+        bStep1.textContent = isAr ? "إرسال رمز التحقق" : "Send Verification Code"; 
+        bStep1.dataset.originalHtml = bStep1.innerHTML; 
+      }
 
       // Step 2
       const s2Title = document.getElementById("s2-title");
@@ -624,7 +636,7 @@
       const err = document.getElementById("step1-error");
       err.classList.add("hidden");
       const isAr = appState.lang === "ar";
-      setBtnLoading("btn-step1", true, isAr ? "جاري التحقق من المركبة..." : "Checking Vehicle...");
+      setBtnLoading("btn-step1", true, isAr ? "جاري إرسال رمز التحقق..." : "Sending OTP Code...");
 
       try {
         const res = await fetch(`${API_BASE}/api/auth/request-otp`, {
