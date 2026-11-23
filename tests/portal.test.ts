@@ -8,23 +8,23 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
   let testCustomerId: string;
 
   beforeAll(async () => {
-    // Look up or seed test customer Mohammed Al-Qahtani
+    // Look up or seed authorized test customer Awais
     const customer = await prisma.customer.upsert({
       where: {
-        licensePlate_phone: { licensePlate: "8821KSA", phone: "553914420" }
+        licensePlate_phone: { licensePlate: "5962HSS", phone: "569809578" }
       },
       update: {},
       create: {
-        name: "Mohammed Al-Qahtani",
-        phone: "553914420",
-        licensePlate: "8821KSA",
-        vehicleModel: "GMC Yukon"
+        name: "Awais",
+        phone: "569809578",
+        licensePlate: "5962HSS",
+        vehicleModel: "MG"
       }
     });
     testCustomerId = customer.id;
 
     // Clean up any test complaints, visits, and OTP sessions from prior test runs
-    await prisma.otpSession.deleteMany({ where: { phone: "553914420" } });
+    await prisma.otpSession.deleteMany({ where: { phone: "569809578" } });
     await prisma.complaint.deleteMany({ where: { customerId: testCustomerId } });
     await prisma.washVisit.deleteMany({ where: { customerId: testCustomerId } });
 
@@ -96,6 +96,11 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
         quotedAmount: 500,
         status: "INVESTIGATING",
         assignedRole: "OPS_MANAGER",
+        iban: null,
+        bankName: null,
+        accountHolder: null,
+        invoiceUrl: null,
+        payoutStatus: "AWAITING_INVOICE_IBAN",
       },
       create: {
         id: "C-1042",
@@ -123,7 +128,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     // Request OTP
     const otpRes = await request(app)
       .post("/api/auth/request-otp")
-      .send({ licensePlate: "8821KSA", phone: "0553914420" });
+      .send({ licensePlate: "5962HSS", phone: "0569809578" });
 
     expect(otpRes.status).toBe(200);
     expect(otpRes.body.sent).toBe(true);
@@ -131,14 +136,14 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     // Tests can't read the SMS; replace the stored hash with a known code
     const validDevOtp = "123456";
     await prisma.otpSession.updateMany({
-      where: { phone: "553914420", verified: false },
+      where: { phone: "569809578", verified: false },
       data: { codeHash: hashOtp(validDevOtp) },
     });
 
     // Verify with WRONG OTP
     const failRes = await request(app)
       .post("/api/auth/verify-otp")
-      .send({ licensePlate: "8821KSA", phone: "0553914420", code: "000000" });
+      .send({ licensePlate: "5962HSS", phone: "0569809578", code: "000000" });
 
     expect(failRes.status).toBe(401);
     expect(failRes.body.error).toContain("Invalid OTP");
@@ -146,7 +151,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     // Verify with CORRECT OTP
     const passRes = await request(app)
       .post("/api/auth/verify-otp")
-      .send({ licensePlate: "8821KSA", phone: "0553914420", code: validDevOtp });
+      .send({ licensePlate: "5962HSS", phone: "0569809578", code: validDevOtp });
 
     expect(passRes.status).toBe(200);
     expect(passRes.body.token).toBeDefined();
@@ -272,7 +277,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
       .send({
         invoiceUrl: "/api/files/invoices/2-00000000000000000000000000000000.pdf",
         bankName: "Alinma Bank",
-        accountHolder: "Mohammed Al-Qahtani",
+        accountHolder: "Awais",
         iban: "SA0380000000608010167519",
       });
 
@@ -285,7 +290,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
   it("6. should return complaint tracking with Rush tax details", async () => {
     const trackRes = await request(app)
       .post("/api/complaints/track")
-      .send({ query: "8821KSA", phone: "0553914420" });
+      .send({ query: "5962HSS", phone: "0569809578" });
 
     expect(trackRes.status).toBe(200);
     expect(trackRes.body.rushTaxDetails).toBeDefined();
