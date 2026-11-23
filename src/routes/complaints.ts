@@ -1,29 +1,115 @@
-import { Router, Response } from "express";
+import crypto from "crypto";
+import { Router, Request, Response } from "express";
 import { z } from "zod";
-import { PrismaClient, ComplaintType, StaffRole, MessageChannel, TicketStatus, PayoutStatus } from "@prisma/client";
-import { AuthedRequest, requireCustomerJwt } from "../middleware/auth";
-import { normalizePlate, normalizePhone } from "../utils/normalize";
+import { PrismaClient, ComplaintType, StaffRole, MessageChannel, TicketStatus, PayoutStatus, Prisma } from "@prisma/client";
+import { AuthedRequest, requireCustomerJwt, ownsTicket, signCustomerToken } from "../middleware/auth";
+import { normalizePlate, normalizePhone, isSaudiMobile, isSafeFileUrl } from "../utils/normalize";
+import { encryptField, maskIban } from "../utils/crypto";
+import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET } from "../config/env";
+import { trackLimiter, webhookLimiter } from "../middleware/security";
+import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
+
+const safeUrl = z.string().refine(isSafeFileUrl, "Invalid file reference");
+
+/** Saudi IBAN: SA + 22 digits, ISO 7064 mod-97 check. */
+export function isValidSaIban(iban: string): boolean {
+  if (!/^SA\d{22}$/.test(iban)) return false;
+  const rearranged = iban.slice(4) + iban.slice(0, 4);
+  const numeric = rearranged.replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  let rem = 0;
+  for (const ch of numeric) rem = (rem * 10 + Number(ch)) % 97;
+  return rem === 1;
+}
+
+/** Customer-safe projection of a ticket. Never exposes INTERNAL messages, audit logs or full bank details. */
+function ticketDto(t: any, full: boolean) {
+  const base = {
+    id: t.id,
+    type: t.type,
+    status: t.status,
+    resolutionStatus: t.resolutionStatus,
+    site: t.site,
+    createdAt: t.createdAt,
+    customer: t.customer
+      ? { name: t.customer.name, licensePlate: t.customer.licensePlate, vehicleModel: t.customer.vehicleModel, phone: t.customer.phone }
+      : undefined,
+  };
+  if (!full) return base;
+  return {
+    ...base,
+    resolutionNote: t.resolutionNote,
+    posRecordId: t.posRecordId,
+    posRecordLabel: t.posRecordLabel,
+    vehicleZones: t.vehicleZones,
+    summary: t.summary,
+    rewashCode: t.rewashCode,
+    rrn: t.rrn,
+    transferRef: t.transferRef,
+    payoutStatus: t.payoutStatus,
+    requestedAmount: t.requestedAmount != null ? Number(t.requestedAmount) : null,
+    approvedAmount: t.approvedAmount != null ? Number(t.approvedAmount) : null,
+    quotedAmount: t.quotedAmount != null ? Number(t.quotedAmount) : null,
+    quotationUrl: t.quotationUrl,
+    waiverSigned: t.waiverSigned,
+    quotationApproved: t.quotationApproved,
+    invoiceUrl: t.invoiceUrl,
+    bankName: t.bankName,
+    accountHolder: t.accountHolder ? "•••• " + String(t.accountHolder).slice(-3) : null,
+    iban: t.iban ? maskIban(t.iban) : null,
+    csatRating: t.csatRating,
+    mediaUrls: t.mediaUrls,
+    messages: (t.messages || [])
+      .filter((m: any) => m.channel !== MessageChannel.INTERNAL)
+      .map((m: any) => ({ id: m.id, sender: m.sender, channel: m.channel, body: m.body, createdAt: m.createdAt })),
+  };
+}
 
 export function createComplaintsRouter(prisma: PrismaClient) {
   const router = Router();
+
+  async function loadOwnedTicket(req: AuthedRequest, res: Response, requireType?: ComplaintType) {
+    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
+    // 404 for both missing and foreign tickets so ticket IDs cannot be enumerated
+    if (!ticket || !ownsTicket(req, ticket) || (requireType && ticket.type !== requireType)) {
+      res.status(404).json({ error: "Ticket not found" });
+      return null;
+    }
+    return ticket;
+  }
+
+  async function recordBelongsToCustomer(req: AuthedRequest, type: string, recordId: string): Promise<boolean> {
+    const customerId = req.customer!.customerId;
+    if (type === "BILLING_REFUND") {
+      if (await prisma.posOrder.findFirst({ where: { id: recordId, customerId }, select: { id: true } })) return true;
+    } else if (await prisma.washVisit.findFirst({ where: { id: recordId, customerId }, select: { id: true } })) {
+      return true;
+    }
+    const { licensePlate, phone } = req.customer!;
+    const mc = await findCustomerInMongo(licensePlate, phone);
+    if (!mc) return false;
+    const recs = type === "BILLING_REFUND"
+      ? await getOrdersFromMongo(licensePlate, mc.mongoCustomerId, 10)
+      : await getWashesFromMongo(licensePlate, mc.mongoCustomerId, 7, 3);
+    return recs.some((r: any) => r.id === recordId);
+  }
 
   // 1. Submit New Complaint
   router.post("/", requireCustomerJwt, async (req: AuthedRequest, res: Response) => {
     const schema = z.object({
       type: z.enum(["UNSATISFIED", "BILLING_REFUND", "DAMAGE", "OTHER"]),
-      posRecordId: z.string().min(1),
-      posRecordLabel: z.string().min(1),
-      site: z.string().min(1),
-      summary: z.string().min(3),
-      callbackWindow: z.string().default("Anytime"),
-      qualityTags: z.array(z.string()).default([]),
-      vehicleZones: z.array(z.string()).default([]),
-      billingReason: z.string().optional(),
-      requestedAmount: z.number().nonnegative().optional(),
+      posRecordId: z.string().min(1).max(60),
+      posRecordLabel: z.string().min(1).max(200),
+      site: z.string().min(1).max(100),
+      summary: z.string().min(3).max(2000),
+      callbackWindow: z.string().max(50).default("Anytime"),
+      qualityTags: z.array(z.string().max(60)).max(20).default([]),
+      vehicleZones: z.array(z.string().max(60)).max(20).default([]),
+      billingReason: z.string().max(120).optional(),
+      requestedAmount: z.number().nonnegative().max(100000).optional(),
       cardLast4: z.string().regex(/^\d{4}$/, "Must be exactly 4 digits").optional(),
-      bankSmsText: z.string().optional(),
-      bankSmsUrl: z.string().optional(),
-      mediaUrls: z.array(z.string()).default([]),
+      bankSmsText: z.string().max(2000).optional(),
+      bankSmsUrl: safeUrl.optional(),
+      mediaUrls: z.array(safeUrl).max(10).default([]),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -33,16 +119,27 @@ export function createComplaintsRouter(prisma: PrismaClient) {
 
     const data = parsed.data;
     const customerId = req.customer!.customerId;
+    const site = ALLOWED_SITES.includes(data.site) ? data.site : ALLOWED_SITES[0];
 
-    // Unlisted POS order check
     if (data.posRecordId === "ORD-UNLISTED") {
+      if (data.type !== "BILLING_REFUND") {
+        return res.status(400).json({ error: "Unlisted orders are only valid for billing disputes." });
+      }
       if (!data.cardLast4 || (!data.bankSmsUrl && !data.bankSmsText)) {
         return res.status(400).json({
           error: "Card last 4 digits and Bank SMS proof are required for unlisted orders.",
         });
       }
+      const recentUnlisted = await prisma.complaint.count({
+        where: { customerId, posRecordId: "ORD-UNLISTED", createdAt: { gt: new Date(Date.now() - 24 * 3600 * 1000) } },
+      });
+      if (recentUnlisted >= 2) {
+        return res.status(429).json({ error: "Daily limit for unlisted-order claims reached." });
+      }
     } else {
-      // Duplicate check for listed visit/order
+      if (!(await recordBelongsToCustomer(req, data.type, data.posRecordId))) {
+        return res.status(400).json({ error: "The selected visit/order was not found on your account." });
+      }
       const dup = await prisma.complaint.findFirst({
         where: { customerId, posRecordId: data.posRecordId },
       });
@@ -54,56 +151,59 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       }
     }
 
-    // Generate sequential ticket ID (C-1043, C-1044, ...)
-    const count = await prisma.complaint.count();
-    const ticketId = `C-${1043 + count}`;
-
-    // Auto-routing assignment
     const assignedRole: StaffRole =
       data.type === ComplaintType.DAMAGE ? StaffRole.OPS_MANAGER : StaffRole.ADMIN;
 
-    const complaint = await prisma.complaint.create({
-      data: {
-        id: ticketId,
-        customerId,
-        type: data.type as ComplaintType,
-        assignedRole,
-        site: data.site,
-        posRecordId: data.posRecordId,
-        posRecordLabel: data.posRecordLabel,
-        summary: data.summary,
-        callbackWindow: data.callbackWindow,
-        qualityTags: data.qualityTags,
-        vehicleZones: data.vehicleZones,
-        billingReason: data.billingReason,
-        requestedAmount: data.requestedAmount,
-        cardLast4: data.cardLast4,
-        bankSmsText: data.bankSmsText,
-        bankSmsUrl: data.bankSmsUrl,
-        mediaUrls: data.mediaUrls,
-        messages: {
-          create: {
-            sender: "Customer",
-            channel: MessageChannel.WEB_PORTAL,
-            body: data.summary,
+    // Collision-safe sequential ticket IDs (retry on unique violation instead of trusting count())
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const count = await prisma.complaint.count();
+      const ticketId = `C-${1043 + count + attempt}`;
+      try {
+        const complaint = await prisma.complaint.create({
+          data: {
+            id: ticketId,
+            customerId,
+            type: data.type as ComplaintType,
+            assignedRole,
+            site,
+            posRecordId: data.posRecordId,
+            posRecordLabel: data.posRecordLabel,
+            summary: data.summary,
+            callbackWindow: data.callbackWindow,
+            qualityTags: data.qualityTags,
+            vehicleZones: data.vehicleZones,
+            billingReason: data.billingReason,
+            requestedAmount: data.requestedAmount,
+            cardLast4: data.cardLast4,
+            bankSmsText: data.bankSmsText,
+            bankSmsUrl: data.bankSmsUrl,
+            mediaUrls: data.mediaUrls,
+            messages: {
+              create: { sender: "Customer", channel: MessageChannel.WEB_PORTAL, body: data.summary },
+            },
           },
-        },
-      },
-      include: {
-        messages: true,
-      },
-    });
-
-    return res.status(201).json(complaint);
+          include: { messages: true, customer: true },
+        });
+        // Issue a ticket-scoped token so the customer can follow up without a new OTP
+        const trackToken = signCustomerToken(
+          { customerId, phone: req.customer!.phone, licensePlate: req.customer!.licensePlate, scope: "track", ticketIds: [complaint.id] },
+          "2h"
+        );
+        return res.status(201).json({ ...ticketDto(complaint, true), cardLast4: complaint.cardLast4, trackToken });
+      } catch (e: any) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") continue;
+        throw e;
+      }
+    }
+    return res.status(503).json({ error: "Could not allocate a ticket number, please retry." });
   });
 
-  // 2. Track Complaint by Ticket ID or Plate + Phone
-  router.post("/track", async (req, res) => {
+  // 2. Track Complaint
+  //    Ticket-ID lookup (+ phone) -> full customer-safe view and a ticket-scoped token.
+  //    Plate lookup (+ phone) -> status summary only (plate/phone are weak secrets).
+  router.post("/track", trackLimiter, async (req, res) => {
     const parsed = z
-      .object({
-        query: z.string().min(2),
-        phone: z.string().min(9),
-      })
+      .object({ query: z.string().min(2).max(30), phone: z.string().min(9).max(20) })
       .safeParse(req.body);
 
     if (!parsed.success) {
@@ -113,118 +213,124 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const rawQuery = parsed.data.query.trim().toUpperCase();
     const qPlate = normalizePlate(rawQuery);
     const phone = normalizePhone(parsed.data.phone);
+    const NOT_FOUND = { error: "No matching complaint found for these credentials." };
+    if (!isSaudiMobile(phone)) return res.status(404).json(NOT_FOUND);
 
+    const byId = /^C-\d+$/.test(rawQuery);
     const tickets = await prisma.complaint.findMany({
       where: {
         customer: { phone },
-        OR: [
-          { id: rawQuery },
-          { customer: { licensePlate: qPlate } },
-        ],
+        ...(byId ? { id: rawQuery } : { customer: { phone, licensePlate: qPlate } }),
       },
       include: {
-        customer: {
-          select: {
-            name: true,
-            licensePlate: true,
-            vehicleModel: true,
-            phone: true,
-          },
-        },
-        messages: {
-          orderBy: { createdAt: "asc" },
-        },
+        customer: { select: { name: true, licensePlate: true, vehicleModel: true, phone: true } },
+        messages: { orderBy: { createdAt: "asc" } },
       },
       orderBy: { createdAt: "desc" },
+      take: 20,
     });
 
     if (!tickets.length) {
-      return res.status(404).json({ error: "No matching complaint found for these credentials." });
+      return res.status(404).json(NOT_FOUND);
+    }
+
+    const cfg = await prisma.systemConfig.findUnique({ where: { id: "default" } });
+    let trackToken: string | undefined;
+    if (byId) {
+      const t = tickets[0] as any;
+      const cust = await prisma.customer.findUnique({ where: { id: t.customerId } });
+      if (cust) {
+        trackToken = signCustomerToken(
+          { customerId: cust.id, phone: cust.phone, licensePlate: cust.licensePlate, scope: "track", ticketIds: tickets.map((x) => x.id) },
+          "2h"
+        );
+      }
     }
 
     return res.json({
       rushTaxDetails: {
         companyName: process.env.RUSH_TAX_COMPANY || "Rush Car Wash Operations Co.",
-        vatNumber: process.env.RUSH_VAT_NUMBER || "310482917400003",
-        crNumber: process.env.RUSH_CR_NUMBER || "1010684920",
-        address: process.env.RUSH_TAX_ADDRESS || "Prince Muhammad Bin Salman Road, Al Kharj",
+        vatNumber: cfg?.vatNumber || process.env.RUSH_VAT_NUMBER,
+        crNumber: cfg?.crNumber || process.env.RUSH_CR_NUMBER,
+        address: process.env.RUSH_TAX_ADDRESS,
       },
-      tickets,
+      limited: !byId,
+      trackToken,
+      tickets: tickets.map((t) => ticketDto(t, byId)),
     });
   });
 
-  // 2.5 Damage Document Quick-Upload (Quotation / Invoice)
-  router.post("/:id/damage/upload-doc", async (req, res) => {
-    const schema = z.object({
-      field: z.enum(["quotationUrl", "invoiceUrl"]),
-      url: z.string().min(1),
-    });
+  // 2.5 Damage Document Quick-Upload (Quotation / Invoice) — owner only, and only in the right phase
+  router.post("/:id/damage/upload-doc", requireCustomerJwt, async (req: AuthedRequest, res) => {
+    const parsed = z.object({ field: z.enum(["quotationUrl", "invoiceUrl"]), url: safeUrl }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const parsed = schema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
+    const ticket = await loadOwnedTicket(req, res, ComplaintType.DAMAGE);
+    if (!ticket) return;
+    if (ticket.status === TicketStatus.RESOLVED || ticket.payoutStatus === PayoutStatus.PAID) {
+      return res.status(409).json({ error: "This ticket is closed." });
     }
 
-    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+    if (parsed.data.field === "quotationUrl") {
+      if (ticket.quotationApproved) {
+        return res.status(409).json({ error: "Quotation already approved; it can no longer be replaced." });
+      }
+    } else if (!ticket.quotationApproved) {
+      return res.status(403).json({ error: "Invoice upload is unlocked only after the quotation is approved." });
     }
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: ticket.id },
       data: {
         [parsed.data.field]: parsed.data.url,
         ...(parsed.data.field === "quotationUrl" ? { payoutStatus: PayoutStatus.AWAITING_QUOTE_APPROVAL } : {}),
       },
+      include: { customer: true, messages: true },
     });
-
-    return res.json({ success: true, ticket: updated });
+    return res.json({ success: true, ticket: ticketDto(updated, true) });
   });
 
   // 3. Damage Step 1: Upload Quotation + Sign Waiver
-  router.post("/:id/damage/step1", async (req, res) => {
+  router.post("/:id/damage/step1", requireCustomerJwt, async (req: AuthedRequest, res) => {
     const parsed = z
       .object({
-        quotationUrl: z.string().min(1),
-        waiverSignature: z.string().optional().default("DIGITALLY_SIGNED_ON_PORTAL"),
-        quotedAmount: z.number().optional(),
+        quotationUrl: safeUrl,
+        waiverSignature: z.string().max(300000).optional().default("DIGITALLY_SIGNED_ON_PORTAL"),
+        quotedAmount: z.number().positive().max(100000).optional(),
       })
       .safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Valid quotation reference required" });
 
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Quotation URL required" });
-    }
-
-    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+    const ticket = await loadOwnedTicket(req, res, ComplaintType.DAMAGE);
+    if (!ticket) return;
+    if (ticket.quotationApproved || ticket.status === TicketStatus.RESOLVED) {
+      return res.status(409).json({ error: "Quotation can no longer be changed for this ticket." });
     }
 
     const updated = await prisma.complaint.update({
-      where: { id: req.params.id },
+      where: { id: ticket.id },
       data: {
         quotationUrl: parsed.data.quotationUrl,
         waiverSigned: true,
-        waiverSignature: parsed.data.waiverSignature || "DIGITALLY_SIGNED_ON_PORTAL",
-        quotationApproved: false, // Strict: requires management review
+        waiverSignature: parsed.data.waiverSignature,
+        quotationApproved: false,
         payoutStatus: PayoutStatus.AWAITING_QUOTE_APPROVAL,
         ...(parsed.data.quotedAmount !== undefined ? { quotedAmount: parsed.data.quotedAmount } : {}),
       },
+      include: { customer: true, messages: true },
     });
 
     return res.json({
-      ticket: updated,
+      ticket: ticketDto(updated, true),
       notice:
         "Uploading a quotation does not constitute payout approval. Final payout is strictly based on verified tax invoice and management discretion.",
     });
   });
 
   // 4. Damage Step 2: Upload Tax Invoice + Saudi IBAN (Gated by quotationApproved === true)
-  router.post("/:id/damage/step2", async (req, res) => {
-    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
-    }
+  router.post("/:id/damage/step2", requireCustomerJwt, async (req: AuthedRequest, res) => {
+    const ticket = await loadOwnedTicket(req, res, ComplaintType.DAMAGE);
+    if (!ticket) return;
 
     if (!ticket.quotationApproved) {
       return res.status(403).json({
@@ -232,125 +338,122 @@ export function createComplaintsRouter(prisma: PrismaClient) {
           "Management must review and approve your repair quotation before uploading the tax invoice and bank IBAN.",
       });
     }
+    // Bank details are write-once: once submitted they can only be changed by staff.
+    if (ticket.iban || ticket.status === TicketStatus.PENDING_PAYOUT || ticket.status === TicketStatus.RESOLVED) {
+      return res.status(409).json({ error: "Bank details were already submitted. Contact customer care to change them." });
+    }
 
     const parsed = z
       .object({
-        invoiceUrl: z.string().min(1),
-        bankName: z.string().min(2),
-        accountHolder: z.string().min(2),
-        iban: z.string().regex(/^SA\d{22}$/, "Must be a valid Saudi IBAN (SA + 22 digits)"),
+        invoiceUrl: safeUrl,
+        bankName: z.string().min(2).max(80),
+        accountHolder: z.string().min(2).max(120),
+        iban: z.string().transform((v) => v.replace(/\s+/g, "").toUpperCase())
+          .refine(isValidSaIban, "Must be a valid Saudi IBAN (SA + 22 digits, valid checksum)"),
       })
       .safeParse(req.body);
-
-    if (!parsed.success) {
-      return res.status(400).json({ error: parsed.error.flatten() });
-    }
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: {
         invoiceUrl: parsed.data.invoiceUrl,
         bankName: parsed.data.bankName,
-        accountHolder: parsed.data.accountHolder,
-        iban: parsed.data.iban,
+        accountHolder: encryptField(parsed.data.accountHolder),
+        iban: encryptField(parsed.data.iban),
         status: TicketStatus.PENDING_PAYOUT,
+        payoutStatus: PayoutStatus.PENDING_BANK_TRANSFER,
         messages: {
           create: {
             sender: "Customer",
             channel: MessageChannel.WEB_PORTAL,
-            body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${parsed.data.iban}).`,
+            body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${maskIban(encryptField(parsed.data.iban))}).`,
           },
         },
       },
-      include: {
-        messages: true,
-      },
+      include: { messages: true, customer: true },
     });
 
-    return res.json(updated);
+    return res.json(ticketDto(updated, true));
   });
 
-  // 5. Send WhatsApp Message (Synced to Ticket Timeline)
-  router.post("/:id/whatsapp", async (req, res) => {
-    const parsed = z.object({ body: z.string().min(1) }).safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Message body required" });
-    }
+  // 5. Customer message (synced to ticket timeline)
+  router.post("/:id/whatsapp", requireCustomerJwt, async (req: AuthedRequest, res) => {
+    const parsed = z.object({ body: z.string().min(1).max(2000) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Message body required (max 2000 chars)" });
 
-    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
-    }
+    const ticket = await loadOwnedTicket(req, res);
+    if (!ticket) return;
 
     const msg = await prisma.message.create({
-      data: {
-        complaintId: req.params.id,
-        sender: "Customer",
-        channel: MessageChannel.WHATSAPP,
-        body: parsed.data.body,
-      },
+      data: { complaintId: ticket.id, sender: "Customer", channel: MessageChannel.WHATSAPP, body: parsed.data.body },
     });
-
-    return res.status(201).json(msg);
+    return res.status(201).json({ id: msg.id, sender: msg.sender, channel: msg.channel, body: msg.body, createdAt: msg.createdAt });
   });
 
-  // 6. WhatsApp Webhook (Inbound Simulation / Sync)
-  router.post("/webhooks/whatsapp", async (req, res) => {
+  // 6. WhatsApp Webhook — HMAC-SHA256 signed (header: x-hub-signature-256 = sha256=<hex of raw body>)
+  router.post("/webhooks/whatsapp", webhookLimiter, async (req: Request, res) => {
+    if (!WHATSAPP_WEBHOOK_SECRET) {
+      return res.status(503).json({ error: "Webhook not configured" });
+    }
+    const raw: Buffer | undefined = (req as any).rawBody;
+    const sig = String(req.headers["x-hub-signature-256"] || "").replace(/^sha256=/, "");
+    const expected = raw ? crypto.createHmac("sha256", WHATSAPP_WEBHOOK_SECRET).update(raw).digest("hex") : "";
+    if (!raw || sig.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
+
     const parsed = z
       .object({
-        ticketId: z.string(),
-        sender: z.string().default("Customer Care"),
-        body: z.string(),
-        externalId: z.string().optional(),
+        ticketId: z.string().max(30),
+        sender: z.string().max(80).default("Customer Care"),
+        body: z.string().min(1).max(4000),
+        externalId: z.string().max(120).optional(),
       })
       .safeParse(req.body);
-
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Invalid webhook payload" });
-    }
+    if (!parsed.success) return res.status(400).json({ error: "Invalid webhook payload" });
 
     const ticket = await prisma.complaint.findUnique({ where: { id: parsed.data.ticketId } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    if (parsed.data.externalId) {
+      const seen = await prisma.message.findFirst({ where: { externalId: parsed.data.externalId } });
+      if (seen) return res.status(200).json({ id: seen.id, duplicate: true });
     }
 
     const msg = await prisma.message.create({
       data: {
-        complaintId: parsed.data.ticketId,
+        complaintId: ticket.id,
         sender: parsed.data.sender,
         channel: MessageChannel.WHATSAPP,
         body: parsed.data.body,
         externalId: parsed.data.externalId,
       },
     });
-
-    return res.status(201).json(msg);
+    return res.status(201).json({ id: msg.id });
   });
 
-  // 7. CSAT Rating (Strictly on RESOLVED Tickets)
-  router.post("/:id/csat", async (req, res) => {
+  // 7. CSAT Rating (resolved tickets only, once)
+  router.post("/:id/csat", requireCustomerJwt, async (req: AuthedRequest, res) => {
     const parsed = z.object({ rating: z.number().int().min(1).max(5) }).safeParse(req.body);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "Rating must be an integer between 1 and 5" });
-    }
+    if (!parsed.success) return res.status(400).json({ error: "Rating must be an integer between 1 and 5" });
 
-    const ticket = await prisma.complaint.findUnique({ where: { id: req.params.id } });
-    if (!ticket) {
-      return res.status(404).json({ error: "Ticket not found" });
-    }
+    const ticket = await loadOwnedTicket(req, res);
+    if (!ticket) return;
 
     if (ticket.status !== TicketStatus.RESOLVED) {
-      return res.status(400).json({
-        error: "CSAT can only be submitted on resolved tickets.",
-      });
+      return res.status(400).json({ error: "CSAT can only be submitted on resolved tickets." });
+    }
+    if (ticket.csatRating != null) {
+      return res.status(409).json({ error: "Rating already submitted." });
     }
 
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: { csatRating: parsed.data.rating },
+      include: { customer: true, messages: true },
     });
-
-    return res.json(updated);
+    return res.json(ticketDto(updated, true));
   });
 
   return router;

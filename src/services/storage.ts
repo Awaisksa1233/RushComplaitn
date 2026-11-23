@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 
 function getR2Config() {
@@ -30,54 +31,66 @@ export function getR2Client(): S3Client | null {
 }
 
 // Local uploads directory fallback
-const uploadsDir = path.join(process.cwd(), "uploads");
+const uploadsDir = path.resolve(process.cwd(), "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-export async function uploadFile(
-  fileBuffer: Buffer,
-  originalFilename: string,
-  mimeType: string,
-  prefix: string = "complaints"
-): Promise<string> {
-  const { bucketName, publicUrl } = getR2Config();
+export const ALLOWED_UPLOAD_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "application/pdf": "pdf",
+  "video/mp4": "mp4",
+  "video/quicktime": "mov",
+};
+
+/** Magic-byte check so a renamed HTML/SVG/EXE cannot masquerade as an image or PDF. */
+export function sniffMatches(buf: Buffer, mime: string): boolean {
+  const h = buf.subarray(0, 12);
+  switch (mime) {
+    case "image/jpeg": return h[0] === 0xff && h[1] === 0xd8 && h[2] === 0xff;
+    case "image/png": return h.subarray(0, 4).toString("hex") === "89504e47";
+    case "image/webp": return h.subarray(0, 4).toString() === "RIFF" && h.subarray(8, 12).toString() === "WEBP";
+    case "application/pdf": return h.subarray(0, 4).toString() === "%PDF";
+    case "video/mp4":
+    case "video/quicktime": return h.subarray(4, 8).toString() === "ftyp";
+    default: return false;
+  }
+}
+
+/** Keys are server-generated (random, extension derived from validated MIME); client filenames are never used. */
+export function newObjectKey(prefix: string, mimeType: string): string {
+  return `${prefix}/${Date.now()}-${crypto.randomBytes(16).toString("hex")}.${ALLOWED_UPLOAD_TYPES[mimeType]}`;
+}
+
+export async function uploadFile(fileBuffer: Buffer, mimeType: string, prefix: string = "complaints"): Promise<string> {
+  const { bucketName } = getR2Config();
   const client = getR2Client();
-  const timestamp = Date.now();
-  const safeName = originalFilename.replace(/[^a-zA-Z0-9.-]/g, "_");
-  const key = `${prefix}/${timestamp}-${safeName}`;
+  const key = newObjectKey(prefix, mimeType);
 
   if (client) {
     try {
       await client.send(
-        new PutObjectCommand({
-          Bucket: bucketName,
-          Key: key,
-          Body: fileBuffer,
-          ContentType: mimeType,
-        })
+        new PutObjectCommand({ Bucket: bucketName, Key: key, Body: fileBuffer, ContentType: mimeType })
       );
-
-      if (publicUrl) {
-        return `${publicUrl.replace(/\/$/, "")}/${key}`;
-      }
+      // Always go through the authenticated-by-obscurity proxy route; objects are never public.
       return `/api/files/${key}`;
     } catch (err) {
-      console.warn("R2 upload error, falling back to local storage:", err);
+      console.warn("R2 upload error, falling back to local storage");
     }
   }
 
-  // Local disk fallback
-  const subDir = path.join(uploadsDir, prefix);
-  if (!fs.existsSync(subDir)) {
-    fs.mkdirSync(subDir, { recursive: true });
-  }
+  const localFilePath = resolveLocalPath(key)!;
+  await fs.promises.mkdir(path.dirname(localFilePath), { recursive: true });
+  await fs.promises.writeFile(localFilePath, fileBuffer, { mode: 0o640 });
+  return `/api/files/${key}`;
+}
 
-  const localFileName = `${timestamp}-${safeName}`;
-  const localFilePath = path.join(subDir, localFileName);
-  await fs.promises.writeFile(localFilePath, fileBuffer);
-
-  return `/uploads/${prefix}/${localFileName}`;
+/** Resolve a key inside uploads/ — null if it would escape the directory. */
+export function resolveLocalPath(key: string): string | null {
+  const full = path.resolve(uploadsDir, key);
+  return full.startsWith(uploadsDir + path.sep) ? full : null;
 }
 
 export async function getFileFromR2(key: string) {

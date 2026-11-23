@@ -3,9 +3,12 @@ dotenv.config();
 
 import { PrismaClient, ComplaintType, TicketStatus, ResolutionStatus, StaffRole, MessageChannel } from "@prisma/client";
 
+import { assertSafeToRunDestructive } from "./guard";
+
 const prisma = new PrismaClient();
 
 async function main() {
+  assertSafeToRunDestructive("seed.ts");
   console.log("Seeding RUSH Customer Care Portal demo data into Supabase...");
 
   // Clean existing demo records

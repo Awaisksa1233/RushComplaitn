@@ -3,10 +3,14 @@ dotenv.config();
 
 import { PrismaClient, StaffRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
+
+import { assertSafeToRunDestructive } from "./guard";
 
 const prisma = new PrismaClient();
 
 async function main() {
+  assertSafeToRunDestructive("seed_clean_admin.ts");
   console.log("=== Purging all demo data from Supabase PostgreSQL ===");
 
   // 1. Cascade delete complaints, messages, audit logs
@@ -53,13 +57,15 @@ async function main() {
   console.log(`- SystemConfig ready: SAR ${config.damageApprovalCapSar} cap, ${config.maxSlaHours}h SLA`);
 
   // 4. Seed clean primary admin with hashed password
-  const initialPassword = "RushCare@2026!";
-  const passwordHash = bcrypt.hashSync(initialPassword, 10);
+  // Password comes from the environment, or is generated once and printed. Never hardcoded.
+  const initialPassword = process.env.SEED_ADMIN_PASSWORD || crypto.randomBytes(18).toString("base64url") + "aA1!";
+  if (initialPassword.length < 12) throw new Error("SEED_ADMIN_PASSWORD must be at least 12 characters");
+  const passwordHash = bcrypt.hashSync(initialPassword, 12);
 
   const admin = await prisma.staffUser.create({
     data: {
       name: "RUSH Administrator",
-      email: "admin@rush.com.sa",
+      email: (process.env.SEED_ADMIN_EMAIL || "admin@rush.com.sa").toLowerCase(),
       phone: "0500000000",
       passwordHash,
       role: StaffRole.BUSINESS_OWNER,
@@ -73,7 +79,7 @@ async function main() {
   console.log(`Email: ${admin.email}`);
   console.log(`Role: ${admin.role}`);
   console.log(`Branch: ${admin.branch}`);
-  console.log(`Password: ${initialPassword}`);
+  console.log(process.env.SEED_ADMIN_PASSWORD ? "Password: (from SEED_ADMIN_PASSWORD)" : `One-time password (change immediately): ${initialPassword}`);
   console.log(`Database is 100% clean and ready for scratch testing!`);
 }
 

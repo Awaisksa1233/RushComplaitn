@@ -3,9 +3,12 @@ dotenv.config();
 
 import { PrismaClient, StaffRole } from "@prisma/client";
 
+import { assertSafeToRunDestructive } from "./guard";
+
 const prisma = new PrismaClient();
 
 async function main() {
+  assertSafeToRunDestructive("seed_admin.ts");
   console.log("Seeding Admin SystemConfig & StaffUsers into Supabase...");
 
   // 1. SystemConfig

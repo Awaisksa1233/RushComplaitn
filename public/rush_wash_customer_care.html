@@ -132,33 +132,22 @@
 
             <button id="btn-step1" type="submit" class="w-full py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Continue</button>
           </form>
-
-          <!-- Subtle Demo Helper -->
-          <div class="pt-3 border-t border-neutral-100 space-y-2">
-            <div class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Quick Demo Lookup</div>
-            <div class="flex flex-wrap gap-1.5 text-xs">
-              <button type="button" onclick="fillDemoLookup('8821KSA', '553914420')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">8821 KSA · Marcus</button>
-              <button type="button" onclick="fillDemoLookup('4066DTA', '569809578')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">4066 DTA · Awais</button>
-              <button type="button" onclick="fillDemoLookup('9042EV', '558120934')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">9042 EV · Elena</button>
-              <button type="button" onclick="fillDemoLookup('8821KSA', '500009999')" class="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium transition">Test Mismatch</button>
-            </div>
-          </div>
         </div>
 
         <!-- ================= STEP 2: OTP VERIFICATION ================= -->
         <div id="step-2" class="hidden space-y-5">
           <div>
             <h2 id="s2-title" class="text-2xl font-extrabold tracking-tight text-black">Verify your number</h2>
-            <p id="s2-sub" class="text-sm text-neutral-500 mt-1">We sent a 4-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr"></span>.</p>
+            <p id="s2-sub" class="text-sm text-neutral-500 mt-1">We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr"></span>.</p>
           </div>
 
           <div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-700 flex items-center justify-between gap-2">
-            <span id="otp-demo-label">Demo SMS Code: <code id="otp-demo-code" class="ml-1 bg-white px-2.5 py-0.5 rounded-md border border-neutral-300 font-mono font-extrabold text-sm text-black"></code></span>
+            <span id="otp-demo-label"><code id="otp-demo-code" class="ml-1 bg-white px-2.5 py-0.5 rounded-md border border-neutral-300 font-mono font-extrabold text-sm text-black"></code></span>
             <button id="btn-resend-otp" type="button" onclick="resendOtp()" class="text-[#C91E2F] font-bold hover:underline">Resend</button>
           </div>
 
           <form onsubmit="verifyOtp(event)" class="space-y-4">
-            <input id="inp-otp" type="text" maxlength="4" required placeholder="• • • •" class="w-full rounded-xl border border-neutral-300 px-4 py-3.5 text-center text-2xl tracking-[0.6em] font-mono font-bold focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none" />
+            <input id="inp-otp" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required placeholder="• • • • • •" class="w-full rounded-xl border border-neutral-300 px-4 py-3.5 text-center text-2xl tracking-[0.6em] font-mono font-bold focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none" />
             <div id="step2-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
             <div class="flex gap-2.5">
               <button id="btn-step2-back" type="button" onclick="goToStep(1)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
@@ -304,8 +293,14 @@
   </div>
 
   <script>
-    const customersDB = [];
     let tickets = [];
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function authHeaders(extra) {
+      const tok = appState.token || appState.trackToken;
+      return Object.assign({}, extra || {}, tok ? { "Authorization": "Bearer " + tok } : {});
+    }
 
     let appState = {
       mode: "file",
@@ -484,8 +479,8 @@
       if (s2Sub) {
         const phone = document.getElementById("otp-phone-display")?.textContent || "";
         s2Sub.innerHTML = isAr
-          ? `تم إرسال رمز التحقق المكون من 4 أرقام عبر رسالة نصية إلى <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`
-          : `We sent a 4-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`;
+          ? `تم إرسال رمز التحقق المكون من 6 أرقام عبر رسالة نصية إلى <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`
+          : `We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`;
       }
       const bStep2 = document.getElementById("btn-step2");
       if (bStep2) { bStep2.textContent = isAr ? "تحقق ومتابعة" : "Verify & Continue"; bStep2.dataset.originalHtml = bStep2.innerHTML; }
@@ -622,12 +617,6 @@
       lucide.createIcons();
     }
 
-    function fillDemoLookup(plate, phone) {
-      document.getElementById("inp-plate").value = plate;
-      document.getElementById("inp-phone").value = phone;
-      document.getElementById("step1-error").classList.add("hidden");
-    }
-
     async function verifyPlateAndPhone(e) {
       e.preventDefault();
       const plate = normPlate(document.getElementById("inp-plate").value);
@@ -660,26 +649,11 @@
         showToast(data.message || (isAr ? "تم إرسال رمز التحقق عبر الرسائل القصيرة" : "OTP sent via SMS"));
         return;
       } catch (ex) {
-        console.warn("API request failed, falling back to local demo DB", ex);
+        err.textContent = isAr ? "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً." : "Could not reach the server. Please try again.";
+        err.classList.remove("hidden");
       } finally {
         setBtnLoading("btn-step1", false);
       }
-
-      const match = customersDB.find(c => normPlate(c.plate) === plate && normPhone(c.phone) === phone);
-      if (!match) {
-        err.textContent = isAr ? "رقم اللوحة والجوال غير متطابقين في سجلاتنا. يرجى التأكد من الحقول." : "License plate and mobile number do not match our system records. Please double-check both fields.";
-        err.classList.remove("hidden");
-        return;
-      }
-      err.classList.add("hidden");
-      appState.customer = match;
-      appState.otp = String(1000 + Math.floor(Math.random() * 9000));
-      document.getElementById("otp-phone-display").textContent = "+966 " + document.getElementById("inp-phone").value;
-      document.getElementById("otp-demo-code").textContent = appState.otp;
-      document.getElementById("inp-otp").value = "";
-      document.getElementById("step2-error").classList.add("hidden");
-      goToStep(2);
-      showToast(isAr ? "تم إرسال رمز التحقق" : "OTP sent via SMS");
     }
 
     async function resendOtp() {
@@ -699,12 +673,10 @@
             showToast(isAr ? "تم إرسال رمز جديد" : "New OTP code sent");
             return;
           }
+          showToast(data.error || (isAr ? "تعذر إعادة الإرسال" : "Could not resend the code"));
         }
-        appState.otp = String(1000 + Math.floor(Math.random() * 9000));
-        document.getElementById("otp-demo-code").textContent = appState.otp;
-        showToast(isAr ? "تم إرسال رمز جديد" : "New OTP code sent");
       } catch (ex) {
-        console.warn("Resend OTP failed", ex);
+        showToast(isAr ? "تعذر إعادة الإرسال" : "Could not resend the code");
       } finally {
         setBtnLoading("btn-resend-otp", false, null, isAr ? "إعادة إرسال" : "Resend");
       }
@@ -749,16 +721,11 @@
           return;
         }
 
-        if (entered !== appState.otp) {
-          err.textContent = isAr ? "رمز التحقق غير صحيح. يرجى إدخال الرمز المكون من 4 أرقام." : "Invalid OTP code. Please enter the 4-digit code shown above.";
-          err.classList.remove("hidden");
-          return;
-        }
-        err.classList.add("hidden");
-        goToStep(3);
-        renderRecordsList();
+        err.textContent = isAr ? "انتهت الجلسة. يرجى البدء من جديد." : "Session expired. Please start again.";
+        err.classList.remove("hidden");
       } catch (ex) {
-        console.warn("API verify-otp failed, falling back to local demo DB", ex);
+        err.textContent = isAr ? "تعذر الاتصال بالخادم." : "Could not reach the server.";
+        err.classList.remove("hidden");
       } finally {
         setBtnLoading("btn-step2", false);
       }
@@ -845,11 +812,11 @@
           return `
             <button type="button" ${dup ? "disabled" : `onclick="selectRecord('${r.id}')"`} class="w-full text-left p-3.5 rounded-xl border transition ${dup ? "border-neutral-200 bg-neutral-50 opacity-80 cursor-not-allowed" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"}">
               <div class="flex items-center justify-between gap-2 flex-wrap">
-                <span class="text-sm font-bold text-black">${r.item} · SAR ${r.amount}</span>
+                <span class="text-sm font-bold text-black">${esc(r.item)} · SAR ${r.amount}</span>
                 <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
               </div>
               <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                <span>${r.date}</span><span>·</span><span>${r.method}</span><span>·</span><span>${r.site}</span>
+                <span>${esc(r.date)}</span><span>·</span><span>${esc(r.method)}</span><span>·</span><span>${esc(r.site)}</span>
               </div>
             </button>
           `;
@@ -861,7 +828,7 @@
               <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
             </div>
             <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              <span>${r.site} (${r.lane})</span><span>·</span><span>${r.package}</span>
+              <span>${esc(r.site)} (${esc(r.lane)})</span><span>·</span><span>${esc(r.package)}</span>
             </div>
           </button>
         `;
@@ -931,8 +898,8 @@
                 ? `<div><strong>${appState.issueType}:</strong> General Feedback / Inquiry</div><span class="font-mono font-bold text-neutral-600 bg-neutral-200 px-2 py-0.5 rounded text-[11px]">GENERAL</span>`
                 : `<div><strong>${appState.issueType}:</strong> Earlier / Unlisted Wash</div><span class="font-mono font-bold text-[#C91E2F]">UNLISTED</span>`))
         : isBilling
-        ? `<div><strong>Billing / Refund:</strong> ${rec.item} (SAR ${rec.amount})</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`
-        : `<div><strong>${appState.issueType}:</strong> ${rec.date} · ${rec.package}</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`;
+        ? `<div><strong>Billing / Refund:</strong> ${esc(rec.item)} (SAR ${rec.amount})</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`
+        : `<div><strong>${appState.issueType}:</strong> ${esc(rec.date)} · ${esc(rec.package)}</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`;
 
       const dyn = document.getElementById("dynamic-fields");
       appState.qualityTags = [];
@@ -1171,6 +1138,7 @@
               return;
             }
 
+            if (data.trackToken) appState.trackToken = data.trackToken;
             appState.createdTicketId = data.id;
             document.getElementById("created-ticket-id").textContent = data.id;
             document.getElementById("confirm-phone").textContent = "+966 " + (cust.phone || document.getElementById("inp-phone").value);
@@ -1178,40 +1146,13 @@
             showToast(isAr ? `تم تقديم البلاغ ${data.id}` : `Ticket ${data.id} submitted`);
             return;
           } catch (ex) {
-            console.warn("API submit failed, falling back to local memory", ex);
+            if (s4Err) {
+              s4Err.textContent = isAr ? "تعذر إرسال البلاغ. يرجى المحاولة مرة أخرى." : "Could not submit your complaint. Please try again.";
+              s4Err.classList.remove("hidden");
+            }
+            return;
           }
         }
-
-        const newId = `C-${1043 + tickets.length - 4}`;
-        tickets.unshift({
-          id: newId,
-          type: appState.issueType,
-          status: "Submitted",
-          resolutionStatus: "Pending",
-          resolutionNote: "",
-          site: rec.site,
-          createdAt: "Just now",
-          customerName: cust.name,
-          phone: document.getElementById("inp-phone").value,
-          vehicle: cust.vehicle,
-          plate: cust.plate,
-          receipt: isBilling ? `${rec.id} (${rec.item})` : `${rec.id} (${rec.package})`,
-          zones: [...appState.zones],
-          summary: prefix + desc,
-          rewashCode: "",
-          rrn: "",
-          refundAmount: refundAmt,
-          damageFlow: { quotationFile: "", waiverSigned: false, quotationApproved: false, invoiceFile: "", iban: "", bankName: "", accountHolder: "" },
-          mediaFiles: [...appState.mediaFiles],
-          csatRating: 0,
-          messages: [{ sender: "Customer", channel: "Web Portal", time: "Just now", text: prefix + desc }]
-        });
-
-        appState.createdTicketId = newId;
-        document.getElementById("created-ticket-id").textContent = newId;
-        document.getElementById("confirm-phone").textContent = "+966 " + document.getElementById("inp-phone").value;
-        goToStep(5);
-        showToast(isAr ? `تم تقديم البلاغ ${newId}` : `Ticket ${newId} submitted`);
       } finally {
         setBtnLoading("btn-submit", false);
       }
@@ -1266,6 +1207,7 @@
         });
         if (res.ok) {
           const data = await res.json();
+          if (data.trackToken) appState.trackToken = data.trackToken;
           if (data.tickets && data.tickets.length > 0) {
             const serverTickets = data.tickets.map(st => ({
               id: st.id,
@@ -1304,7 +1246,7 @@
                 time: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 text: m.body
               }))
-            }));
+            })).map(escDeep);
 
             serverTickets.forEach(st => {
               const idx = tickets.findIndex(t => t.id === st.id);
@@ -1328,11 +1270,10 @@
             }
             appState.trackedId = serverTickets[0].id;
             try {
-              localStorage.setItem("rush_track_query", q);
-              localStorage.setItem("rush_track_phone", ph);
+              sessionStorage.setItem("rush_track_query", q);
+              sessionStorage.setItem("rush_track_phone", ph);
               const url = new URL(window.location);
               url.searchParams.set("ticket", q);
-              url.searchParams.set("phone", ph);
               window.history.replaceState(null, "", url.toString());
             } catch (e) {}
             renderTrackedTicket();
@@ -1369,8 +1310,8 @@
       }
       appState.trackedId = matches[0].id;
       try {
-        localStorage.setItem("rush_track_query", q);
-        localStorage.setItem("rush_track_phone", ph);
+        sessionStorage.setItem("rush_track_query", q);
+        sessionStorage.setItem("rush_track_phone", ph);
         const url = new URL(window.location);
         url.searchParams.set("ticket", q);
         url.searchParams.set("phone", ph);
@@ -1379,12 +1320,18 @@
       renderTrackedTicket();
     }
 
+    function escDeep(v) {
+      if (typeof v === "string") return esc(v);
+      if (Array.isArray(v)) return v.map(escDeep);
+      if (v && typeof v === "object") { const o = {}; for (const k in v) o[k] = escDeep(v[k]); return o; }
+      return v;
+    }
     function selectTracked(id) { appState.trackedId = id; renderTrackedTicket(); }
 
     function clearTrackSession() {
       try {
-        localStorage.removeItem("rush_track_query");
-        localStorage.removeItem("rush_track_phone");
+        sessionStorage.removeItem("rush_track_query");
+        sessionStorage.removeItem("rush_track_phone");
         const url = new URL(window.location);
         url.searchParams.delete("ticket");
         url.searchParams.delete("phone");
@@ -1781,6 +1728,7 @@
         formData.append("purpose", field);
         const res = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
+          headers: authHeaders(),
           body: formData
         });
         if (res.ok) {
@@ -1792,7 +1740,7 @@
             const dbField = field === "quotationFile" ? "quotationUrl" : "invoiceUrl";
             await fetch(`${API_BASE}/api/complaints/${id}/damage/upload-doc`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: authHeaders({ "Content-Type": "application/json" }),
               body: JSON.stringify({ field: dbField, url: docUrl })
             });
           }
@@ -1828,9 +1776,9 @@
         if (id.startsWith("C-")) {
           await fetch(`${API_BASE}/api/complaints/${id}/damage/step1`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
-              quotationUrl: t.damageFlow.quotationFile || "https://rush.com.sa/sample_quotation.pdf",
+              quotationUrl: t.damageFlow.quotationFile,
               waiverSignature: sig
             })
           });
@@ -1861,9 +1809,9 @@
         if (id.startsWith("C-")) {
           const res = await fetch(`${API_BASE}/api/complaints/${id}/damage/step2`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
-              invoiceUrl: t.damageFlow.invoiceFile || "https://rush.com.sa/sample_invoice.pdf",
+              invoiceUrl: t.damageFlow.invoiceFile,
               bankName: bank,
               accountHolder: holder,
               iban: iban
@@ -1889,24 +1837,44 @@
       }
     }
 
-    function sendWhatsApp(e, id) {
+    async function sendWhatsApp(e, id) {
       e.preventDefault();
       const t = tickets.find(x => x.id === id);
       const inp = document.getElementById(`wa-input-${id}`) || document.getElementById("wa-input");
       if (!t || !inp || !inp.value.trim()) return;
       const isAr = appState.lang === "ar";
-      t.messages.push({ sender: "Customer", channel: "WhatsApp", time: "Just now", text: inp.value.trim() });
+      const text = inp.value.trim().slice(0, 2000);
+      try {
+        const res = await fetch(`${API_BASE}/api/complaints/${encodeURIComponent(id)}/whatsapp`, {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ body: text })
+        });
+        if (!res.ok) {
+          showToast(res.status === 401 ? (isAr ? "يرجى البحث برقم البلاغ لإرسال رسالة" : "Look up by ticket ID to send a message") : "Message failed");
+          return;
+        }
+      } catch { showToast("Message failed"); return; }
+      t.messages.push({ sender: "Customer", channel: "WhatsApp", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), text });
       inp.value = "";
       renderTrackedTicket();
-      showToast(isAr ? "تم إرسال الرسالة وحفظها في السجل" : "WhatsApp message sent & saved to history");
+      showToast(isAr ? "تم إرسال الرسالة وحفظها في السجل" : "Message sent & saved to history");
     }
 
-    function rateTicket(id, stars) {
+    async function rateTicket(id, stars) {
       const t = tickets.find(x => x.id === id);
       if (!t) return;
+      const isAr = appState.lang === "ar";
+      try {
+        const res = await fetch(`${API_BASE}/api/complaints/${encodeURIComponent(id)}/csat`, {
+          method: "POST",
+          headers: authHeaders({ "Content-Type": "application/json" }),
+          body: JSON.stringify({ rating: stars })
+        });
+        if (!res.ok) { showToast(isAr ? "تعذر حفظ التقييم" : "Could not save rating"); return; }
+      } catch { showToast("Could not save rating"); return; }
       t.csatRating = stars;
       renderTrackedTicket();
-      const isAr = appState.lang === "ar";
       showToast(isAr ? `شكراً لك! تم تسجيل تقييمك ${stars} من 5 نجوم.` : `Thank you for rating ${stars}/5 stars!`);
     }
 
@@ -1920,8 +1888,8 @@
       // Auto-restore active tracking session on page reload or direct link
       try {
         const urlParams = new URLSearchParams(window.location.search);
-        const q = urlParams.get("ticket") || localStorage.getItem("rush_track_query");
-        const ph = urlParams.get("phone") || localStorage.getItem("rush_track_phone");
+        const q = urlParams.get("ticket") || sessionStorage.getItem("rush_track_query");
+        const ph = sessionStorage.getItem("rush_track_phone");
 
         if (q && ph) {
           const qEl = document.getElementById("track-query");

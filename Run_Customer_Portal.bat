@@ -2,9 +2,10 @@
 title RUSH Customer Care Portal
 cd /d "%~dp0"
 echo ============================================================
-echo   Starting RUSH Car Wash Customer Care Portal API
-echo   Backend: http://localhost:4000
-echo   Frontend: http://localhost:4000/rush_wash_customer_care.html
+echo   RUSH Car Wash Customer Care Portal (production build)
+echo   Customer portal: http://localhost:4000/
+echo   Admin console:   http://localhost:4000/admin
+echo   Requires a configured .env (see .env.example) incl. JWT_SECRET
 echo ============================================================
-npm run dev
+call npm run build && npm start
 pause
