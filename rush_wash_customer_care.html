@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rush Wash | Customer Care</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rush: {
+              red: '#C91E2F',
+              dark: '#A61726',
+              black: '#000000',
+              surface: '#F7F7F8',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    .car-zone { cursor: pointer; transition: all 0.15s ease; }
+    .car-zone:hover { filter: brightness(0.92); stroke: #C91E2F; stroke-width: 2; }
+    .car-zone.selected { fill: #C91E2F !important; fill-opacity: 0.78 !important; stroke: #881320 !important; stroke-width: 2.5 !important; }
+    .rush-hero-bg {
+      background: radial-gradient(circle at 85% 15%, rgba(201, 30, 47, 0.15) 0%, rgba(10, 10, 10, 0.96) 55%, #000000 100%);
+    }
+    .rush-stripe {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        #C91E2F 0px,
+        #C91E2F 12px,
+        #000000 12px,
+        #000000 24px
+      );
+    }
+    .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
+    .scrollbar-thin::-webkit-scrollbar-thumb { background: #D4D4D4; border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-white text-black antialiased min-h-screen">
+
+  <div id="portal-root" class="min-h-screen bg-[#F7F7F8] flex flex-col justify-start items-center sm:py-8">
+
+    <main class="w-full max-w-xl bg-white sm:rounded-3xl shadow-sm sm:border sm:border-neutral-200/80 p-4 sm:p-8 flex flex-col justify-between min-h-screen sm:min-h-0 space-y-5">
+      <div class="w-full space-y-5">
+        <!-- Sleek Brand & Language Header -->
+        <header class="flex items-center justify-between border-b border-neutral-100 pb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-xs">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-6 h-4">
+                <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
+                <path fill-rule="evenodd" d="M349.6 195.55A10.65 10.65 0 1 1 349.6 216.85A10.65 10.65 0 1 1 349.6 195.55ZM349.6 197.7A8.5 8.5 0 1 0 349.6 214.7A8.5 8.5 0 1 0 349.6 197.7Z"/>
+                <path fill-rule="evenodd" d="M345.9 201.05H349.95C352.35 201.05 353.65 202.25 353.65 204.2C353.65 205.55 352.95 206.5 351.65 206.95L354.15 211.2H351.65L349.45 207.35H348.1V211.2H345.9ZM348.1 202.95V205.5H349.7C350.8 205.5 351.4 205.05 351.4 204.2C351.4 203.35 350.8 202.95 349.7 202.95Z"/>
+              </svg>
+            </div>
+            <div class="leading-none">
+              <span class="font-extrabold tracking-widest text-base italic text-black">RUSH</span>
+              <span class="text-xs font-bold text-neutral-800 ml-1">رش واش</span>
+              <span class="block text-[10px] font-semibold text-neutral-400 mt-1">Customer Care · خدمة العملاء</span>
+            </div>
+          </div>
+
+          <button id="lang-btn" type="button" onclick="toggleLang()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 border border-neutral-200 text-xs font-semibold text-black transition">
+            <span class="text-[#C91E2F] font-bold">AR</span>
+            <span>العربية</span>
+          </button>
+        </header>
+
+        <!-- Top Bar: Mode Switcher -->
+        <div class="w-full inline-flex items-center bg-[#F4F4F5] p-1 rounded-full border border-neutral-200 text-xs font-semibold">
+          <button id="tab-file" type="button" onclick="switchMode('file')" class="flex-1 py-2 text-center rounded-full bg-black text-white shadow-xs transition">File Complaint</button>
+          <button id="tab-track" type="button" onclick="switchMode('track')" class="flex-1 py-2 text-center rounded-full text-neutral-600 hover:text-black transition">Track Complaint</button>
+        </div>
+
+        <!-- Minimal Progress Dots (File Mode) -->
+        <div id="stepper" class="flex items-center gap-2 text-[11px] font-semibold">
+          <div id="step-ind-1" class="flex items-center gap-1.5 text-black">
+            <span class="w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]">1</span>
+            <span>Verify</span>
+          </div>
+          <div class="h-px flex-1 bg-neutral-200"></div>
+          <div id="step-ind-2" class="flex items-center gap-1.5 text-neutral-400">
+            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">2</span>
+            <span>OTP</span>
+          </div>
+          <div class="h-px flex-1 bg-neutral-200"></div>
+          <div id="step-ind-3" class="flex items-center gap-1.5 text-neutral-400">
+            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">3</span>
+            <span>Visit</span>
+          </div>
+          <div class="h-px flex-1 bg-neutral-200"></div>
+          <div id="step-ind-4" class="flex items-center gap-1.5 text-neutral-400">
+            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">4</span>
+            <span>Details</span>
+          </div>
+        </div>
+
+        <!-- ================= STEP 1: WELCOME TO RUSH (Plate + +966 Phone) ================= -->
+        <div id="step-1" class="space-y-5">
+          <div>
+            <h2 id="s1-title" class="text-2xl font-extrabold tracking-tight text-black">Welcome to Rush</h2>
+            <p id="s1-sub" class="text-sm text-neutral-500 mt-1">Enter your license plate and mobile number to get started.</p>
+          </div>
+
+          <form onsubmit="verifyPlateAndPhone(event)" class="space-y-4">
+            <div>
+              <label id="step1-plate-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">License plate *</label>
+              <input id="inp-plate" type="text" required placeholder="ABC 1234" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm uppercase font-mono font-semibold tracking-wider focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none transition" />
+            </div>
+
+            <div>
+              <label id="step1-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Mobile number *</label>
+              <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] focus-within:border-[#C91E2F] overflow-hidden transition" dir="ltr">
+                <span class="inline-flex items-center gap-1.5 px-3.5 bg-[#F4F4F5] border-r border-neutral-200 text-sm font-semibold text-neutral-700 shrink-0">
+                  <span>🇸🇦</span>
+                  <span>+966</span>
+                </span>
+                <input id="inp-phone" type="tel" required placeholder="50 000 0000" class="w-full px-3.5 py-3 text-sm font-medium focus:outline-none" />
+              </div>
+            </div>
+
+            <div id="step1-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+
+            <button id="btn-step1" type="submit" class="w-full py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Continue</button>
+          </form>
+
+          <!-- Subtle Demo Helper -->
+          <div class="pt-3 border-t border-neutral-100 space-y-2">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Quick Demo Lookup</div>
+            <div class="flex flex-wrap gap-1.5 text-xs">
+              <button type="button" onclick="fillDemoLookup('8821KSA', '553914420')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">8821 KSA · Marcus</button>
+              <button type="button" onclick="fillDemoLookup('4066DTA', '569809578')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">4066 DTA · Awais</button>
+              <button type="button" onclick="fillDemoLookup('9042EV', '558120934')" class="px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 text-neutral-800 font-medium transition">9042 EV · Elena</button>
+              <button type="button" onclick="fillDemoLookup('8821KSA', '500009999')" class="px-3 py-1.5 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 font-medium transition">Test Mismatch</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= STEP 2: OTP VERIFICATION ================= -->
+        <div id="step-2" class="hidden space-y-5">
+          <div>
+            <h2 id="s2-title" class="text-2xl font-extrabold tracking-tight text-black">Verify your number</h2>
+            <p id="s2-sub" class="text-sm text-neutral-500 mt-1">We sent a 4-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr"></span>.</p>
+          </div>
+
+          <div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-700 flex items-center justify-between gap-2">
+            <span id="otp-demo-label">Demo SMS Code: <code id="otp-demo-code" class="ml-1 bg-white px-2.5 py-0.5 rounded-md border border-neutral-300 font-mono font-extrabold text-sm text-black"></code></span>
+            <button id="btn-resend-otp" type="button" onclick="resendOtp()" class="text-[#C91E2F] font-bold hover:underline">Resend</button>
+          </div>
+
+          <form onsubmit="verifyOtp(event)" class="space-y-4">
+            <input id="inp-otp" type="text" maxlength="4" required placeholder="• • • •" class="w-full rounded-xl border border-neutral-300 px-4 py-3.5 text-center text-2xl tracking-[0.6em] font-mono font-bold focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none" />
+            <div id="step2-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+            <div class="flex gap-2.5">
+              <button id="btn-step2-back" type="button" onclick="goToStep(1)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+              <button id="btn-step2" type="submit" class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Verify &amp; Continue</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ================= STEP 3: ISSUE TYPE DROPDOWN + WASHES / ORDERS ================= -->
+        <div id="step-3" class="hidden space-y-5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h2 id="s3-title" class="text-xl font-extrabold tracking-tight text-black">What can we help with?</h2>
+              <p class="text-xs text-neutral-500 mt-0.5"><span id="s3-veh-prefix">Verified vehicle: </span><span id="matched-vehicle" class="font-semibold text-black"></span></p>
+            </div>
+            <span id="otp-verified-badge" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">OTP Verified</span>
+          </div>
+
+          <div>
+            <label id="issue-type-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Complaint / Issue type *</label>
+            <select id="sel-issue-type" onchange="handleTypeChange(this.value)" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-semibold bg-white focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none">
+              <option value="Unsatisfied">Unsatisfied (Wash Quality / Rewash)</option>
+              <option value="Billing / Refund">Billing / Refund (Orders &amp; Charges)</option>
+              <option value="Damage">Damage (Vehicle Damage Claim)</option>
+              <option value="Other">Other (General Inquiry / Feedback)</option>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span id="history-heading" class="text-xs font-bold uppercase tracking-wider text-neutral-500">Last 3 Washes (Past 7 Days)</span>
+              <span id="history-sub" class="text-[11px] text-neutral-400">Select the wash visit</span>
+            </div>
+            <div id="records-list" class="space-y-2.5"></div>
+          </div>
+
+          <div class="flex gap-2.5 pt-1">
+            <button id="btn-step3-back" type="button" onclick="goToStep(1)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+            <button id="btn-to-step4" type="button" onclick="openDynamicForm()" disabled class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] disabled:bg-neutral-200 disabled:text-neutral-400 hover:bg-[#A61726] text-white text-sm font-bold transition">Continue</button>
+          </div>
+        </div>
+
+        <!-- ================= STEP 4: DYNAMIC FORM ================= -->
+        <div id="step-4" class="hidden space-y-5">
+          <div id="selected-record-banner" class="bg-[#F4F4F5] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 flex items-center justify-between gap-2"></div>
+
+          <form onsubmit="submitComplaint(event)" class="space-y-4">
+            <div id="dynamic-fields" class="space-y-4"></div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label id="callback-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Preferred callback window</label>
+                <select id="inp-callback" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#C91E2F] focus:outline-none">
+                  <option value="Anytime">Anytime</option>
+                  <option value="Morning (8AM–12PM)">Morning (8AM–12PM)</option>
+                  <option value="Afternoon (12PM–5PM)">Afternoon (12PM–5PM)</option>
+                  <option value="Evening (5PM–9PM)">Evening (5PM–9PM)</option>
+                </select>
+              </div>
+              <div>
+                <label id="photos-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Photos / Video</label>
+                <label class="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-neutral-400 hover:border-[#C91E2F] bg-[#F9F9F9] hover:bg-[#FDF2F3] px-3 py-2.5 text-xs font-bold text-neutral-700 hover:text-[#C91E2F] cursor-pointer transition">
+                  <i data-lucide="camera" class="w-4 h-4"></i>
+                  <span id="upload-btn-text">Upload Photos / Video</span>
+                  <input id="inp-files" type="file" accept="image/*,video/*" multiple class="hidden" onchange="handleFiles(this.files)" />
+                </label>
+              </div>
+            </div>
+
+            <div id="media-previews" class="hidden flex flex-wrap gap-2"></div>
+
+            <div>
+              <label id="desc-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Additional details *</label>
+              <textarea id="inp-desc" required rows="3" placeholder="Tell us what happened..." class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none"></textarea>
+            </div>
+
+            <div id="step4-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+
+            <div class="flex gap-2.5 pt-1">
+              <button id="btn-step4-back" type="button" onclick="goToStep(3)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+              <button id="btn-submit" type="submit" class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Submit Complaint</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ================= STEP 5: CONFIRMATION ================= -->
+        <div id="step-5" class="hidden text-center py-8 space-y-4">
+          <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+            <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+          </div>
+          <div>
+            <h2 id="s5-title" class="text-xl font-extrabold text-black">Complaint Logged · <span id="created-ticket-id" class="font-mono text-[#C91E2F]"></span></h2>
+            <p id="s5-sub" class="text-sm text-neutral-500 mt-1 max-w-md mx-auto">We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr"></span>.</p>
+          </div>
+          <div class="flex flex-wrap justify-center gap-2.5 pt-2">
+            <button id="btn-track-created" type="button" onclick="trackCreatedTicket()" class="px-5 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-sm transition">Track This Complaint</button>
+            <button id="btn-submit-another" type="button" onclick="resetFileFlow()" class="px-5 py-3 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition">Submit Another</button>
+          </div>
+        </div>
+
+        <!-- ================= TRACK COMPLAINT FLOW ================= -->
+        <div id="track-panel" class="hidden space-y-5">
+          <div>
+            <h2 id="track-title" class="text-2xl font-extrabold tracking-tight text-black">Track your complaint</h2>
+            <p id="track-subtitle" class="text-sm text-neutral-500 mt-1">Enter your Ticket ID or License Plate with your mobile number.</p>
+          </div>
+
+          <form id="track-form" onsubmit="lookupTicket(event)" class="space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label id="track-query-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Ticket ID or License plate *</label>
+                <input id="track-query" type="text" required placeholder="C-1042 or KSA 8821" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm uppercase font-mono font-semibold focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
+              </div>
+              <div>
+                <label id="track-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Mobile number *</label>
+                <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] overflow-hidden" dir="ltr">
+                  <span class="inline-flex items-center px-3 bg-[#F4F4F5] border-r border-neutral-200 text-xs font-semibold text-neutral-700">+966</span>
+                  <input id="track-phone" type="tel" required placeholder="55 391 4420" class="w-full px-3 py-2.5 text-sm focus:outline-none" />
+                </div>
+              </div>
+            </div>
+            <button id="track-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold transition">Track Status</button>
+          </form>
+
+          <div id="track-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+          <div id="track-multi" class="hidden space-y-2"></div>
+          <div id="track-result" class="hidden space-y-4 pt-3 border-t border-neutral-200"></div>
+        </div>
+      </div>
+
+      <!-- Mobile Footer -->
+      <div class="max-w-xl w-full mx-auto pt-8 mt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
+        <span>© 2026 RUSH Car Wash</span>
+        <span dir="ltr">+966 55 312 3848 · contactus@rush.com.sa</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-neutral-700 flex items-center gap-2">
+    <i data-lucide="check-circle" class="w-4 h-4 text-[#C91E2F] shrink-0"></i>
+    <span id="toast-msg">Saved</span>
+  </div>
+
+  <script>
+    const customersDB = [];
+    let tickets = [];
+
+    let appState = {
+      mode: "file",
+      lang: "en",
+      step: 1,
+      customer: null,
+      token: null,
+      pendingPlate: "",
+      pendingPhone: "",
+      otp: "",
+      issueType: "Unsatisfied",
+      selectedRecordId: null,
+      qualityTags: [],
+      zones: [],
+      mediaFiles: [],
+      bankSmsFile: "",
+      createdTicketId: null,
+      trackedId: null
+    };
+
+    const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "" : "http://localhost:4000";
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      document.getElementById("toast-msg").textContent = msg;
+      t.classList.remove("hidden");
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => t.classList.add("hidden"), 3000);
+    }
+
+    function setBtnLoading(btnOrId, isLoading, loadingText, defaultText) {
+      const btn = typeof btnOrId === "string" ? document.getElementById(btnOrId) : btnOrId;
+      if (!btn) return;
+      if (isLoading) {
+        if (!btn.dataset.originalHtml) {
+          btn.dataset.originalHtml = btn.innerHTML;
+        }
+        btn.disabled = true;
+        btn.classList.add("opacity-75", "cursor-not-allowed");
+        btn.innerHTML = `
+          <span class="inline-flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4 text-current shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span>${loadingText || "Please wait..."}</span>
+          </span>
+        `;
+      } else {
+        btn.disabled = false;
+        btn.classList.remove("opacity-75", "cursor-not-allowed");
+        if (defaultText) {
+          btn.innerHTML = defaultText;
+        } else if (btn.dataset.originalHtml) {
+          btn.innerHTML = btn.dataset.originalHtml;
+        }
+      }
+    }
+
+    function renderRecordsSkeleton(isBilling) {
+      const list = document.getElementById("records-list");
+      if (!list) return;
+      const isAr = appState.lang === "ar";
+      const label = isBilling
+        ? (isAr ? "جاري البحث عن فواتير الدفع المكتملة..." : "Looking up paid orders...")
+        : (isAr ? "جاري جلب سجل زيارات الغسيل في الخرج..." : "Looking up recent washes in Al Kharj...");
+      list.innerHTML = `
+        <div class="space-y-2.5 animate-pulse">
+          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-500 py-1 px-1">
+            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span>${label}</span>
+          </div>
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-neutral-200 rounded w-28"></div>
+              <div class="h-4 bg-neutral-200 rounded w-20"></div>
+            </div>
+            <div class="h-3 bg-neutral-200 rounded w-44"></div>
+          </div>
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-neutral-200 rounded w-32"></div>
+              <div class="h-4 bg-neutral-200 rounded w-16"></div>
+            </div>
+            <div class="h-3 bg-neutral-200 rounded w-36"></div>
+          </div>
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+            <div class="flex justify-between items-center">
+              <div class="h-4 bg-neutral-200 rounded w-24"></div>
+              <div class="h-4 bg-neutral-200 rounded w-20"></div>
+            </div>
+            <div class="h-3 bg-neutral-200 rounded w-40"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTrackSkeleton() {
+      const result = document.getElementById("track-result");
+      if (!result) return;
+      const isAr = appState.lang === "ar";
+      result.classList.remove("hidden");
+      result.innerHTML = `
+        <div class="space-y-3 animate-pulse">
+          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-500 py-1">
+            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+            </svg>
+            <span>${isAr ? "جاري البحث عن البلاغ في النظام..." : "Searching ticket records..."}</span>
+          </div>
+          <div class="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <div class="h-5 bg-neutral-200 rounded w-32"></div>
+              <div class="h-5 bg-neutral-200 rounded w-20"></div>
+            </div>
+            <div class="h-10 bg-neutral-200 rounded-xl"></div>
+            <div class="h-14 bg-neutral-200 rounded-xl"></div>
+          </div>
+        </div>
+      `;
+    }
+
+    function normPlate(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+    function normPhone(p) { return String(p || "").replace(/\D/g, "").slice(-9); }
+
+    function applyLang(lang) {
+      appState.lang = lang;
+      try { localStorage.setItem("rush_portal_lang", lang); } catch (e) {}
+      const isAr = lang === "ar";
+      document.getElementById("portal-root").setAttribute("dir", isAr ? "rtl" : "ltr");
+
+      // Header language button
+      const btnHtml = isAr
+        ? `<span class="text-[#C91E2F] font-bold">EN</span><span>English</span>`
+        : `<span class="text-[#C91E2F] font-bold">AR</span><span>العربية</span>`;
+      const langBtn = document.getElementById("lang-btn");
+      if (langBtn) langBtn.innerHTML = btnHtml;
+      const langBtnMobile = document.getElementById("lang-btn-mobile");
+      if (langBtnMobile) langBtnMobile.innerHTML = btnHtml;
+
+      // Mode tabs
+      const tabFile = document.getElementById("tab-file");
+      if (tabFile) tabFile.textContent = isAr ? "تقديم بلاغ" : "File Complaint";
+      const tabTrack = document.getElementById("tab-track");
+      if (tabTrack) tabTrack.textContent = isAr ? "تتبع البلاغ" : "Track Complaint";
+
+      // Stepper
+      const labels = isAr ? ["التحقق", "الرمز", "الزيارة", "التفاصيل"] : ["Verify", "OTP", "Visit", "Details"];
+      [1, 2, 3, 4].forEach((s, idx) => {
+        const el = document.getElementById(`step-ind-${s}`)?.querySelector("span:last-child");
+        if (el) el.textContent = labels[idx];
+      });
+
+      // Step 1
+      const s1Title = document.getElementById("s1-title");
+      if (s1Title) s1Title.textContent = isAr ? "مرحباً بك في رش واش" : "Welcome to Rush";
+      const s1Sub = document.getElementById("s1-sub");
+      if (s1Sub) s1Sub.textContent = isAr ? "أدخل رقم اللوحة ورقم الجوال للبدء." : "Enter your license plate and mobile number to get started.";
+      const s1PlateLbl = document.getElementById("step1-plate-label");
+      if (s1PlateLbl) s1PlateLbl.textContent = isAr ? "رقم اللوحة *" : "License plate *";
+      const inpPlate = document.getElementById("inp-plate");
+      if (inpPlate) inpPlate.placeholder = isAr ? "أ ب ج 1234" : "ABC 1234";
+      const s1PhoneLbl = document.getElementById("step1-phone-label");
+      if (s1PhoneLbl) s1PhoneLbl.textContent = isAr ? "رقم الجوال *" : "Mobile number *";
+      const bStep1 = document.getElementById("btn-step1");
+      if (bStep1) { bStep1.textContent = isAr ? "متابعة" : "Continue"; bStep1.dataset.originalHtml = bStep1.innerHTML; }
+
+      // Step 2
+      const s2Title = document.getElementById("s2-title");
+      if (s2Title) s2Title.textContent = isAr ? "التحقق من رقم الجوال" : "Verify your number";
+      const s2Sub = document.getElementById("s2-sub");
+      if (s2Sub) {
+        const phone = document.getElementById("otp-phone-display")?.textContent || "";
+        s2Sub.innerHTML = isAr
+          ? `تم إرسال رمز التحقق المكون من 4 أرقام عبر رسالة نصية إلى <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`
+          : `We sent a 4-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`;
+      }
+      const bStep2 = document.getElementById("btn-step2");
+      if (bStep2) { bStep2.textContent = isAr ? "تحقق ومتابعة" : "Verify & Continue"; bStep2.dataset.originalHtml = bStep2.innerHTML; }
+      const bStep2Back = document.getElementById("btn-step2-back");
+      if (bStep2Back) bStep2Back.textContent = isAr ? "رجوع" : "Back";
+      const bResend = document.getElementById("btn-resend-otp");
+      if (bResend) { bResend.textContent = isAr ? "إعادة إرسال" : "Resend"; bResend.dataset.originalHtml = bResend.innerHTML; }
+
+      // Step 3
+      const s3Title = document.getElementById("s3-title");
+      if (s3Title) s3Title.textContent = isAr ? "كيف نقدر نساعدك؟" : "What can we help with?";
+      const s3Veh = document.getElementById("s3-veh-prefix");
+      if (s3Veh) s3Veh.textContent = isAr ? "المركبة المسجلة: " : "Verified vehicle: ";
+      const otpBadge = document.getElementById("otp-verified-badge");
+      if (otpBadge) otpBadge.textContent = isAr ? "تم التحقق بالرمز" : "OTP Verified";
+      const issueLbl = document.getElementById("issue-type-label");
+      if (issueLbl) issueLbl.textContent = isAr ? "نوع الشكوى أو الملاحظة *" : "Complaint / Issue type *";
+      const issueSel = document.getElementById("sel-issue-type");
+      if (issueSel && issueSel.options.length >= 4) {
+        issueSel.options[0].text = isAr ? "جودة الغسيل (ملاحظات على الخدمة / إعادة غسيل)" : "Unsatisfied (Wash Quality / Rewash)";
+        issueSel.options[1].text = isAr ? "الفواتير والمبالغ (العمليات والخصومات)" : "Billing / Refund (Orders & Charges)";
+        issueSel.options[2].text = isAr ? "أضرار وتلفيات (مطالبة بأضرار المركبة)" : "Damage (Vehicle Damage Claim)";
+        issueSel.options[3].text = isAr ? "أخرى (استفسار عام أو ملاحظات)" : "Other (General Inquiry / Feedback)";
+      }
+      const hHead = document.getElementById("history-heading");
+      if (hHead) hHead.textContent = isAr ? "آخر 3 غسلات (خلال 7 أيام)" : "Last 3 Washes (Past 7 Days)";
+      const hSub = document.getElementById("history-sub");
+      if (hSub) hSub.textContent = isAr ? "حدد زيارة الغسيل المعنية" : "Select the wash visit";
+      const bStep3Back = document.getElementById("btn-step3-back");
+      if (bStep3Back) bStep3Back.textContent = isAr ? "رجوع" : "Back";
+      const bTo4 = document.getElementById("btn-to-step4");
+      if (bTo4) bTo4.textContent = isAr ? "متابعة" : "Continue";
+
+      // Step 4
+      const cbLbl = document.getElementById("callback-label");
+      if (cbLbl) cbLbl.textContent = isAr ? "الوقت المفضل للتواصل معك" : "Preferred callback window";
+      const cbSel = document.getElementById("inp-callback");
+      if (cbSel && cbSel.options.length >= 4) {
+        cbSel.options[0].text = isAr ? "في أي وقت" : "Anytime";
+        cbSel.options[1].text = isAr ? "صباحاً (8 ص – 12 م)" : "Morning (8AM–12PM)";
+        cbSel.options[2].text = isAr ? "ظهراً (12 م – 5 م)" : "Afternoon (12PM–5PM)";
+        cbSel.options[3].text = isAr ? "مساءً (5 م – 9 م)" : "Evening (5PM–9PM)";
+      }
+      const photoLbl = document.getElementById("photos-label");
+      if (photoLbl) photoLbl.textContent = isAr ? "الصور أو مقاطع الفيديو" : "Photos / Video";
+      const photoBtn = document.getElementById("upload-btn-text");
+      if (photoBtn) photoBtn.textContent = isAr ? "رفع صور / فيديو" : "Upload Photos / Video";
+      const descLbl = document.getElementById("desc-label");
+      if (descLbl) descLbl.textContent = isAr ? "تفاصيل إضافية *" : "Additional details *";
+      const descInp = document.getElementById("inp-desc");
+      if (descInp) descInp.placeholder = isAr ? "اشرح لنا بالتفصيل ما حدث..." : "Tell us what happened...";
+      const bStep4Back = document.getElementById("btn-step4-back");
+      if (bStep4Back) bStep4Back.textContent = isAr ? "رجوع" : "Back";
+      const bSubmit = document.getElementById("btn-submit");
+      if (bSubmit) { bSubmit.textContent = isAr ? "إرسال البلاغ" : "Submit Complaint"; bSubmit.dataset.originalHtml = bSubmit.innerHTML; }
+
+      // Step 5
+      const s5Title = document.getElementById("s5-title");
+      if (s5Title) {
+        const tid = document.getElementById("created-ticket-id")?.textContent || "";
+        s5Title.innerHTML = isAr ? `تم تسجيل البلاغ بنجاح · <span id="created-ticket-id" class="font-mono text-[#C91E2F]">${tid}</span>` : `Complaint Logged · <span id="created-ticket-id" class="font-mono text-[#C91E2F]">${tid}</span>`;
+      }
+      const s5Sub = document.getElementById("s5-sub");
+      if (s5Sub) {
+        const ph = document.getElementById("confirm-phone")?.textContent || "";
+        s5Sub.innerHTML = isAr ? `تلقينا طلبك وسنرسل لك التحديثات عبر رسائل الواتساب/SMS على <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${ph}</span>.` : `We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${ph}</span>.`;
+      }
+      const bTrackCreated = document.getElementById("btn-track-created");
+      if (bTrackCreated) bTrackCreated.textContent = isAr ? "تتبع حالة هذا البلاغ" : "Track This Complaint";
+      const bSubmitAnother = document.getElementById("btn-submit-another");
+      if (bSubmitAnother) bSubmitAnother.textContent = isAr ? "تقديم بلاغ آخر" : "Submit Another";
+
+      // Track Panel
+      const trTitle = document.getElementById("track-title");
+      if (trTitle) trTitle.textContent = isAr ? "تتبع بلاغك" : "Track your complaint";
+      const trSub = document.getElementById("track-subtitle");
+      if (trSub) trSub.textContent = isAr ? "أدخل رقم البلاغ أو رقم اللوحة مع رقم الجوال." : "Enter your Ticket ID or License Plate with your mobile number.";
+      const trQueryLbl = document.getElementById("track-query-label");
+      if (trQueryLbl) trQueryLbl.textContent = isAr ? "رقم البلاغ أو رقم اللوحة *" : "Ticket ID or License plate *";
+      const trQueryInp = document.getElementById("track-query");
+      if (trQueryInp) trQueryInp.placeholder = isAr ? "C-1042 أو أ ب ج 1234" : "C-1042 or KSA 8821";
+      const trPhoneLbl = document.getElementById("track-phone-label");
+      if (trPhoneLbl) trPhoneLbl.textContent = isAr ? "رقم الجوال *" : "Mobile number *";
+      const trSubmitBtn = document.getElementById("track-submit-btn");
+      if (trSubmitBtn) trSubmitBtn.textContent = isAr ? "تتبع الحالة" : "Track Status";
+
+      // Re-render active ticket if present
+      if (appState.trackedId) {
+        renderTrackedTicket();
+      }
+    }
+
+    function toggleLang() {
+      const newLang = appState.lang === "en" ? "ar" : "en";
+      applyLang(newLang);
+      showToast(newLang === "ar" ? "تم التبديل إلى العربية" : "Switched to English");
+    }
+
+    function switchMode(mode) {
+      appState.mode = mode;
+      const isTrack = mode === "track";
+      const baseBtnClass = "flex-1 py-2 text-center rounded-full text-xs font-bold transition";
+      document.getElementById("tab-file").className = isTrack
+        ? `${baseBtnClass} text-neutral-600 hover:text-black`
+        : `${baseBtnClass} bg-black text-white shadow-xs`;
+      document.getElementById("tab-track").className = isTrack
+        ? `${baseBtnClass} bg-black text-white shadow-xs`
+        : `${baseBtnClass} text-neutral-600 hover:text-black`;
+      document.getElementById("stepper").classList.toggle("hidden", isTrack);
+      [1, 2, 3, 4, 5].forEach(s => document.getElementById(`step-${s}`).classList.toggle("hidden", isTrack || s !== appState.step));
+      document.getElementById("track-panel").classList.toggle("hidden", !isTrack);
+      lucide.createIcons();
+    }
+
+    function goToStep(step) {
+      appState.step = step;
+      [1, 2, 3, 4, 5].forEach(s => {
+        document.getElementById(`step-${s}`).classList.toggle("hidden", s !== step);
+        if (s <= 4) {
+          const ind = document.getElementById(`step-ind-${s}`);
+          const badge = ind.querySelector("span:first-child");
+          if (s < step) {
+            ind.className = "flex items-center gap-1.5 text-emerald-600";
+            badge.className = "w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]";
+          } else if (s === step) {
+            ind.className = "flex items-center gap-1.5 text-black";
+            badge.className = "w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]";
+          } else {
+            ind.className = "flex items-center gap-1.5 text-neutral-400";
+            badge.className = "w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]";
+          }
+        }
+      });
+      lucide.createIcons();
+    }
+
+    function fillDemoLookup(plate, phone) {
+      document.getElementById("inp-plate").value = plate;
+      document.getElementById("inp-phone").value = phone;
+      document.getElementById("step1-error").classList.add("hidden");
+    }
+
+    async function verifyPlateAndPhone(e) {
+      e.preventDefault();
+      const plate = normPlate(document.getElementById("inp-plate").value);
+      const phone = normPhone(document.getElementById("inp-phone").value);
+      const err = document.getElementById("step1-error");
+      err.classList.add("hidden");
+      const isAr = appState.lang === "ar";
+      setBtnLoading("btn-step1", true, isAr ? "جاري التحقق من المركبة..." : "Checking Vehicle...");
+
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/request-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ licensePlate: plate, phone: phone })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          err.textContent = data.error || (isAr ? "رقم اللوحة ورقم الجوال غير متطابقين في سجلاتنا." : "License plate and mobile number do not match our system records.");
+          err.classList.remove("hidden");
+          return;
+        }
+        appState.pendingPlate = plate;
+        appState.pendingPhone = phone;
+        appState.otp = data.devOtp || "";
+        document.getElementById("otp-phone-display").textContent = "+966 " + phone;
+        document.getElementById("otp-demo-code").textContent = data.devOtp ? `(Dev OTP: ${data.devOtp})` : (isAr ? "تحقق من الرسائل القصيرة" : "Check your SMS");
+        document.getElementById("inp-otp").value = data.devOtp || "";
+        document.getElementById("step2-error").classList.add("hidden");
+        goToStep(2);
+        showToast(data.message || (isAr ? "تم إرسال رمز التحقق عبر الرسائل القصيرة" : "OTP sent via SMS"));
+        return;
+      } catch (ex) {
+        console.warn("API request failed, falling back to local demo DB", ex);
+      } finally {
+        setBtnLoading("btn-step1", false);
+      }
+
+      const match = customersDB.find(c => normPlate(c.plate) === plate && normPhone(c.phone) === phone);
+      if (!match) {
+        err.textContent = isAr ? "رقم اللوحة والجوال غير متطابقين في سجلاتنا. يرجى التأكد من الحقول." : "License plate and mobile number do not match our system records. Please double-check both fields.";
+        err.classList.remove("hidden");
+        return;
+      }
+      err.classList.add("hidden");
+      appState.customer = match;
+      appState.otp = String(1000 + Math.floor(Math.random() * 9000));
+      document.getElementById("otp-phone-display").textContent = "+966 " + document.getElementById("inp-phone").value;
+      document.getElementById("otp-demo-code").textContent = appState.otp;
+      document.getElementById("inp-otp").value = "";
+      document.getElementById("step2-error").classList.add("hidden");
+      goToStep(2);
+      showToast(isAr ? "تم إرسال رمز التحقق" : "OTP sent via SMS");
+    }
+
+    async function resendOtp() {
+      const isAr = appState.lang === "ar";
+      setBtnLoading("btn-resend-otp", true, isAr ? "جاري الإرسال..." : "Sending...");
+      try {
+        if (appState.pendingPlate && appState.pendingPhone) {
+          const res = await fetch(`${API_BASE}/api/auth/request-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ licensePlate: appState.pendingPlate, phone: appState.pendingPhone })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            appState.otp = data.devOtp || "";
+            document.getElementById("otp-demo-code").textContent = data.devOtp ? `(Dev OTP: ${data.devOtp})` : (isAr ? "تحقق من الرسائل القصيرة" : "Check SMS");
+            showToast(isAr ? "تم إرسال رمز جديد" : "New OTP code sent");
+            return;
+          }
+        }
+        appState.otp = String(1000 + Math.floor(Math.random() * 9000));
+        document.getElementById("otp-demo-code").textContent = appState.otp;
+        showToast(isAr ? "تم إرسال رمز جديد" : "New OTP code sent");
+      } catch (ex) {
+        console.warn("Resend OTP failed", ex);
+      } finally {
+        setBtnLoading("btn-resend-otp", false, null, isAr ? "إعادة إرسال" : "Resend");
+      }
+    }
+
+    async function verifyOtp(e) {
+      e.preventDefault();
+      const entered = document.getElementById("inp-otp").value.trim();
+      const err = document.getElementById("step2-error");
+      err.classList.add("hidden");
+      const isAr = appState.lang === "ar";
+      setBtnLoading("btn-step2", true, isAr ? "جاري التحقق من الرمز..." : "Verifying Code...");
+
+      try {
+        if (appState.pendingPlate && appState.pendingPhone) {
+          const res = await fetch(`${API_BASE}/api/auth/verify-otp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              licensePlate: appState.pendingPlate,
+              phone: appState.pendingPhone,
+              code: entered
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            err.textContent = data.error || (isAr ? "رمز التحقق غير صحيح." : "Invalid OTP code.");
+            err.classList.remove("hidden");
+            return;
+          }
+          appState.token = data.token;
+          appState.customer = {
+            name: data.customer.name,
+            phone: data.customer.phone || appState.pendingPhone,
+            plate: data.customer.licensePlate,
+            vehicle: data.customer.vehicleModel,
+            washes: [],
+            orders: []
+          };
+          goToStep(3);
+          await loadCustomerHistory();
+          return;
+        }
+
+        if (entered !== appState.otp) {
+          err.textContent = isAr ? "رمز التحقق غير صحيح. يرجى إدخال الرمز المكون من 4 أرقام." : "Invalid OTP code. Please enter the 4-digit code shown above.";
+          err.classList.remove("hidden");
+          return;
+        }
+        err.classList.add("hidden");
+        goToStep(3);
+        renderRecordsList();
+      } catch (ex) {
+        console.warn("API verify-otp failed, falling back to local demo DB", ex);
+      } finally {
+        setBtnLoading("btn-step2", false);
+      }
+    }
+
+    async function handleTypeChange(val) {
+      appState.issueType = val;
+      appState.selectedRecordId = null;
+      if (appState.token) {
+        await loadCustomerHistory();
+      } else {
+        renderRecordsList();
+      }
+    }
+
+    async function loadCustomerHistory() {
+      const isBilling = appState.issueType === "Billing / Refund";
+      const btnTo4 = document.getElementById("btn-to-step4");
+      if (btnTo4) btnTo4.disabled = true;
+
+      if (!appState.token) {
+        renderRecordsList();
+        return;
+      }
+      renderRecordsSkeleton(isBilling);
+      try {
+        const apiType = isBilling ? "BILLING_REFUND" : (appState.issueType === "Damage" ? "DAMAGE" : (appState.issueType === "Other" ? "OTHER" : "UNSATISFIED"));
+        const res = await fetch(`${API_BASE}/api/customer/history?type=${apiType}`, {
+          headers: { "Authorization": `Bearer ${appState.token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isBilling) {
+            appState.customer.orders = data.records.map(r => ({
+              id: r.id,
+              item: r.itemName,
+              amount: r.amountSar,
+              date: new Date(r.orderedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              method: r.paymentMethod,
+              site: r.site,
+              alreadyReportedTicketId: r.alreadyReportedTicketId
+            }));
+          } else {
+            appState.customer.washes = data.records.map(r => ({
+              id: r.id,
+              package: r.packageName,
+              date: new Date(r.washedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+              lane: r.lane,
+              site: r.site,
+              daysAgo: Math.round((Date.now() - new Date(r.washedAt).getTime()) / (24 * 3600 * 1000)),
+              alreadyReportedTicketId: r.alreadyReportedTicketId
+            }));
+          }
+        }
+      } catch (ex) {
+        console.error("Failed to load history from API", ex);
+      }
+      renderRecordsList();
+    }
+
+    function renderRecordsList() {
+      const cust = appState.customer;
+      if (!cust) return;
+      document.getElementById("matched-vehicle").textContent = `${cust.vehicle} (${cust.plate})`;
+      const isBilling = appState.issueType === "Billing / Refund";
+      document.getElementById("history-heading").textContent = isBilling ? "Recent Orders & Charges" : "Last 3 Washes (Past 7 Days)";
+      document.getElementById("history-sub").textContent = isBilling ? "Select order or Order Not Listed" : "Select the wash visit";
+
+      const records = isBilling ? cust.orders : cust.washes.filter(w => w.daysAgo <= 7).slice(0, 3);
+      const findDup = (recId) => tickets.find(t => t.receipt.startsWith(recId));
+      const firstOpen = records.find(r => !findDup(r.id));
+      const isSpecial = appState.selectedRecordId === "ORD-UNLISTED" || appState.selectedRecordId === "VISIT-UNLISTED" || appState.selectedRecordId === "VISIT-GENERAL";
+      if (!isSpecial && (!appState.selectedRecordId || !records.some(r => r.id === appState.selectedRecordId) || findDup(appState.selectedRecordId))) {
+        appState.selectedRecordId = firstOpen ? firstOpen.id : (isBilling ? "ORD-UNLISTED" : (appState.issueType === "Other" ? "VISIT-GENERAL" : "VISIT-UNLISTED"));
+      }
+      document.getElementById("btn-to-step4").disabled = !appState.selectedRecordId;
+
+      const list = document.getElementById("records-list");
+      list.innerHTML = records.map(r => {
+        const dup = findDup(r.id);
+        const sel = !dup && r.id === appState.selectedRecordId;
+        const dupBadge = dup ? `<span onclick="event.stopPropagation(); jumpToTrack('${dup.id}')" class="text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full hover:bg-amber-200 cursor-pointer">Already Reported (${dup.id}) · Track ↗</span>` : "";
+        if (isBilling) {
+          return `
+            <button type="button" ${dup ? "disabled" : `onclick="selectRecord('${r.id}')"`} class="w-full text-left p-3.5 rounded-xl border transition ${dup ? "border-neutral-200 bg-neutral-50 opacity-80 cursor-not-allowed" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"}">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-sm font-bold text-black">${r.item} · SAR ${r.amount}</span>
+                <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
+              </div>
+              <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                <span>${r.date}</span><span>·</span><span>${r.method}</span><span>·</span><span>${r.site}</span>
+              </div>
+            </button>
+          `;
+        }
+        return `
+          <button type="button" ${dup ? "disabled" : `onclick="selectRecord('${r.id}')"`} class="w-full text-left p-3.5 rounded-xl border transition ${dup ? "border-neutral-200 bg-neutral-50 opacity-80 cursor-not-allowed" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"}">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="text-sm font-bold text-black">${r.date}</span>
+              <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
+            </div>
+            <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+              <span>${r.site} (${r.lane})</span><span>·</span><span>${r.package}</span>
+            </div>
+          </button>
+        `;
+      }).join("");
+
+      if (isBilling) {
+        const uSel = appState.selectedRecordId === "ORD-UNLISTED";
+        list.innerHTML += `
+          <button type="button" onclick="selectRecord('ORD-UNLISTED')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-bold text-black">Order Not Listed</span>
+              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">Card Last 4 + Bank SMS</span>
+            </div>
+            <div class="text-xs text-neutral-500 mt-1">Charged on your card but don't see it above? Provide card last 4 digits &amp; Bank SMS.</div>
+          </button>
+        `;
+      } else if (appState.issueType === "Other") {
+        const isGeneral = !appState.selectedRecordId || appState.selectedRecordId === "VISIT-GENERAL";
+        if (!appState.selectedRecordId) appState.selectedRecordId = "VISIT-GENERAL";
+        document.getElementById("btn-to-step4").disabled = false;
+        list.innerHTML += `
+          <button type="button" onclick="selectRecord('VISIT-GENERAL')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${isGeneral ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-bold text-black">${appState.lang === "ar" ? "ملاحظة عامة / بدون تحديد غسلة معينة" : "General Inquiry / No Specific Wash"}</span>
+              <span class="text-[11px] font-bold text-neutral-600 bg-white border border-neutral-200 px-2 py-0.5 rounded">${appState.lang === "ar" ? "عام" : "General"}</span>
+            </div>
+            <div class="text-xs text-neutral-500 mt-1">${appState.lang === "ar" ? "تقديم استفسار أو مقترح عام غير مرتبط بزيارة محددة." : "Submit general feedback or inquiries not tied to a specific wash visit."}</div>
+          </button>
+        `;
+      } else if (records.length === 0 || !firstOpen) {
+        const uSel = appState.selectedRecordId === "VISIT-UNLISTED";
+        if (!appState.selectedRecordId) {
+          appState.selectedRecordId = "VISIT-UNLISTED";
+          document.getElementById("btn-to-step4").disabled = false;
+        }
+        list.innerHTML += `
+          <button type="button" onclick="selectRecord('VISIT-UNLISTED')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-bold text-black">${appState.lang === "ar" ? "زيارة غير مدرجة في القائمة" : "Visit Not Listed"}</span>
+              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">${appState.lang === "ar" ? "زيارة سابقة" : "Earlier Visit"}</span>
+            </div>
+            <div class="text-xs text-neutral-500 mt-1">${appState.lang === "ar" ? "هل قمت بالغسيل قبل أكثر من 7 أيام أو تم الإبلاغ عن الزيارة بالفعل؟ اختر هذا الخيار للمتابعة." : "Washed more than 7 days ago or already reported? Select this option to proceed."}</div>
+          </button>
+        `;
+      }
+    }
+
+    function selectRecord(id) {
+      appState.selectedRecordId = id;
+      document.getElementById("btn-to-step4").disabled = false;
+      renderRecordsList();
+    }
+
+    function openDynamicForm() {
+      const cust = appState.customer;
+      const isBilling = appState.issueType === "Billing / Refund";
+      const isUnlisted = (isBilling && appState.selectedRecordId === "ORD-UNLISTED") || appState.selectedRecordId === "VISIT-UNLISTED" || appState.selectedRecordId === "VISIT-GENERAL";
+      const rec = isUnlisted
+        ? { id: appState.selectedRecordId || "VISIT-UNLISTED", item: "General / Unlisted Visit", amount: "", date: "General / Unlisted", package: "General / Unlisted", site: "RUSH Al Kharj" }
+        : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-GENERAL", item: "General", package: "General", date: "General", site: "RUSH Al Kharj" };
+      if (!rec) return;
+
+      document.getElementById("selected-record-banner").innerHTML = isUnlisted
+        ? (isBilling
+            ? `<div><strong>Billing / Refund:</strong> Order Not Listed</div><span class="font-mono font-bold text-[#C91E2F]">UNLISTED</span>`
+            : (appState.selectedRecordId === "VISIT-GENERAL"
+                ? `<div><strong>${appState.issueType}:</strong> General Feedback / Inquiry</div><span class="font-mono font-bold text-neutral-600 bg-neutral-200 px-2 py-0.5 rounded text-[11px]">GENERAL</span>`
+                : `<div><strong>${appState.issueType}:</strong> Earlier / Unlisted Wash</div><span class="font-mono font-bold text-[#C91E2F]">UNLISTED</span>`))
+        : isBilling
+        ? `<div><strong>Billing / Refund:</strong> ${rec.item} (SAR ${rec.amount})</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`
+        : `<div><strong>${appState.issueType}:</strong> ${rec.date} · ${rec.package}</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`;
+
+      const dyn = document.getElementById("dynamic-fields");
+      appState.qualityTags = [];
+      appState.zones = [];
+      appState.bankSmsFile = "";
+
+      if (appState.issueType === "Unsatisfied") {
+        dyn.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-2">What wasn't clean? (Select all that apply)</label>
+            <div class="flex flex-wrap gap-2 text-xs">
+              ${["Missed Spots / Dirt", "Soap Residue", "Water Spots", "Dryer / Towel Issue", "Interior / Vacuum"].map(tag => `
+                <button type="button" onclick="toggleQualityTag('${tag}', this)" class="px-3 py-1.5 rounded-full border border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50 transition">${tag}</button>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      } else if (isBilling) {
+        dyn.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Billing issue reason *</label>
+              <select id="inp-billing-reason" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white">
+                <option value="Double Charge">Charged Twice for Same Wash</option>
+                <option value="Wrong Package Billed">Billed Wrong Wash Package</option>
+                <option value="Membership Renewal">Membership Renewal After Cancel</option>
+                <option value="Promo Not Applied">Promo / Discount Not Applied</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Requested refund (SAR) *</label>
+              <input id="inp-refund-amt" type="number" step="0.01" min="0" required placeholder="e.g. 65.00" value="${rec.amount || ""}" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm" />
+            </div>
+          </div>
+          ${isUnlisted ? `
+            <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 space-y-3">
+              <div class="text-xs font-bold text-[#881320]">Unlisted Order Verification (Required)</div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-neutral-700 mb-1">Card last 4 digits *</label>
+                  <input id="inp-card-last4" type="text" maxlength="4" pattern="[0-9]{4}" required placeholder="4419" class="w-full rounded-xl border border-[#F7C5CA] bg-white px-3.5 py-2 text-sm font-mono tracking-widest" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-neutral-700 mb-1">Bank SMS screenshot *</label>
+                  <label class="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#C91E2F] bg-white hover:bg-[#FCE4E6] px-3 py-2 text-xs font-bold text-[#C91E2F] cursor-pointer">
+                    <span id="bank-sms-lbl">+ Upload Bank SMS</span>
+                    <input type="file" accept="image/*,.pdf" class="hidden" onchange="handleBankSms(this.files)" />
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-neutral-700 mb-1">Or paste Bank SMS text</label>
+                <textarea id="inp-bank-sms-text" rows="2" placeholder="Paste the bank SMS alert showing transaction time & amount..." class="w-full rounded-xl border border-[#F7C5CA] bg-white px-3 py-2 text-xs"></textarea>
+              </div>
+            </div>
+          ` : ""}
+        `;
+      } else if (appState.issueType === "Damage") {
+        dyn.innerHTML = `
+          <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-neutral-800">Tap affected vehicle zones</span>
+              <span id="zones-label" class="text-xs font-bold text-[#C91E2F]">None selected</span>
+            </div>
+            <div class="flex justify-center">
+              <svg viewBox="0 0 360 150" class="w-full max-w-[300px] h-auto select-none">
+                <rect x="45" y="25" width="270" height="100" rx="28" fill="#E5E5E5" stroke="#A3A3A3" stroke-width="2" />
+                <path d="M25,40 Q15,75 25,110 L45,115 L45,35 Z" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Front Bumper', this)" />
+                <rect x="48" y="34" width="68" height="82" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone" onclick="toggleZone('Hood', this)" />
+                <polygon points="118,36 146,42 146,108 118,114" fill="#E5E5E5" stroke="#525252" class="car-zone" onclick="toggleZone('Windshield', this)" />
+                <rect x="148" y="42" width="88" height="66" rx="4" fill="#FFFFFF" stroke="#737373" class="car-zone" onclick="toggleZone('Roof', this)" />
+                <rect x="122" y="14" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Driver Side &amp; Mirror', this)" />
+                <rect x="122" y="120" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Passenger Side &amp; Mirror', this)" />
+                <rect x="240" y="36" width="66" height="78" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone" onclick="toggleZone('Rear Trunk / Quarter', this)" />
+                <path d="M315,35 L335,40 Q345,75 335,110 L315,115 Z" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Rear Bumper', this)" />
+                <text x="180" y="79" text-anchor="middle" font-size="10" fill="#404040" font-weight="700" pointer-events="none">ROOF</text>
+                <text x="82" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">HOOD</text>
+                <text x="273" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">REAR</text>
+              </svg>
+            </div>
+          </div>
+        `;
+      } else {
+        // Issue Type: Other
+        dyn.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Topic / Category</label>
+            <select id="inp-other-topic" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white">
+              <option value="General Feedback">General Feedback</option>
+              <option value="Staff & Customer Service">Staff &amp; Customer Service</option>
+              <option value="Facilities & Lane Operation">Facilities &amp; Lane Operation</option>
+              <option value="Subscription / App Suggestion">Subscription / App Suggestion</option>
+              <option value="Other Inquiry">Other Inquiry</option>
+            </select>
+          </div>
+        `;
+      }
+      goToStep(4);
+    }
+
+    function toggleQualityTag(tag, btn) {
+      const idx = appState.qualityTags.indexOf(tag);
+      if (idx >= 0) {
+        appState.qualityTags.splice(idx, 1);
+        btn.className = "px-3 py-1.5 rounded-full border border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50 transition";
+      } else {
+        appState.qualityTags.push(tag);
+        btn.className = "px-3 py-1.5 rounded-full border border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold transition";
+      }
+    }
+
+    function toggleZone(zone, el) {
+      const idx = appState.zones.indexOf(zone);
+      if (idx >= 0) { appState.zones.splice(idx, 1); el.classList.remove("selected"); }
+      else { appState.zones.push(zone); el.classList.add("selected"); }
+      const lbl = document.getElementById("zones-label");
+      if (lbl) lbl.textContent = appState.zones.length ? appState.zones.join(", ") : "None selected";
+    }
+
+    function handleFiles(files) {
+      const isAr = appState.lang === "ar";
+      const fileList = Array.from(files || []).slice(0, 4 - appState.mediaFiles.length);
+      if (!fileList.length) return;
+      showToast(isAr ? `جاري إضافة ${fileList.length} ملف...` : `Adding ${fileList.length} file(s)...`);
+
+      fileList.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          appState.mediaFiles.push({ name: file.name, type: file.type, url: ev.target.result });
+          renderPreviews();
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function handleBankSms(files) {
+      if (!files || !files.length) return;
+      appState.bankSmsFile = files[0].name;
+      const lbl = document.getElementById("bank-sms-lbl");
+      if (lbl) lbl.textContent = "✓ " + files[0].name;
+      handleFiles(files);
+      showToast("Bank SMS screenshot attached");
+    }
+
+    function removeFile(idx) {
+      appState.mediaFiles.splice(idx, 1);
+      renderPreviews();
+    }
+
+    function renderPreviews() {
+      const box = document.getElementById("media-previews");
+      if (!appState.mediaFiles.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+      box.classList.remove("hidden");
+      box.innerHTML = appState.mediaFiles.map((m, i) => `
+        <div class="relative w-16 h-16 rounded-xl border border-neutral-200 overflow-hidden bg-neutral-100">
+          ${m.type.startsWith("video") ? `<div class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-600">VIDEO</div>` : `<img src="${m.url}" alt="${m.name}" class="w-full h-full object-cover" />`}
+          <button type="button" onclick="removeFile(${i})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white text-[10px] flex items-center justify-center">×</button>
+        </div>
+      `).join("");
+    }
+
+    async function submitComplaint(e) {
+      e.preventDefault();
+      const isAr = appState.lang === "ar";
+      const s4Err = document.getElementById("step4-error");
+      if (s4Err) s4Err.classList.add("hidden");
+      setBtnLoading("btn-submit", true, isAr ? "جاري تقديم البلاغ..." : "Submitting Complaint...");
+
+      try {
+        const cust = appState.customer;
+        const isBilling = appState.issueType === "Billing / Refund";
+        const isUnlisted = isBilling && appState.selectedRecordId === "ORD-UNLISTED";
+        const rec = isUnlisted
+          ? { id: "ORD-UNLISTED", item: "Unlisted Card Charge", site: "RUSH Al Kharj", package: "Unlisted" }
+          : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-UNKNOWN", site: "RUSH Al Kharj", package: "Standard Wash" };
+
+        const desc = document.getElementById("inp-desc").value.trim();
+        let prefix = "";
+        let refundAmt = 0;
+        let reason = "";
+        let cardLast4 = undefined;
+        let bankSmsText = undefined;
+        if (appState.issueType === "Unsatisfied") {
+          prefix = `[Tags: ${appState.qualityTags.join(", ") || "General"}] `;
+        } else if (appState.issueType === "Other") {
+          const topic = document.getElementById("inp-other-topic")?.value || "General";
+          prefix = `[Topic: ${topic}] `;
+        } else if (isBilling) {
+          reason = document.getElementById("inp-billing-reason")?.value || "";
+          refundAmt = Number(document.getElementById("inp-refund-amt")?.value || 0);
+          if (isUnlisted) {
+            cardLast4 = document.getElementById("inp-card-last4")?.value || "XXXX";
+            bankSmsText = document.getElementById("inp-bank-sms-text")?.value.trim() || undefined;
+            prefix = `[Unlisted Order · Card •••• ${cardLast4} · Bank SMS: ${appState.bankSmsFile || (bankSmsText ? "Pasted" : "Pending")} · ${reason} · SAR ${refundAmt}] `;
+          } else {
+            prefix = `[${reason} · SAR ${refundAmt}] `;
+          }
+        }
+
+        if (appState.token) {
+          try {
+            const apiType = isBilling ? "BILLING_REFUND" : (appState.issueType === "Damage" ? "DAMAGE" : (appState.issueType === "Other" ? "OTHER" : "UNSATISFIED"));
+            const payload = {
+              type: apiType,
+              posRecordId: rec.id,
+              posRecordLabel: isBilling ? `${rec.id} (${rec.item || "Order"})` : `${rec.id} (${rec.package || "Wash"})`,
+              site: rec.site || "RUSH Al Kharj",
+              summary: prefix + desc,
+              callbackWindow: "Anytime",
+              qualityTags: appState.qualityTags,
+              vehicleZones: appState.zones,
+              billingReason: reason || undefined,
+              requestedAmount: refundAmt || undefined,
+              cardLast4: cardLast4,
+              bankSmsText: bankSmsText,
+              bankSmsUrl: appState.bankSmsFile || undefined,
+              mediaUrls: appState.mediaFiles.map(m => m.url).filter(Boolean)
+            };
+
+            const res = await fetch(`${API_BASE}/api/complaints`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${appState.token}`
+              },
+              body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              const errMsg = data.error?.message || data.error || (data.ticketId ? (isAr ? `تم تقديم بلاغ مسبق لهذه الزيارة (${data.ticketId})` : `Complaint already submitted (${data.ticketId})`) : (isAr ? "حدث خطأ أثناء الإرسال" : "Submission error"));
+              if (s4Err) {
+                s4Err.textContent = errMsg;
+                s4Err.classList.remove("hidden");
+              }
+              showToast(errMsg);
+              return;
+            }
+
+            appState.createdTicketId = data.id;
+            document.getElementById("created-ticket-id").textContent = data.id;
+            document.getElementById("confirm-phone").textContent = "+966 " + (cust.phone || document.getElementById("inp-phone").value);
+            goToStep(5);
+            showToast(isAr ? `تم تقديم البلاغ ${data.id}` : `Ticket ${data.id} submitted`);
+            return;
+          } catch (ex) {
+            console.warn("API submit failed, falling back to local memory", ex);
+          }
+        }
+
+        const newId = `C-${1043 + tickets.length - 4}`;
+        tickets.unshift({
+          id: newId,
+          type: appState.issueType,
+          status: "Submitted",
+          resolutionStatus: "Pending",
+          resolutionNote: "",
+          site: rec.site,
+          createdAt: "Just now",
+          customerName: cust.name,
+          phone: document.getElementById("inp-phone").value,
+          vehicle: cust.vehicle,
+          plate: cust.plate,
+          receipt: isBilling ? `${rec.id} (${rec.item})` : `${rec.id} (${rec.package})`,
+          zones: [...appState.zones],
+          summary: prefix + desc,
+          rewashCode: "",
+          rrn: "",
+          refundAmount: refundAmt,
+          damageFlow: { quotationFile: "", waiverSigned: false, quotationApproved: false, invoiceFile: "", iban: "", bankName: "", accountHolder: "" },
+          mediaFiles: [...appState.mediaFiles],
+          csatRating: 0,
+          messages: [{ sender: "Customer", channel: "Web Portal", time: "Just now", text: prefix + desc }]
+        });
+
+        appState.createdTicketId = newId;
+        document.getElementById("created-ticket-id").textContent = newId;
+        document.getElementById("confirm-phone").textContent = "+966 " + document.getElementById("inp-phone").value;
+        goToStep(5);
+        showToast(isAr ? `تم تقديم البلاغ ${newId}` : `Ticket ${newId} submitted`);
+      } finally {
+        setBtnLoading("btn-submit", false);
+      }
+    }
+
+    function trackCreatedTicket() { if (appState.createdTicketId) jumpToTrack(appState.createdTicketId); }
+
+    function resetFileFlow() {
+      const lang = appState.lang;
+      appState = { mode: "file", lang, step: 1, customer: null, token: null, pendingPlate: "", pendingPhone: "", otp: "", issueType: "Unsatisfied", selectedRecordId: null, qualityTags: [], zones: [], mediaFiles: [], bankSmsFile: "", createdTicketId: null, trackedId: null };
+      document.getElementById("inp-plate").value = "";
+      document.getElementById("inp-phone").value = "";
+      document.getElementById("inp-desc").value = "";
+      document.getElementById("sel-issue-type").value = "Unsatisfied";
+      renderPreviews();
+      goToStep(1);
+    }
+
+    function jumpToTrack(ticketId) {
+      const t = tickets.find(x => x.id === ticketId);
+      switchMode("track");
+      if (t) {
+        document.getElementById("track-query").value = t.id;
+        document.getElementById("track-phone").value = t.phone;
+        appState.trackedId = t.id;
+        renderTrackedTicket();
+      }
+    }
+
+    function fillTrack(q, ph) {
+      document.getElementById("track-query").value = q;
+      document.getElementById("track-phone").value = ph;
+      document.getElementById("track-error").classList.add("hidden");
+    }
+
+    async function lookupTicket(e) {
+      e.preventDefault();
+      const q = document.getElementById("track-query").value.trim().toUpperCase();
+      const ph = normPhone(document.getElementById("track-phone").value);
+      const err = document.getElementById("track-error");
+      const multi = document.getElementById("track-multi");
+      const isAr = appState.lang === "ar";
+
+      setBtnLoading("track-submit-btn", true, isAr ? "جاري البحث عن البلاغ..." : "Searching Tickets...");
+      renderTrackSkeleton();
+
+      try {
+        const res = await fetch(`${API_BASE}/api/complaints/track`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q, phone: ph })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.tickets && data.tickets.length > 0) {
+            const serverTickets = data.tickets.map(st => ({
+              id: st.id,
+              type: st.type === "BILLING_REFUND" ? "Billing / Refund" : (st.type === "DAMAGE" ? "Damage" : (st.type === "OTHER" ? "Other" : "Unsatisfied")),
+              status: st.status === "SUBMITTED" ? "Submitted" : (st.status === "INVESTIGATING" ? "Investigating" : (st.status === "PENDING_PAYOUT" ? "Pending Payout" : "Resolved")),
+              resolutionStatus: st.resolutionStatus === "APPROVED" ? "Approved" : (st.resolutionStatus === "REFUSED" ? "Refused" : "Pending"),
+              resolutionNote: st.resolutionNote || "",
+              site: st.site,
+              createdAt: new Date(st.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" }),
+              customerName: st.customer?.name || "",
+              phone: st.customer?.phone || ph,
+              vehicle: st.customer?.vehicleModel || "",
+              plate: st.customer?.licensePlate || "",
+              receipt: st.posRecordLabel || st.posRecordId,
+              zones: st.vehicleZones || [],
+              summary: st.summary,
+              rewashCode: st.rewashCode || "",
+              rrn: st.rrn || "",
+              transferRef: st.transferRef || "",
+              payoutStatus: st.payoutStatus || "",
+              refundAmount: Number(st.approvedAmount || st.requestedAmount || 0),
+              damageFlow: {
+                quotationFile: st.quotationUrl || "",
+                waiverSigned: st.waiverSigned || false,
+                quotationApproved: st.quotationApproved || false,
+                invoiceFile: st.invoiceUrl || "",
+                iban: st.iban || "",
+                bankName: st.bankName || "",
+                accountHolder: st.accountHolder || ""
+              },
+              mediaFiles: (st.mediaUrls || []).map(u => ({ name: u.split("/").pop(), url: u, type: "image/jpeg" })),
+              csatRating: st.csatRating || 0,
+              messages: (st.messages || []).map(m => ({
+                sender: m.sender,
+                channel: m.channel === "WHATSAPP" ? "WhatsApp" : "Web Portal",
+                time: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                text: m.body
+              }))
+            }));
+
+            serverTickets.forEach(st => {
+              const idx = tickets.findIndex(t => t.id === st.id);
+              if (idx >= 0) tickets[idx] = st;
+              else tickets.unshift(st);
+            });
+
+            err.classList.add("hidden");
+            if (serverTickets.length > 1) {
+              const typeDict = { "Unsatisfied": "جودة الغسيل", "Billing / Refund": "الفواتير والمبالغ", "Damage": "أضرار وتلفيات", "Other": "أخرى" };
+              const statusDict = { "Submitted": "تم التقديم", "Investigating": "قيد المراجعة", "Pending Payout": "بانتظار الصرف", "Resolved": "تم الحل", "Closed": "مغلق" };
+              multi.classList.remove("hidden");
+              multi.innerHTML = `<div class="text-xs font-bold text-neutral-500">${isAr ? `تم العثور على ${serverTickets.length} بلاغات:` : `Found ${serverTickets.length} tickets:`}</div>` + serverTickets.map(m => `
+                <button type="button" onclick="selectTracked('${m.id}')" class="w-full text-left p-2.5 rounded-xl border border-neutral-200 hover:bg-[#FDF2F3] flex items-center justify-between text-xs">
+                  <span><strong class="font-mono text-[#C91E2F]">${m.id}</strong> · ${isAr ? (typeDict[m.type] || m.type) : m.type}</span>
+                  <span class="font-bold text-neutral-700">${isAr ? (statusDict[m.status] || m.status) : m.status}</span>
+                </button>
+              `).join("");
+            } else {
+              multi.classList.add("hidden");
+            }
+            appState.trackedId = serverTickets[0].id;
+            try {
+              localStorage.setItem("rush_track_query", q);
+              localStorage.setItem("rush_track_phone", ph);
+              const url = new URL(window.location);
+              url.searchParams.set("ticket", q);
+              url.searchParams.set("phone", ph);
+              window.history.replaceState(null, "", url.toString());
+            } catch (e) {}
+            renderTrackedTicket();
+            return;
+          }
+        }
+      } catch (ex) {
+        console.warn("Track API failed, falling back to local memory", ex);
+      } finally {
+        setBtnLoading("track-submit-btn", false);
+      }
+
+      const matches = tickets.filter(t => normPhone(t.phone) === ph && (t.id.toUpperCase() === q || normPlate(t.plate) === normPlate(q)));
+      if (!matches.length) {
+        err.textContent = isAr ? "لم يتم العثور على بلاغ مطابق لرقم البلاغ / اللوحة ورقم الجوال." : "No matching complaint found for that Ticket ID / License Plate and mobile number.";
+        err.classList.remove("hidden");
+        multi.classList.add("hidden");
+        document.getElementById("track-result").classList.add("hidden");
+        return;
+      }
+      err.classList.add("hidden");
+      if (matches.length > 1) {
+        const typeDict = { "Unsatisfied": "جودة الغسيل", "Billing / Refund": "الفواتير والمبالغ", "Damage": "أضرار وتلفيات", "Other": "أخرى" };
+        const statusDict = { "Submitted": "تم التقديم", "Investigating": "قيد المراجعة", "Pending Payout": "بانتظار الصرف", "Resolved": "تم الحل", "Closed": "مغلق" };
+        multi.classList.remove("hidden");
+        multi.innerHTML = `<div class="text-xs font-bold text-neutral-500">${isAr ? `تم العثور على ${matches.length} بلاغات:` : `Found ${matches.length} tickets:`}</div>` + matches.map(m => `
+          <button type="button" onclick="selectTracked('${m.id}')" class="w-full text-left p-2.5 rounded-xl border border-neutral-200 hover:bg-[#FDF2F3] flex items-center justify-between text-xs">
+            <span><strong class="font-mono text-[#C91E2F]">${m.id}</strong> · ${isAr ? (typeDict[m.type] || m.type) : m.type}</span>
+            <span class="font-bold text-neutral-700">${isAr ? (statusDict[m.status] || m.status) : m.status}</span>
+          </button>
+        `).join("");
+      } else {
+        multi.classList.add("hidden");
+      }
+      appState.trackedId = matches[0].id;
+      try {
+        localStorage.setItem("rush_track_query", q);
+        localStorage.setItem("rush_track_phone", ph);
+        const url = new URL(window.location);
+        url.searchParams.set("ticket", q);
+        url.searchParams.set("phone", ph);
+        window.history.replaceState(null, "", url.toString());
+      } catch (e) {}
+      renderTrackedTicket();
+    }
+
+    function selectTracked(id) { appState.trackedId = id; renderTrackedTicket(); }
+
+    function clearTrackSession() {
+      try {
+        localStorage.removeItem("rush_track_query");
+        localStorage.removeItem("rush_track_phone");
+        const url = new URL(window.location);
+        url.searchParams.delete("ticket");
+        url.searchParams.delete("phone");
+        window.history.replaceState(null, "", url.pathname);
+      } catch (e) {}
+      const qEl = document.getElementById("track-query");
+      const phEl = document.getElementById("track-phone");
+      if (qEl) qEl.value = "";
+      if (phEl) phEl.value = "";
+      document.getElementById("track-result")?.classList.add("hidden");
+      document.getElementById("track-multi")?.classList.add("hidden");
+      appState.trackedId = null;
+    }
+
+    function renderFlowPanel(t) {
+      const isAr = appState.lang === "ar";
+      const rs = t.resolutionStatus || "Pending";
+      const df = t.damageFlow || {};
+
+      if (t.type === "Unsatisfied") {
+        if (rs === "Approved") {
+          const code = t.rewashCode || "RW-8841";
+          return `
+            <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 flex items-center justify-between gap-4">
+              <div class="space-y-1">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-[#C91E2F]">${isAr ? "تمت الموافقة على إعادة الغسيل · جاهز للاستخدام" : "Rewash Approved · Ready to Redeem"}</span>
+                <div class="text-xl font-mono font-extrabold text-black">${code}</div>
+                <p class="text-xs text-neutral-700">${t.resolutionNote || (isAr ? "تمت الموافقة على إعادة الغسيل لمركبتكم. يرجى إبراز هذا الرمز عند زيارة الفرع." : "Your rewash request has been approved. Please show this code at the branch.")}</p>
+              </div>
+              <div class="w-20 h-20 bg-white p-2 rounded-xl border border-[#F7C5CA] shrink-0">
+                <svg viewBox="0 0 100 100" class="w-full h-full text-black">
+                  <rect x="6" y="6" width="26" height="26" fill="none" stroke="currentColor" stroke-width="6"/>
+                  <rect x="14" y="14" width="10" height="10" fill="currentColor"/>
+                  <rect x="68" y="6" width="26" height="26" fill="none" stroke="currentColor" stroke-width="6"/>
+                  <rect x="76" y="14" width="10" height="10" fill="currentColor"/>
+                  <rect x="6" y="68" width="26" height="26" fill="none" stroke="currentColor" stroke-width="6"/>
+                  <rect x="14" y="76" width="10" height="10" fill="currentColor"/>
+                  <rect x="44" y="44" width="14" height="14" fill="#C91E2F"/>
+                  <rect x="68" y="68" width="20" height="20" fill="currentColor"/>
+                </svg>
+              </div>
+            </div>
+          `;
+        }
+        if (rs === "Refused") {
+          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "طلب إعادة الغسيل غير معتمد" : "Rewash Request Declined"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+        }
+        return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم فريقنا حالياً بمراجعة ملاحظاتكم حول جودة الغسيل." : "Our team is reviewing your wash quality feedback."}</div>`;
+      }
+
+      if (t.type === "Billing / Refund") {
+        if (rs === "Approved") {
+          return `
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">${isAr ? "تمت الموافقة على استرداد المبلغ ومعالجته" : "Refund Approved &amp; Processed"}</span>
+                <span class="text-sm font-extrabold text-emerald-800">${t.refundAmount} ${isAr ? "ريال" : "SAR"}</span>
+              </div>
+              <div class="bg-white border border-emerald-200 rounded-lg px-3 py-2 flex items-center justify-between">
+                <span class="text-xs text-neutral-600">${isAr ? "رقم مرجع العملية البنكية (RRN):" : "Retrieval Reference Number (RRN):"}</span>
+                <span class="font-mono text-sm font-bold text-black">${t.rrn || "—"}</span>
+              </div>
+              <p class="text-xs text-emerald-900">${t.resolutionNote || ""}</p>
+            </div>
+          `;
+        }
+        if (rs === "Refused") {
+          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "لم تتم الموافقة على طلب الاسترداد" : "Refund Not Approved"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+        }
+        return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم الفريق المالي بالتحقق من العملية البنكية. سيظهر رقم المرجع البنكي هنا فور اعتماده." : "Our billing team is verifying your transaction. Once approved, your refund RRN will appear here."}</div>`;
+      }
+
+      if (rs === "Refused") {
+        return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "نعتذر، تم رفض مطالبة التعويض" : "Damage Claim Refused"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+      }
+
+      if (rs === "Approved" || t.payoutStatus === "Awaiting Quote Approval" || (t.type === "Damage" && t.status === "Investigating" && df.quotationFile)) {
+        const step1Done = Boolean(df.quotationFile && df.waiverSigned);
+        const quoteApproved = Boolean(df.quotationApproved);
+        const step2Done = Boolean(df.invoiceFile && df.iban && df.bankName);
+        const isPaid = t.payoutStatus === "Paid" || t.payoutStatus === "PAID" || t.status === "Resolved";
+
+        return `
+          <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-4">
+            <div class="space-y-1.5">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-amber-900">${isAr ? "مطالبة التعويض · تسوية الأضرار (خطوتان)" : "Damage Claim · 2-Step Settlement"}</span>
+              <p class="text-xs text-neutral-700">${t.resolutionNote || ""}</p>
+              <div class="bg-amber-100 border border-amber-300 rounded-lg px-3 py-2 text-[11px] text-amber-950 font-medium">
+                ${isAr
+                  ? `<strong>تنبيه هام:</strong> رفع تسعيرة الإصلاح <strong>لا يعني</strong> الموافقة التلقائية على الصرف. تخضع جميع التسعيرات لمراجعة الإدارة، ويتم تحديد التعويض النهائي بناءً على الفاتورة الضريبية المعتمدة ووفق التقدير الإداري.`
+                  : `<strong>Important Notice:</strong> Uploading a quotation does <strong>not</strong> constitute payout approval. All quotations require management review, and final payout is strictly determined by the verified tax invoice and management discretion.`}
+              </div>
+            </div>
+
+            <!-- Step 1: Repair Quotation & Customer Waiver -->
+            <div class="bg-white border ${step1Done ? "border-emerald-200" : "border-amber-200"} rounded-xl p-3.5 space-y-3">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="text-xs font-bold text-black">${isAr ? "الخطوة 1: تسعيرة الإصلاح وإقرار التنازل" : "Step 1: Repair Quotation &amp; Customer Waiver"}</h4>
+                ${quoteApproved
+                  ? `<span class="text-[11px] font-bold text-emerald-700">${isAr ? "✓ تمت الموافقة على التسعيرة" : "✓ Quotation Approved"}</span>`
+                  : step1Done
+                    ? `<span class="text-[11px] font-bold text-[#C91E2F]">${isAr ? "قيد مراجعة الإدارة" : "Under Management Review"}</span>`
+                    : `<span class="text-[11px] font-bold text-amber-700">${isAr ? "مطلوبة أولاً" : "Required First"}</span>`}
+              </div>
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
+                <span>${isAr ? "تسعيرة الإصلاح:" : "Quotation:"} <strong class="font-mono text-[#C91E2F]">${df.quotationFile ? `<a href="${df.quotationFile}" target="_blank" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+                  ${df.quotationFile ? (isAr ? "تغيير التسعيرة" : "Replace Quotation") : (isAr ? "+ رفع تسعيرة الإصلاح" : "+ Upload Quotation")}
+                  <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'quotationFile', this.files)" />
+                </label>
+              </div>
+              ${df.waiverSigned ? `
+                <div class="flex items-center text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                  <span>${isAr ? "✓ تم توقيع إقرار التنازل الإلكتروني" : "✓ Customer Waiver Signed"}</span>
+                </div>
+              ` : `
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between text-xs">
+                    <span class="font-semibold text-neutral-700">${isAr ? "توقيع إقرار التنازل عن المطالبة" : "Sign Customer Liability Waiver"}</span>
+                    <button type="button" onclick="clearSig()" class="text-neutral-500 hover:underline">${isAr ? "مسح" : "Clear"}</button>
+                  </div>
+                  <canvas id="cust-sig" width="420" height="80" class="w-full h-20 bg-[#F9F9F9] border border-neutral-300 rounded-lg cursor-crosshair touch-none"></canvas>
+                  <button type="button" onclick="signWaiver('${t.id}')" class="px-3.5 py-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold">${isAr ? "تأكيد وتوقيع الإقرار" : "Confirm &amp; Sign Waiver"}</button>
+                </div>
+              `}
+            </div>
+
+            <!-- Step 2: Tax Invoice & Bank Transfer Details -->
+            <div class="bg-white border ${isPaid ? "border-emerald-300 bg-emerald-50/20" : step2Done ? "border-emerald-200" : "border-neutral-200"} rounded-xl p-3.5 space-y-3 ${quoteApproved ? "" : "opacity-60 pointer-events-none"}">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="text-xs font-bold text-black">${isAr ? "الخطوة 2: الفاتورة الضريبية وبيانات التحويل البنكي" : "Step 2: Tax Invoice &amp; Bank Transfer Details"}</h4>
+                ${isPaid
+                  ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-800 bg-emerald-100">${isAr ? "✓ تم تحويل مبلغ التعويض وإغلاق البلاغ" : "✓ Payout Transferred &amp; Settled"}</span>`
+                  : step2Done
+                    ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">${isAr ? "✓ تم تقديم البيانات (قيد المراجعة المالية)" : "✓ Submitted (Under Finance Review)"}</span>`
+                    : `<span class="text-[11px] text-neutral-500">${quoteApproved ? (isAr ? "متاح للإدخال" : "Unlocked") : (isAr ? "بانتظار موافقة الإدارة على الخطوة 1" : "Awaiting Management Approval")}</span>`}
+              </div>
+
+              <!-- Rush Company Tax Details Card -->
+              <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-lg p-3 text-xs space-y-1">
+                <div class="font-bold text-[#881320]">${isAr ? "إصدار الفاتورة الضريبية باسم (بيانات شركة رش واش):" : "Issue Repair Tax Invoice To (Rush Tax Details):"}</div>
+                <div><strong>${isAr ? "اسم الشركة:" : "Company Name:"}</strong> ${isAr ? "شركة عمليات رش واش" : "Rush Car Wash Operations Co."}</div>
+                <div><strong>${isAr ? "الرقم الضريبي:" : "VAT / Tax Number:"}</strong> <span class="font-mono font-bold">310482917400003</span></div>
+                <div><strong>${isAr ? "رقم السجل التجاري:" : "CR Number:"}</strong> <span class="font-mono">1010684920</span> · <strong>${isAr ? "العنوان:" : "Address:"}</strong> ${isAr ? "طريق الأمير محمد بن سلمان، الخرج" : "Prince Muhammad Bin Salman Rd, Al Kharj"}</div>
+              </div>
+
+              ${step2Done ? `
+                <!-- Confirmed Summary Card -->
+                <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-3 space-y-2 text-xs">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-neutral-800">${isAr ? "بيانات الحساب البنكي والتحويل المؤكدة:" : "Confirmed Bank &amp; Payout Details:"}</span>
+                    ${!isPaid ? `<button type="button" onclick="document.getElementById('edit-bank-form-${t.id}').classList.toggle('hidden')" class="text-[11px] text-[#C91E2F] font-bold underline hover:text-black">${isAr ? "تعديل البيانات" : "Edit Details"}</button>` : ""}
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-neutral-700">
+                    <div>${isAr ? "البنك:" : "Bank:"} <strong>${df.bankName || "—"}</strong></div>
+                    <div>${isAr ? "صاحب الحساب:" : "Account Holder:"} <strong>${df.accountHolder || "—"}</strong></div>
+                    <div class="sm:col-span-2">${isAr ? "الآيبان:" : "IBAN:"} <strong class="font-mono">${df.iban || "—"}</strong></div>
+                    <div class="sm:col-span-2">${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black font-bold">${isAr ? "عرض الفاتورة الضريبية ↗" : "View Tax Invoice ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></div>
+                  </div>
+                  ${isPaid ? `
+                    <div class="mt-2 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg p-2.5 font-bold text-xs flex items-center justify-between">
+                      <span>${isAr ? "✓ تم تحويل المبلغ إلى الآيبان الخاص بك" : "✓ Payout transferred to your IBAN"}</span>
+                      ${t.transferRef ? `<span class="font-mono text-[11px]">${isAr ? "رقم المرجع: " : "Ref: "}${t.transferRef}</span>` : ""}
+                    </div>
+                  ` : `
+                    <div class="mt-1 text-[11px] text-neutral-500">${isAr ? "يقوم الفريق المالي بالتحقق من الفاتورة الضريبية وسيتم تحويل مبلغ التعويض مباشرة إلى حسابك البنكي." : "Our finance team is reviewing your tax invoice and will initiate payment directly to your account."}</div>
+                  `}
+                </div>
+
+                <!-- Hidden Collapsible Edit Form -->
+                <div id="edit-bank-form-${t.id}" class="hidden pt-2 border-t border-neutral-200 space-y-2.5">
+                  <div class="text-xs font-bold text-neutral-700">${isAr ? "تحديث البيانات البنكية:" : "Update Bank Details:"}</div>
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
+                    <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black font-bold">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                    <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+                      ${isAr ? "تغيير الفاتورة" : "Replace Invoice"}
+                      <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'invoiceFile', this.files)" />
+                    </label>
+                  </div>
+                  <form onsubmit="saveBankDetails(event, '${t.id}')" class="space-y-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
+                        <input id="dmg-bank" type="text" required value="${df.bankName || ""}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
+                        <input id="dmg-holder" type="text" required value="${df.accountHolder || t.customerName}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                      </div>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
+                      <input id="dmg-iban" type="text" required value="${df.iban || ""}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
+                    </div>
+                    <button type="submit" class="w-full py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "حفظ البيانات المعدلة" : "Save Updated Details"}</button>
+                  </form>
+                </div>
+              ` : `
+                <!-- Unsubmitted Initial Form -->
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
+                  <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                  <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+                    ${df.invoiceFile ? (isAr ? "تغيير الفاتورة" : "Replace Invoice") : (isAr ? "+ رفع الفاتورة الضريبية" : "+ Upload Tax Invoice")}
+                    <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'invoiceFile', this.files)" />
+                  </label>
+                </div>
+                <form onsubmit="saveBankDetails(event, '${t.id}')" class="space-y-2.5">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
+                      <input id="dmg-bank" type="text" required value="${df.bankName || ""}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
+                      <input id="dmg-holder" type="text" required value="${df.accountHolder || t.customerName}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
+                    <input id="dmg-iban" type="text" required value="${df.iban || ""}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
+                  </div>
+                  <button type="submit" class="w-full py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "إرسال الفاتورة والآيبان" : "Submit Invoice &amp; Bank Details"}</button>
+                </form>
+              `}
+            </div>
+          </div>
+        `;
+      }
+      return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم فريقنا حالياً بمراجعة تقرير فحص الأضرار والتلفيات. ستظهر خطوات المتابعة هنا فور التحديث." : "Our team is reviewing your damage claim. Next steps will appear here once reviewed."}</div>`;
+    }
+
+    function renderTrackedTicket() {
+      const box = document.getElementById("track-result");
+      const t = tickets.find(x => x.id === appState.trackedId);
+      if (!t) return;
+      box.classList.remove("hidden");
+      const isAr = appState.lang === "ar";
+
+      const stageMap = { "Submitted": 1, "Investigating": 2, "Pending Payout": 3, "Resolved": 4, "Closed": 4 };
+      const stage = stageMap[t.status] || 1;
+      const steps = isAr 
+        ? ["تم التقديم", "قيد المراجعة", "القرار", "تم الحل"] 
+        : ["Submitted", "Investigating", "Decision", "Resolved"];
+
+      const statusLabels = isAr ? {
+        "Submitted": "تم التقديم",
+        "Investigating": "قيد المراجعة",
+        "Pending Payout": "بانتظار الصرف",
+        "Resolved": "تم الحل",
+        "Closed": "مغلق"
+      } : {
+        "Submitted": "Submitted",
+        "Investigating": "Investigating",
+        "Pending Payout": "Pending Payout",
+        "Resolved": "Resolved",
+        "Closed": "Closed"
+      };
+
+      const typeLabels = isAr ? {
+        "Unsatisfied": "جودة الغسيل",
+        "Billing / Refund": "الفواتير والمبالغ",
+        "Damage": "أضرار وتلفيات",
+        "Other": "أخرى"
+      } : {
+        "Unsatisfied": "Wash Quality",
+        "Billing / Refund": "Billing / Refund",
+        "Damage": "Damage",
+        "Other": "Other"
+      };
+
+      const siteDisplay = isAr 
+        ? (t.site && (t.site.includes("Kharj") || t.site.includes("الخرج")) ? "رش واش - فرع الخرج" : t.site)
+        : t.site;
+
+      box.innerHTML = `
+        <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-4 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded">${t.id}</span>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F3] text-[#C91E2F] border border-[#F7C5CA]">${statusLabels[t.status] || t.status}</span>
+                <span class="text-xs font-semibold text-neutral-500">${typeLabels[t.type] || t.type}</span>
+              </div>
+              <p class="text-sm font-bold text-black mt-1.5">${t.summary}</p>
+            </div>
+            <div class="${isAr ? "text-left sm:text-left" : "text-right"} text-xs text-neutral-500 space-y-0.5">
+              <div class="font-semibold text-black">${siteDisplay}</div>
+              <div>${t.vehicle} (${t.plate})</div>
+              <div><button type="button" onclick="clearTrackSession()" class="text-[11px] text-[#C91E2F] hover:underline font-bold">${isAr ? "تتبع بلاغ آخر ↗" : "Track another ticket ↗"}</button></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-4 gap-2 pt-1">
+            ${steps.map((lbl, i) => `
+              <div class="space-y-1">
+                <div class="h-1.5 rounded-full ${i + 1 <= stage ? "bg-[#C91E2F]" : "bg-neutral-200"}"></div>
+                <div class="text-[11px] font-bold ${i + 1 <= stage ? "text-[#C91E2F]" : "text-neutral-400"}">${lbl}</div>
+              </div>
+            `).join("")}
+          </div>
+
+          <div class="text-xs text-neutral-600 bg-white border border-neutral-200 rounded-lg px-3 py-2 flex flex-wrap justify-between gap-2">
+            <span><strong>${isAr ? "رقم الإيصال:" : "Receipt:"}</strong> ${t.receipt || "—"}</span>
+            <span><strong>${isAr ? "تاريخ التسجيل:" : "Logged:"}</strong> ${t.createdAt}</span>
+          </div>
+        </div>
+
+        ${renderFlowPanel(t)}
+
+        ${(t.status === "Resolved" || t.status === "Closed") ? `
+          <div class="bg-white border border-neutral-200 rounded-xl p-4 space-y-2">
+            <h4 class="text-xs font-bold text-black">${isAr ? "ما مدى رضاك عن حل هذا البلاغ؟" : "How satisfied are you with this resolution?"}</h4>
+            ${t.csatRating ? `<div class="text-xs font-bold text-emerald-700">${isAr ? `شكراً لك! تم تسجيل تقييمك ${t.csatRating} من 5 نجوم.` : `Thank you! You rated this ${t.csatRating}/5 stars.`}</div>` : `
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${[1, 2, 3, 4, 5].map(s => `<button type="button" onclick="rateTicket('${t.id}', ${s})" class="px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-[#C91E2F] hover:bg-[#FDF2F3] text-xs font-bold transition">⭐ ${s}</button>`).join("")}
+              </div>
+            `}
+          </div>
+        ` : ""}
+
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">${isAr ? `سجل المحادثة (${t.messages.length})` : `Message History (${t.messages.length})`}</h4>
+            <span class="text-[11px] font-bold text-emerald-700">${isAr ? "متزامن مع واتساب" : "WhatsApp Synced"}</span>
+          </div>
+          <div class="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pr-1">
+            ${t.messages.map(m => {
+              const senderLabel = isAr 
+                ? (m.sender === "Customer" ? "العميل" : (m.sender === "Agent" || m.sender === "Admin" ? "خدمة عملاء رش واش" : m.sender))
+                : m.sender;
+              return `
+                <div class="rounded-xl border p-3 ${m.channel === "WhatsApp" ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-[#F9F9F9]"}">
+                  <div class="flex items-center justify-between text-xs mb-1">
+                    <span class="font-bold text-black flex items-center gap-1.5">
+                      ${senderLabel}
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${m.channel === "WhatsApp" ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"}">${m.channel}</span>
+                    </span>
+                    <span class="text-neutral-400">${m.time}</span>
+                  </div>
+                  <p class="text-xs sm:text-sm text-neutral-700">${m.text}</p>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+
+        <form onsubmit="sendWhatsApp(event, '${t.id}')" class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600"></i>
+              <span>${isAr ? "💬 الرد عبر محادثة واتساب الرسمية" : "💬 Reply via Official WhatsApp Channel"}</span>
+            </label>
+            <a href="https://wa.me/966553123848?text=${encodeURIComponent("RUSH Ticket " + t.id + ": ")}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-emerald-700 hover:underline">${isAr ? "فتح تطبيق واتساب ↗" : "Open WhatsApp App ↗"}</a>
+          </div>
+          <div class="flex gap-2">
+            <input id="wa-input-${t.id}" type="text" required placeholder="${isAr ? "اكتب رسالتك لخدمة العملاء هنا..." : "Type a WhatsApp message for ticket " + t.id + "..."}" class="flex-1 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 transition">${isAr ? "إرسال" : "Send"}</button>
+          </div>
+        </form>
+      `;
+      lucide.createIcons();
+      if (document.getElementById("cust-sig")) initSig();
+    }
+
+    function initSig() {
+      const canvas = document.getElementById("cust-sig");
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = "#000000"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      let drawing = false;
+      const pos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (cx - r.left) * (canvas.width / r.width), y: (cy - r.top) * (canvas.height / r.height) };
+      };
+      canvas.onmousedown = canvas.ontouchstart = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
+      canvas.onmousemove = canvas.ontouchmove = (e) => { if (!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+      canvas.onmouseup = canvas.ontouchend = canvas.onmouseleave = () => { drawing = false; };
+    }
+
+    function clearSig() { const c = document.getElementById("cust-sig"); if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); }
+
+    async function uploadDmgDoc(id, field, files) {
+      const t = tickets.find(x => x.id === id);
+      if (!t || !files || !files.length) return;
+      const file = files[0];
+      const isAr = appState.lang === "ar";
+      showToast(isAr ? `جاري رفع ${file.name}...` : `Uploading ${file.name}...`);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("purpose", field);
+        const res = await fetch(`${API_BASE}/api/upload`, {
+          method: "POST",
+          body: formData
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const docUrl = data.url || file.name;
+          t.damageFlow[field] = docUrl;
+
+          if (id.startsWith("C-")) {
+            const dbField = field === "quotationFile" ? "quotationUrl" : "invoiceUrl";
+            await fetch(`${API_BASE}/api/complaints/${id}/damage/upload-doc`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ field: dbField, url: docUrl })
+            });
+          }
+        } else {
+          t.damageFlow[field] = file.name;
+        }
+      } catch (ex) {
+        console.warn("Upload doc error:", ex);
+        t.damageFlow[field] = file.name;
+      }
+      renderTrackedTicket();
+      showToast(isAr ? `تم رفع ${file.name}` : `Uploaded ${file.name}`);
+    }
+
+    async function signWaiver(id) {
+      const t = tickets.find(x => x.id === id);
+      if (!t) return;
+      const btn = event?.currentTarget || event?.target;
+      const isAr = appState.lang === "ar";
+      setBtnLoading(btn, true, isAr ? "جاري توثيق التنازل..." : "Signing Waiver...");
+
+      try {
+        const canvas = document.getElementById("cust-sig");
+        let sig = "DIGITALLY_SIGNED_ON_PORTAL";
+        if (canvas) {
+          try {
+            sig = canvas.toDataURL();
+          } catch (e) {
+            sig = "DIGITALLY_SIGNED_ON_PORTAL";
+          }
+        }
+
+        if (id.startsWith("C-")) {
+          await fetch(`${API_BASE}/api/complaints/${id}/damage/step1`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              quotationUrl: t.damageFlow.quotationFile || "https://rush.com.sa/sample_quotation.pdf",
+              waiverSignature: sig
+            })
+          });
+        }
+        t.damageFlow.waiverSigned = true;
+        renderTrackedTicket();
+        showToast(isAr ? "تم توقيع إقرار التنازل بنجاح" : "Customer waiver signed successfully");
+      } catch (ex) {
+        t.damageFlow.waiverSigned = true;
+        renderTrackedTicket();
+        showToast("Customer waiver signed");
+      }
+    }
+
+    async function saveBankDetails(e, id) {
+      e.preventDefault();
+      const t = tickets.find(x => x.id === id);
+      if (!t) return;
+      const btn = e.target.querySelector("button[type='submit']");
+      const isAr = appState.lang === "ar";
+      setBtnLoading(btn, true, isAr ? "جاري حفظ الفاتورة والآيبان..." : "Saving Bank Details...");
+
+      const bank = document.getElementById("dmg-bank").value.trim();
+      const holder = document.getElementById("dmg-holder").value.trim();
+      const iban = document.getElementById("dmg-iban").value.trim().toUpperCase();
+
+      try {
+        if (id.startsWith("C-")) {
+          const res = await fetch(`${API_BASE}/api/complaints/${id}/damage/step2`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              invoiceUrl: t.damageFlow.invoiceFile || "https://rush.com.sa/sample_invoice.pdf",
+              bankName: bank,
+              accountHolder: holder,
+              iban: iban
+            })
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            showToast(data.error || "Submission failed");
+            return;
+          }
+        }
+        t.damageFlow.bankName = bank;
+        t.damageFlow.accountHolder = holder;
+        t.damageFlow.iban = iban;
+        t.status = "Pending Payout";
+        t.messages.push({ sender: "Customer", channel: "Web Portal", time: "Just now", text: `Submitted Tax Invoice & Bank Details (${bank} · ${iban}).` });
+        renderTrackedTicket();
+        showToast(isAr ? "تم إرسال الفاتورة والآيبان للمراجعة" : "Invoice & IBAN submitted for review");
+      } catch (ex) {
+        showToast("Error saving bank details");
+      } finally {
+        setBtnLoading(btn, false);
+      }
+    }
+
+    function sendWhatsApp(e, id) {
+      e.preventDefault();
+      const t = tickets.find(x => x.id === id);
+      const inp = document.getElementById(`wa-input-${id}`) || document.getElementById("wa-input");
+      if (!t || !inp || !inp.value.trim()) return;
+      const isAr = appState.lang === "ar";
+      t.messages.push({ sender: "Customer", channel: "WhatsApp", time: "Just now", text: inp.value.trim() });
+      inp.value = "";
+      renderTrackedTicket();
+      showToast(isAr ? "تم إرسال الرسالة وحفظها في السجل" : "WhatsApp message sent & saved to history");
+    }
+
+    function rateTicket(id, stars) {
+      const t = tickets.find(x => x.id === id);
+      if (!t) return;
+      t.csatRating = stars;
+      renderTrackedTicket();
+      const isAr = appState.lang === "ar";
+      showToast(isAr ? `شكراً لك! تم تسجيل تقييمك ${stars} من 5 نجوم.` : `Thank you for rating ${stars}/5 stars!`);
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+
+      // Check stored language preference or default to Arabic
+      const savedLang = localStorage.getItem("rush_portal_lang") || "ar";
+      applyLang(savedLang);
+
+      // Auto-restore active tracking session on page reload or direct link
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const q = urlParams.get("ticket") || localStorage.getItem("rush_track_query");
+        const ph = urlParams.get("phone") || localStorage.getItem("rush_track_phone");
+
+        if (q && ph) {
+          const qEl = document.getElementById("track-query");
+          const phEl = document.getElementById("track-phone");
+          if (qEl && phEl) {
+            qEl.value = q;
+            phEl.value = ph;
+            switchMode("track");
+            // Automatically execute lookup
+            const form = document.getElementById("track-form");
+            if (form) {
+              form.dispatchEvent(new Event("submit"));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Auto-restore tracking session failed:", err);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ComplaintType {
+  UNSATISFIED
+  BILLING_REFUND
+  DAMAGE
+  OTHER
+}
+
+enum TicketStatus {
+  SUBMITTED
+  INVESTIGATING
+  PENDING_PAYOUT
+  RESOLVED
+}
+
+enum ResolutionStatus {
+  PENDING
+  APPROVED
+  REFUSED
+}
+
+enum PayoutStatus {
+  PENDING_REVIEW
+  AWAITING_QUOTE_APPROVAL
+  AWAITING_INVOICE_IBAN
+  PENDING_BANK_TRANSFER
+  PAID
+  PAID_RRN
+  REWASH_ISSUED
+  DECLINED
+}
+
+enum StaffRole {
+  BUSINESS_OWNER
+  ADMIN
+  OPS_MANAGER
+  CSM
+}
+
+enum MessageChannel {
+  WEB_PORTAL
+  WHATSAPP
+  SMS
+  EMAIL
+  INTERNAL
+}
+
+model SystemConfig {
+  id                   String   @id @default("default")
+  damageApprovalCapSar Decimal  @default(200.00) @db.Decimal(10, 2)
+  maxSlaHours          Int      @default(48)
+  vatNumber            String   @default("310482917400003")
+  crNumber             String   @default("1010684920")
+  updatedAt            DateTime @updatedAt
+}
+
+model StaffUser {
+  id           String      @id @default(cuid())
+  name         String
+  email        String      @unique
+  phone        String?
+  passwordHash String?
+  role         StaffRole
+  branch       String      @default("All Branches")
+  active       Boolean     @default(true)
+  auditLogs    AuditLog[]
+  createdAt    DateTime    @default(now())
+}
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  complaintId String
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  staffId     String?
+  staff       StaffUser? @relation(fields: [staffId], references: [id])
+  actorName   String
+  action      String    // e.g. "HANDOFF_CSM", "APPROVE_QUOTE", "MARK_PAID", "SLA_NUDGE"
+  details     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([complaintId, createdAt])
+}
+
+model Customer {
+  id           String      @id @default(cuid())
+  name         String
+  phone        String      // Normalized 9 digits (e.g. 553914420)
+  email        String?
+  licensePlate String      // Normalized (e.g. KSA8821)
+  vehicleModel String
+  washes       WashVisit[]
+  orders       PosOrder[]
+  complaints   Complaint[]
+  createdAt    DateTime    @default(now())
+
+  @@unique([licensePlate, phone])
+  @@index([phone])
+}
+
+model WashVisit {
+  id          String   @id // e.g. POS-94102
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id])
+  site        String
+  lane        String
+  packageName String
+  washedAt    DateTime
+
+  @@index([customerId, washedAt])
+}
+
+model PosOrder {
+  id            String   @id // e.g. ORD-88241
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  site          String
+  itemName      String
+  amountSar     Decimal  @db.Decimal(10, 2)
+  paymentMethod String
+  orderedAt     DateTime
+
+  @@index([customerId, orderedAt])
+}
+
+model OtpSession {
+  id           String   @id @default(cuid())
+  phone        String
+  licensePlate String
+  codeHash     String
+  attempts     Int      @default(0)
+  expiresAt    DateTime
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@index([phone, licensePlate])
+}
+
+model Complaint {
+  id               String           @id // e.g. C-1043
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  type             ComplaintType
+  status           TicketStatus     @default(SUBMITTED)
+  resolutionStatus ResolutionStatus @default(PENDING)
+  resolutionNote   String?
+  assignedRole     StaffRole
+  assignedStaffName String?
+  site             String
+  posRecordId      String           // WashVisit.id, PosOrder.id, or "ORD-UNLISTED"
+  posRecordLabel   String
+  summary          String
+  callbackWindow   String           @default("Anytime")
+
+  // Type-specific fields
+  qualityTags      String[]         @default([])
+  vehicleZones     String[]         @default([])
+  billingReason    String?
+  requestedAmount  Decimal?         @db.Decimal(10, 2)
+  approvedAmount   Decimal?         @db.Decimal(10, 2)
+  cardLast4        String?
+  bankSmsText      String?
+  bankSmsUrl       String?
+
+  // Resolution outputs
+  rewashCode       String?          @unique
+  rrn              String?
+
+  // Damage 2-step settlement (uploading quotation does NOT approve payout)
+  quotedAmount      Decimal?        @db.Decimal(10, 2)
+  quotationUrl      String?
+  waiverSigned      Boolean         @default(false)
+  waiverSignature   String?
+  quotationApproved Boolean         @default(false)
+  invoiceUrl        String?
+  bankName          String?
+  accountHolder     String?
+  iban              String?
+
+  // Payout & SLA tracking
+  payoutStatus        PayoutStatus  @default(PENDING_REVIEW)
+  transferRef         String?
+  slaBreached         Boolean       @default(false)
+  slaBreachedNotified Boolean       @default(false)
+  auditLogs           AuditLog[]
+
+  // Post-resolution feedback
+  csatRating       Int?
+  mediaUrls        String[]         @default([])
+  messages         Message[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([customerId])
+  @@index([posRecordId])
+}
+
+model Message {
+  id          String         @id @default(cuid())
+  complaintId String
+  complaint   Complaint      @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  sender      String
+  channel     MessageChannel
+  body        String
+  externalId  String?        // WhatsApp Cloud API message ID
+  createdAt   DateTime       @default(now())
+
+  @@index([complaintId, createdAt])
+}

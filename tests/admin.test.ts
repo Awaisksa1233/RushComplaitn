@@ -1,0 +1,257 @@
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import request from "supertest";
+import { app, prisma } from "../src/server";
+import { StaffRole } from "@prisma/client";
+
+describe("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => {
+  let ownerToken: string;
+  let adminToken: string;
+  let opsToken: string;
+  let csmToken: string;
+  let testComplaintId: string | null = null;
+  let testCustomerId: string | null = null;
+  const createdStaffIds: string[] = [];
+
+  beforeAll(async () => {
+    await prisma.staffUser.deleteMany({
+      where: { email: { startsWith: "test." } },
+    });
+    await prisma.complaint.deleteMany({
+      where: { id: { startsWith: "C-TEST-" } },
+    });
+  });
+
+  afterAll(async () => {
+    // Clean up any test records created during test execution
+    if (testComplaintId) {
+      await prisma.message.deleteMany({ where: { complaintId: testComplaintId } });
+      await prisma.complaint.delete({ where: { id: testComplaintId } }).catch(() => {});
+    }
+    if (testCustomerId) {
+      await prisma.customer.delete({ where: { id: testCustomerId } }).catch(() => {});
+    }
+    if (createdStaffIds.length > 0) {
+      await prisma.staffUser.deleteMany({ where: { id: { in: createdStaffIds } } }).catch(() => {});
+    }
+    await prisma.staffUser.deleteMany({
+      where: { email: { startsWith: "test." } },
+    });
+    await prisma.$disconnect();
+  });
+
+  // Test 1: Staff Authentication & Roles
+  it("1. should authenticate admin with email/password and reject bad passwords", async () => {
+    const ts = Date.now();
+    const adminEmail = `test.sara.${ts}@rush.com.sa`;
+    const opsEmail = `test.faisal.${ts}@rush.com.sa`;
+    const csmEmail = `test.omar.${ts}@rush.com.sa`;
+
+    // 1a. Reject invalid password
+    const resBad = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: "admin@rush.com.sa", password: "WrongPassword!" });
+    expect(resBad.status).toBe(401);
+    expect(resBad.body.error).toContain("Invalid email or password");
+
+    // 1b. Reject unknown email
+    const resUnknown = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: "unknown@rush.com.sa", password: "RushCare@2026!" });
+    expect(resUnknown.status).toBe(401);
+
+    // 1c. Successfully authenticate primary admin
+    const resOwner = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: "admin@rush.com.sa", password: "RushCare@2026!" });
+    expect(resOwner.status).toBe(200);
+    expect(resOwner.body.token).toBeDefined();
+    expect(resOwner.body.user.email).toBe("admin@rush.com.sa");
+    expect(resOwner.body.user.role).toBe(StaffRole.BUSINESS_OWNER);
+    ownerToken = resOwner.body.token;
+
+    // 1d. Create test staff for other roles
+    const resCreateAdmin = await request(app)
+      .post("/api/admin/staff")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        name: "Test Sara Admin",
+        email: adminEmail,
+        role: StaffRole.ADMIN,
+        branch: "RUSH Al Kharj",
+        password: "RushCare@2026!",
+      });
+    expect(resCreateAdmin.status).toBe(200);
+    createdStaffIds.push(resCreateAdmin.body.id);
+
+    const resCreateOps = await request(app)
+      .post("/api/admin/staff")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        name: "Test Faisal Ops",
+        email: opsEmail,
+        role: StaffRole.OPS_MANAGER,
+        branch: "RUSH Al Kharj",
+        password: "RushCare@2026!",
+      });
+    expect(resCreateOps.status).toBe(200);
+    createdStaffIds.push(resCreateOps.body.id);
+
+    const resCreateCsm = await request(app)
+      .post("/api/admin/staff")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({
+        name: "Test Omar CSM",
+        email: csmEmail,
+        role: StaffRole.CSM,
+        branch: "RUSH Al Kharj",
+        password: "RushCare@2026!",
+      });
+    expect(resCreateCsm.status).toBe(200);
+    createdStaffIds.push(resCreateCsm.body.id);
+
+    // 1e. Login as each created staff member
+    const resAdminLogin = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: adminEmail, password: "RushCare@2026!" });
+    expect(resAdminLogin.status).toBe(200);
+    adminToken = resAdminLogin.body.token;
+
+    const resOpsLogin = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: opsEmail, password: "RushCare@2026!" });
+    expect(resOpsLogin.status).toBe(200);
+    opsToken = resOpsLogin.body.token;
+
+    const resCsmLogin = await request(app)
+      .post("/api/admin/auth/login")
+      .send({ email: csmEmail, password: "RushCare@2026!" });
+    expect(resCsmLogin.status).toBe(200);
+    csmToken = resCsmLogin.body.token;
+  }, 45000);
+
+  // Test 2: Require Staff Middleware
+  it("2. should reject unauthenticated requests with 401", async () => {
+    const res = await request(app).get("/api/admin/config");
+    expect(res.status).toBe(401);
+  });
+
+  // Test 3: System Config & Owner-Only Policy Update
+  it("3. should enforce that only Business Owner can update policy config", async () => {
+    // Non-owner (CSM) update attempt -> 403
+    const failRes = await request(app)
+      .patch("/api/admin/config")
+      .set("Authorization", `Bearer ${csmToken}`)
+      .send({ damageApprovalCapSar: 300 });
+    expect(failRes.status).toBe(403);
+
+    // Business Owner update -> 200
+    const passRes = await request(app)
+      .patch("/api/admin/config")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ damageApprovalCapSar: 250, maxSlaHours: 48 });
+    expect(passRes.status).toBe(200);
+    expect(Number(passRes.body.damageApprovalCapSar)).toBe(250);
+
+    // Reset back to 200
+    await request(app)
+      .patch("/api/admin/config")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ damageApprovalCapSar: 200, maxSlaHours: 48 });
+  });
+
+  // Test 4: Executive Dashboard KPIs
+  it("4. should return dashboard KPIs and escalations", async () => {
+    const res = await request(app)
+      .get("/api/admin/dashboard")
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.config).toBeDefined();
+    expect(res.body.kpis).toBeDefined();
+    expect(typeof res.body.kpis.openCount).toBe("number");
+    expect(typeof res.body.kpis.slaCompliancePct).toBe("number");
+    expect(res.body.escalations).toBeDefined();
+    expect(res.body.charts).toBeDefined();
+    expect(res.body.charts.byResolution).toBeDefined();
+    expect(res.body.charts.byBranch.length).toBe(1);
+    expect(res.body.charts.byBranch[0].branch).toBe("RUSH Al Kharj");
+  });
+
+  // Test 5: Claims Queue Filtering & Branch Scoping
+  it("5. should list claims with branch scoping for Ops Manager", async () => {
+    const resOps = await request(app)
+      .get("/api/admin/claims")
+      .set("Authorization", `Bearer ${opsToken}`);
+
+    expect(resOps.status).toBe(200);
+    expect(Array.isArray(resOps.body)).toBe(true);
+    for (const c of resOps.body) {
+      expect(c.branch).toBe("RUSH Al Kharj");
+    }
+  });
+
+  // Test 6: Approve Rewash Pass
+  it("6. should approve unsatisfied complaint and issue RW-xxxx rewash pass", async () => {
+    let cust = await prisma.customer.findFirst();
+    if (!cust) {
+      cust = await prisma.customer.create({
+        data: {
+          licensePlate: "TEST 9999",
+          phone: "0559999999",
+          name: "Test Customer",
+          vehicleModel: "2024 Toyota Camry",
+        },
+      });
+      testCustomerId = cust.id;
+    }
+
+    const complaint = await prisma.complaint.create({
+      data: {
+        id: `C-TEST-${Math.floor(2000 + Math.random() * 8000)}`,
+        customerId: cust.id,
+        type: "UNSATISFIED",
+        site: "RUSH Al Kharj",
+        posRecordId: "POS-TEST",
+        posRecordLabel: "Nano Ceramic Wash",
+        summary: "Test unsatisfied wash spots",
+        assignedRole: StaffRole.ADMIN,
+      },
+    });
+    testComplaintId = complaint.id;
+
+    const res = await request(app)
+      .post(`/api/admin/claims/${complaint.id}/unsatisfied/approve`)
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.rewashCode).toMatch(/^RW-\d{4}$/);
+    expect(res.body.complaint.status).toBe("RESOLVED");
+  });
+
+  // Test 7: Finance Disbursement & CSV Export
+  it("7. should list finance payout queue and export live RFC-4180 CSV", async () => {
+    const resFin = await request(app)
+      .get("/api/admin/finance")
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(resFin.status).toBe(200);
+    expect(Array.isArray(resFin.body)).toBe(true);
+
+    const resCsv = await request(app)
+      .get("/api/admin/finance/export.csv")
+      .set("Authorization", `Bearer ${ownerToken}`);
+
+    expect(resCsv.status).toBe(200);
+    expect(resCsv.headers["content-type"]).toContain("text/csv");
+    expect(resCsv.text).toContain("Ticket ID,Branch,Type");
+  });
+
+  // Test 8: Static HTML Serving on /admin
+  it("8. should serve rush_admin_operations_console.html on /admin", async () => {
+    const res = await request(app).get("/admin");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/html");
+    expect(res.text).toContain("RUSH رش | Admin & Operations Console");
+  });
+});
