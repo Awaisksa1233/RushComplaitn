@@ -7,6 +7,7 @@ import { otpRequestLimiter, otpVerifyLimiter } from "../middleware/security";
 import { PrismaClient } from "@prisma/client";
 import { normalizePlate, normalizePhone, isSaudiMobile, hashOtp } from "../utils/normalize";
 import { findCustomerInMongo } from "../services/mongo";
+import { sendSmsOtp } from "../services/unifonic";
 
 export function createAuthRouter(prisma: PrismaClient) {
   const router = Router();
@@ -97,6 +98,11 @@ export function createAuthRouter(prisma: PrismaClient) {
         codeHash: hashOtp(code),
         expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 min TTL
       },
+    });
+
+    // Send real SMS OTP via Unifonic
+    sendSmsOtp(phone, code).catch((err) => {
+      console.warn("[Auth] Failed to dispatch Unifonic SMS OTP:", err);
     });
 
     return res.json({

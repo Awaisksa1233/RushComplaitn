@@ -8,6 +8,7 @@ import { encryptField, maskIban } from "../utils/crypto";
 import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET } from "../config/env";
 import { trackLimiter, webhookLimiter } from "../middleware/security";
 import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
+import { syncComplaintToChatwoot, forwardCustomerMessageToChatwoot } from "../services/chatwoot";
 
 const safeUrl = z.string().refine(isSafeFileUrl, "Invalid file reference");
 
@@ -184,6 +185,12 @@ export function createComplaintsRouter(prisma: PrismaClient) {
           },
           include: { messages: true, customer: true },
         });
+
+        // Asynchronously sync ticket with Chatwoot & send customer confirmation WhatsApp
+        syncComplaintToChatwoot(complaint).catch((err) => {
+          console.warn("[Complaints] Chatwoot sync failed for #" + complaint.id, err);
+        });
+
         // Issue a ticket-scoped token so the customer can follow up without a new OTP
         const trackToken = signCustomerToken(
           { customerId, phone: req.customer!.phone, licensePlate: req.customer!.licensePlate, scope: "track", ticketIds: [complaint.id] },
@@ -388,7 +395,54 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const msg = await prisma.message.create({
       data: { complaintId: ticket.id, sender: "Customer", channel: MessageChannel.WHATSAPP, body: parsed.data.body },
     });
+
+    // Forward customer reply into Chatwoot conversation
+    forwardCustomerMessageToChatwoot({
+      ticketId: ticket.id,
+      phone: req.customer!.phone,
+      text: parsed.data.body,
+    }).catch((err) => {
+      console.warn("[Complaints] Failed to forward customer message to Chatwoot:", err);
+    });
+
     return res.status(201).json({ id: msg.id, sender: msg.sender, channel: msg.channel, body: msg.body, createdAt: msg.createdAt });
+  });
+
+  // 6. Chatwoot Incoming Event Webhook
+  router.post("/webhooks/chatwoot", webhookLimiter, async (req: Request, res) => {
+    try {
+      const event = req.body;
+      if (event?.event === "message_created" && event?.message_type === "outgoing" && !event?.private) {
+        const ticketId = event?.conversation?.custom_attributes?.ticket_code;
+        const bodyText = event?.content;
+        const senderName = event?.sender?.name || "Customer Care";
+
+        if (ticketId && bodyText) {
+          const ticket = await prisma.complaint.findUnique({ where: { id: ticketId } });
+          if (ticket) {
+            const externalId = event?.id ? `cw_${event.id}` : undefined;
+            if (externalId) {
+              const seen = await prisma.message.findFirst({ where: { externalId } });
+              if (seen) return res.status(200).json({ ok: true, duplicate: true });
+            }
+            await prisma.message.create({
+              data: {
+                complaintId: ticket.id,
+                sender: senderName,
+                channel: MessageChannel.WHATSAPP,
+                body: bodyText,
+                externalId,
+              },
+            });
+            console.log(`[Chatwoot Webhook] Synced agent reply to ticket #${ticketId}`);
+          }
+        }
+      }
+      return res.status(200).json({ ok: true });
+    } catch (err: any) {
+      console.warn("[Chatwoot Webhook] Error processing event:", err?.message || err);
+      return res.status(200).json({ ok: false });
+    }
   });
 
   // 6. WhatsApp Webhook — HMAC-SHA256 signed (header: x-hub-signature-256 = sha256=<hex of raw body>)

@@ -8,12 +8,111 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
   let testCustomerId: string;
 
   beforeAll(async () => {
-    // Look up seeded customer Mohammed Al-Qahtani
-    const customer = await prisma.customer.findFirstOrThrow({
-      where: { phone: "553914420" },
+    // Look up or seed test customer Mohammed Al-Qahtani
+    const customer = await prisma.customer.upsert({
+      where: {
+        licensePlate_phone: { licensePlate: "8821KSA", phone: "553914420" }
+      },
+      update: {},
+      create: {
+        name: "Mohammed Al-Qahtani",
+        phone: "553914420",
+        licensePlate: "8821KSA",
+        vehicleModel: "GMC Yukon"
+      }
     });
     testCustomerId = customer.id;
-  });
+
+    // Clean up any test complaints, visits, and OTP sessions from prior test runs
+    await prisma.otpSession.deleteMany({ where: { phone: "553914420" } });
+    await prisma.complaint.deleteMany({ where: { customerId: testCustomerId } });
+    await prisma.washVisit.deleteMany({ where: { customerId: testCustomerId } });
+
+    // Seed test wash visits for test 2 and test 3
+    const now = Date.now();
+    await prisma.washVisit.upsert({
+      where: { id: "POS-94102" },
+      update: { customerId: testCustomerId },
+      create: {
+        id: "POS-94102",
+        customerId: testCustomerId,
+        site: "Al Kharj Main",
+        lane: "Express Lane 1",
+        packageName: "Fresh Wash",
+        washedAt: new Date(now - 2 * 24 * 3600 * 1000),
+      },
+    });
+    await prisma.washVisit.upsert({
+      where: { id: "POS-93881" },
+      update: { customerId: testCustomerId },
+      create: {
+        id: "POS-93881",
+        customerId: testCustomerId,
+        site: "Al Kharj Main",
+        lane: "Express Lane 2",
+        packageName: "Shiny Wash",
+        washedAt: new Date(now - 4 * 24 * 3600 * 1000),
+      },
+    });
+    await prisma.washVisit.upsert({
+      where: { id: "POS-91400" },
+      update: { customerId: testCustomerId },
+      create: {
+        id: "POS-91400",
+        customerId: testCustomerId,
+        site: "Al Kharj Main",
+        lane: "Express Lane 1",
+        packageName: "Nano Ceramic Wash",
+        washedAt: new Date(now - 12 * 24 * 3600 * 1000),
+      },
+    });
+
+    // Seed complaint C-1041 for test 3 duplicate guard
+    await prisma.complaint.upsert({
+      where: { id: "C-1041" },
+      update: { customerId: testCustomerId, posRecordId: "POS-93881" },
+      create: {
+        id: "C-1041",
+        customerId: testCustomerId,
+        type: "UNSATISFIED",
+        site: "Al Kharj Main",
+        posRecordId: "POS-93881",
+        posRecordLabel: "Fresh Wash · Express Lane 1",
+        summary: "Previous complaint",
+        status: "INVESTIGATING",
+        assignedRole: "ADMIN",
+      },
+    });
+
+    // Seed complaint C-1042 for test 5 Damage Step 2
+    await prisma.complaint.upsert({
+      where: { id: "C-1042" },
+      update: {
+        customerId: testCustomerId,
+        type: "DAMAGE",
+        posRecordId: "POS-91400",
+        quotationApproved: true,
+        quotationUrl: "/api/files/quotes/test.pdf",
+        quotedAmount: 500,
+        status: "INVESTIGATING",
+        assignedRole: "OPS_MANAGER",
+      },
+      create: {
+        id: "C-1042",
+        customerId: testCustomerId,
+        type: "DAMAGE",
+        site: "Al Kharj Main",
+        posRecordId: "POS-91400",
+        posRecordLabel: "Nano Ceramic Wash",
+        summary: "Bumper scratch approved",
+        quotationApproved: true,
+        quotationUrl: "/api/files/quotes/test.pdf",
+        quotedAmount: 500,
+        status: "INVESTIGATING",
+        assignedRole: "OPS_MANAGER",
+      },
+    });
+  }, 30000);
 
   afterAll(async () => {
     await prisma.$disconnect();
