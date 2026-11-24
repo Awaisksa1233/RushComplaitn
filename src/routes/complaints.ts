@@ -291,6 +291,40 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     });
   }));
 
+  // 2.1 Direct 1-Click Ticket Access (via signed ?t= JWT sent in WhatsApp)
+  router.get("/direct", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
+    const c = req.customer!;
+    const tickets = await prisma.complaint.findMany({
+      where: {
+        customerId: c.customerId,
+        ...(c.scope === "track" && c.ticketIds?.length ? { id: { in: c.ticketIds } } : {}),
+      },
+      include: {
+        customer: { select: { name: true, licensePlate: true, vehicleModel: true, phone: true } },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    if (!tickets.length) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    const cfg = await prisma.systemConfig.findUnique({ where: { id: "default" } });
+    return res.json({
+      rushTaxDetails: {
+        companyName: cfg?.companyName || process.env.RUSH_TAX_COMPANY || "شركة رَش للتجارة المتقدمة",
+        vatNumber: cfg?.vatNumber || process.env.RUSH_VAT_NUMBER || "311949083200003",
+        crNumber: cfg?.crNumber || process.env.RUSH_CR_NUMBER || "1011154912",
+        unifiedNationalNumber: cfg?.unifiedNationalNumber || process.env.RUSH_UNIFIED_NUMBER || "7037475576",
+        whatsappNumber: cfg?.whatsappNumber || process.env.RUSH_WHATSAPP_NUMBER || "966503444958",
+        address: process.env.RUSH_TAX_ADDRESS,
+      },
+      limited: false,
+      tickets: tickets.map((t) => ticketDto(t, true)),
+    });
+  }));
+
   // 2.5 Damage Document Quick-Upload (Quotation / Invoice) — owner only, and only in the right phase
   router.post("/:id/damage/upload-doc", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z.object({ field: z.enum(["quotationUrl", "invoiceUrl"]), url: safeUrl }).safeParse(req.body);

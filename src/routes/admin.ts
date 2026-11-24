@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { STAFF_JWT_SECRET } from "../config/env";
+import { buildDirectTicketUrl } from "../middleware/auth";
 import { staffLoginLimiter, ibanRevealLimiter } from "../middleware/security";
 import { deleteFiles } from "../services/storage";
 import { findPaidOrderCeilingInMongo } from "../services/mongo";
@@ -786,7 +787,14 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       return res.status(409).json({ error: "Quotation can only be requested on open Damage claims awaiting a quotation" });
     }
 
-    const waText = `Hi, your damage claim ${complaint.id} has been approved for repair review. Please open your tracker to upload the official repair quotation and sign the waiver: ${process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/"}`;
+    const cust = await prisma.customer.findUnique({
+      where: { id: complaint.customerId },
+      select: { id: true, phone: true, licensePlate: true },
+    });
+    const directUrl = cust
+      ? buildDirectTicketUrl(cust, complaint.id)
+      : process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/";
+    const waText = `Hi, your damage claim ${complaint.id} has been approved for repair review. Open your ticket directly to upload the official repair quotation and sign the waiver: ${directUrl}`;
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {
@@ -845,7 +853,14 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       });
     }
 
-    const waText = `Your repair quotation of SAR ${quoted} has been approved! Please upload your official repair invoice and IBAN to receive payout.`;
+    const cust = await prisma.customer.findUnique({
+      where: { id: complaint.customerId },
+      select: { id: true, phone: true, licensePlate: true },
+    });
+    const directUrl = cust
+      ? buildDirectTicketUrl(cust, complaint.id)
+      : process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/";
+    const waText = `Your repair quotation of SAR ${quoted} has been approved! Open your ticket directly to upload your official repair invoice and IBAN to receive payout: ${directUrl}`;
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {

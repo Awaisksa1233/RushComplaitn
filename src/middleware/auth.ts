@@ -18,6 +18,18 @@ export function signCustomerToken(payload: CustomerPayload, expiresIn: string | 
   return jwt.sign(payload, CUSTOMER_JWT_SECRET, { expiresIn: expiresIn as any, audience: "rush-customer", issuer: "rush-care" });
 }
 
+export function buildDirectTicketUrl(
+  customer: { id: string; phone: string; licensePlate: string },
+  ticketId: string
+): string {
+  const token = signCustomerToken(
+    { customerId: customer.id, phone: customer.phone, licensePlate: customer.licensePlate, scope: "track", ticketIds: [ticketId] },
+    "7d"
+  );
+  const base = (process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa").replace(/\/+$/, "");
+  return `${base}/?t=${encodeURIComponent(token)}`;
+}
+
 export function requireCustomerJwt(req: AuthedRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !/^Bearer\s+/i.test(authHeader)) {

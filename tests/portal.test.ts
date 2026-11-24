@@ -376,4 +376,28 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     expect(msgs.length).toBe(2);
     expect(msgs.find((m) => m.externalId === "cw_990001")?.complaintId).toBe("C-1041");
   });
+
+  // Test 9: Direct 1-click ticket link (/api/complaints/direct)
+  it("9. should load owned ticket via signed direct link and reject missing/tampered tokens", async () => {
+    const noAuth = await request(app).get("/api/complaints/direct");
+    expect(noAuth.status).toBe(401);
+
+    const badAuth = await request(app)
+      .get("/api/complaints/direct")
+      .set("Authorization", "Bearer invalid.jwt.token");
+    expect(badAuth.status).toBe(401);
+
+    const trackRes = await request(app)
+      .post("/api/complaints/track")
+      .send({ query: "C-1041", phone: "0569809578" });
+    expect(trackRes.status).toBe(200);
+    expect(trackRes.body.trackToken).toBeDefined();
+
+    const directRes = await request(app)
+      .get("/api/complaints/direct")
+      .set("Authorization", `Bearer ${trackRes.body.trackToken}`);
+    expect(directRes.status).toBe(200);
+    expect(directRes.body.tickets[0].id).toBe("C-1041");
+    expect(directRes.body.rushTaxDetails).toBeDefined();
+  });
 });

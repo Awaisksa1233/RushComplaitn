@@ -2213,7 +2213,47 @@
       showToast(isAr ? `شكراً لك! تم تسجيل تقييمك ${stars} من 5 نجوم.` : `Thank you for rating ${stars}/5 stars!`);
     }
 
-    window.addEventListener("DOMContentLoaded", () => {
+    async function loadDirectTicket(directToken) {
+      const err = document.getElementById("track-error");
+      const isAr = appState.lang === "ar";
+      switchMode("track");
+      renderTrackSkeleton();
+      try {
+        const res = await fetch(`${API_BASE}/api/complaints/direct`, {
+          headers: { "Authorization": `Bearer ${directToken}` }
+        });
+        if (!res.ok) throw new Error("Direct link expired or invalid");
+        const data = await res.json();
+        appState.trackToken = directToken;
+        if (data.rushTaxDetails) appState.rushTaxDetails = data.rushTaxDetails;
+        if (data.tickets && data.tickets.length > 0) {
+          const serverTickets = data.tickets.map(st => mapServerTicket(st, st.customer?.phone || ""));
+          serverTickets.forEach(st => {
+            const idx = tickets.findIndex(t => t.id === st.id);
+            if (idx >= 0) tickets[idx] = st;
+            else tickets.unshift(st);
+          });
+          if (err) err.classList.add("hidden");
+          appState.multiTicketIds = serverTickets.map(m => m.id);
+          renderMultiTrackList();
+          appState.trackedId = serverTickets[0].id;
+          const qEl = document.getElementById("track-query");
+          if (qEl) qEl.value = serverTickets[0].id;
+          renderTrackedTicket();
+          return;
+        }
+      } catch {
+        document.getElementById("track-result")?.classList.add("hidden");
+        if (err) {
+          err.textContent = isAr
+            ? "انتهت صلاحية الرابط المباشر. يرجى إدخال رقم البلاغ ورقم الجوال."
+            : "Your direct link has expired. Please enter your Ticket ID and mobile number.";
+          err.classList.remove("hidden");
+        }
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", async () => {
       lucide.createIcons();
 
       // Check stored language preference or default to Arabic
@@ -2221,9 +2261,18 @@
       try { savedLang = localStorage.getItem("rush_portal_lang") || "ar"; } catch (e) {}
       applyLang(savedLang);
 
-      // Auto-restore tracking query (without persisting phone)
+      // Auto-open 1-click direct ticket link (?t=<JWT>) or restore tracking query
       try {
         const urlParams = new URLSearchParams(window.location.search);
+        const directToken = urlParams.get("t");
+        if (directToken) {
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("t");
+          window.history.replaceState(null, "", cleanUrl.pathname + (cleanUrl.search || ""));
+          await loadDirectTicket(directToken);
+          return;
+        }
+
         const q = urlParams.get("ticket") || sessionStorage.getItem("rush_track_query");
         sessionStorage.removeItem("rush_track_phone");
 

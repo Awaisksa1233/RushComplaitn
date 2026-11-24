@@ -10,6 +10,7 @@
  */
 
 import { signFileUrl } from "../utils/crypto";
+import { buildDirectTicketUrl } from "../middleware/auth";
 
 const CHATWOOT_BASE_URL = (process.env.CHATWOOT_BASE_URL || "https://chatwoot.rush.com.sa").replace(/\/+$/, "");
 const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || "";
@@ -303,7 +304,12 @@ export async function syncComplaintToChatwoot(ticket: any): Promise<void> {
     const conversationId = conv?.id || conv?.payload?.id;
     if (!conversationId) return;
 
-    const trackingUrl = `${PORTAL_PUBLIC_URL}/?ticket=${ticket.id}&phone=${phone}`;
+    const trackingUrl = ticket.customer?.id
+      ? buildDirectTicketUrl(
+          { id: ticket.customer.id, phone, licensePlate: ticket.customer?.licensePlate || "" },
+          ticket.id
+        )
+      : `${PORTAL_PUBLIC_URL}/?ticket=${ticket.id}`;
 
     // Send confirmation to customer via WhatsApp
     await sendWhatsAppConfirmation({
