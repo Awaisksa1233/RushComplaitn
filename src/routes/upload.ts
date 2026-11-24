@@ -7,7 +7,7 @@ import { uploadLimiter } from "../middleware/security";
 import { asyncHandler } from "../utils/asyncHandler";
 import { signFileUrl } from "../utils/crypto";
 
-const CATEGORIES = new Set(["media", "quotations", "invoices", "complaints", "damage"]);
+const CATEGORIES = new Set(["media", "quotations", "invoices", "complaints", "damage", "signatures"]);
 
 function requireAnyAuth(req: Request, res: Response, next: NextFunction) {
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();

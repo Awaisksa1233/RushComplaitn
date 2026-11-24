@@ -1812,6 +1812,7 @@
               damageFlow: {
                 quotationFile: c.quotationUrl || "",
                 waiverSigned: Boolean(c.waiverSigned),
+                waiverSignatureUrl: c.waiverSignatureUrl || "",
                 quotationApproved: Boolean(c.quotationApproved),
                 invoiceFile: c.invoiceUrl || "",
                 bankName: c.bankName || "",
@@ -2511,6 +2512,10 @@
       const vatCalc = amtVal > 0 ? `${(amtVal - amtVal / 1.15).toFixed(2)} SAR` : "";
       const waiverSigned = rawTicket ? Boolean(rawTicket.waiverSigned) : Boolean(c.damageFlow?.waiverSigned);
       const waiverStatus = waiverSigned ? "موقع إلكترونياً / Signed Electronically" : "";
+      const waiverSigImg = rawTicket?.waiverSignatureUrl || c.damageFlow?.waiverSignatureUrl || "";
+      const waiverSigCell = waiverSigImg
+        ? `<img src="${esc(waiverSigImg)}" alt="Customer Signature" style="max-height:36px;max-width:150px;object-fit:contain;display:inline-block;" />`
+        : esc(waiverStatus);
       const payMethod = iban ? "تحويل بنكي / Bank Transfer" : "";
       const custName = rawTicket?.customer?.name || c.customer.name;
       const custPhone = rawTicket?.customer?.phone || c.customer.phone;
@@ -2618,7 +2623,7 @@
       <tr><td colspan="6" style="padding:6px;">أقر أنا الموقع أدناه باستلام مبلغ وقدره ( ${esc(amtDisplay)} ) ريال من شركة رش المتقدمة تعويضاً نهائياً وكاملاً عن الأضرار الموضحة في النموذج وأبرئ ذمة الشركة من أي مطالبات لاحقة تخص الواقعة.</td></tr>
       <tr>
         <td class="lbl">اسم العميل<br/>Customer Name</td><td class="val">${esc(custName)}</td>
-        <td class="lbl">التوقيع<br/>Signature</td><td class="val">${esc(waiverStatus)}</td>
+        <td class="lbl">التوقيع<br/>Signature</td><td class="val" style="text-align:center;">${waiverSigCell}</td>
         <td class="lbl">التاريخ<br/>Date</td><td class="val"></td>
       </tr>
     </table>

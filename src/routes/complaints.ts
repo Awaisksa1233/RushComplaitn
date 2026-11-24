@@ -10,6 +10,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { trackLimiter, webhookLimiter } from "../middleware/security";
 import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
 import { syncComplaintToChatwoot, forwardCustomerMessageToChatwoot } from "../services/chatwoot";
+import { uploadFile, sniffMatches } from "../services/storage";
 import { invalidateClaimsCache } from "./admin";
 
 const safeUrl = z.string().refine(isSafeFileUrl, "Invalid file reference");
@@ -374,12 +375,24 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       return res.status(409).json({ error: "Quotation can no longer be changed for this ticket." });
     }
 
+    let storedSignature = parsed.data.waiverSignature;
+    const dataUrlMatch = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(storedSignature);
+    if (dataUrlMatch) {
+      const mime = dataUrlMatch[1];
+      const buf = Buffer.from(dataUrlMatch[2], "base64");
+      if (buf.length > 0 && buf.length <= 2 * 1024 * 1024 && sniffMatches(buf, mime)) {
+        storedSignature = await uploadFile(buf, mime, "signatures");
+      } else {
+        storedSignature = "DIGITALLY_SIGNED_ON_PORTAL";
+      }
+    }
+
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: {
         quotationUrl: cleanFileUrl(parsed.data.quotationUrl) || parsed.data.quotationUrl,
         waiverSigned: true,
-        waiverSignature: parsed.data.waiverSignature,
+        waiverSignature: storedSignature,
         quotationApproved: false,
         payoutStatus: PayoutStatus.AWAITING_QUOTE_APPROVAL,
         ...(parsed.data.quotedAmount !== undefined ? { quotedAmount: parsed.data.quotedAmount } : {}),

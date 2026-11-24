@@ -504,6 +504,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         quotationUrl: signFileUrl(c.quotationUrl),
         quotationApproved: c.quotationApproved,
         waiverSigned: c.waiverSigned,
+        waiverSignatureUrl: c.waiverSignature?.startsWith("/api/files/")
+          ? signFileUrl(c.waiverSignature)
+          : c.waiverSignature?.startsWith("data:image/")
+            ? c.waiverSignature
+            : null,
         invoiceUrl: signFileUrl(c.invoiceUrl),
         bankName: c.bankName,
         accountHolder: c.accountHolder ? "•••• " + String(decryptField(c.accountHolder) || "").slice(-3) : null,
@@ -568,6 +573,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return res.json({
       ...rest,
       quotationUrl: signFileUrl(rest.quotationUrl),
+      waiverSignatureUrl: waiverSignature?.startsWith("/api/files/")
+        ? signFileUrl(waiverSignature)
+        : waiverSignature?.startsWith("data:image/")
+          ? waiverSignature
+          : null,
       invoiceUrl: signFileUrl(rest.invoiceUrl),
       bankSmsUrl: signFileUrl(rest.bankSmsUrl),
       mediaUrls: (rest.mediaUrls || []).map((u) => signFileUrl(u) || u),
