@@ -2422,9 +2422,30 @@
       showToast("Exported CSV");
     }
 
-    function printDamageCompensationForm(id) {
+    async function printDamageCompensationForm(id) {
       const c = claimsData.find(x => x.id === id);
       if (!c) return showToast("Ticket not found");
+
+      let bankName = c.damageFlow?.bankName || "";
+      let accountHolder = c.damageFlow?.accountHolder || "";
+      let iban = c.damageFlow?.iban || "";
+
+      if (adminToken && isFinanceRole() && c.payoutStatus === "Pending Bank Transfer" && iban) {
+        try {
+          const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/bank-details`, {
+            headers: { "Authorization": `Bearer ${adminToken}` }
+          });
+          if (res.ok) {
+            const bankData = await res.json();
+            bankName = bankData.bankName || bankName;
+            accountHolder = bankData.accountHolder || accountHolder;
+            iban = bankData.iban || iban;
+          }
+        } catch {
+          // Fall back to masked values already loaded on ticket
+        }
+      }
+
       const zonesLower = (c.zones || []).map(z => String(z).toLowerCase());
       const hasZone = (...keys) => zonesLower.some(z => keys.some(k => z.includes(k)));
       const damageLocations = [
@@ -2541,11 +2562,11 @@
     <tr><td colspan="6" class="sec">الصرف | Payment</td></tr>
     <tr>
       <td class="lbl">طريقة الصرف<br/>Payment Method</td><td class="val">${esc(payMethod)}</td>
-      <td class="lbl">اسم صاحب الحساب<br/>Account Holder</td><td class="val">${esc(c.damageFlow?.accountHolder || "")}</td>
-      <td class="lbl">البنك<br/>Bank</td><td class="val">${esc(c.damageFlow?.bankName || "")}</td>
+      <td class="lbl">اسم صاحب الحساب<br/>Account Holder</td><td class="val">${esc(accountHolder)}</td>
+      <td class="lbl">البنك<br/>Bank</td><td class="val">${esc(bankName)}</td>
     </tr>
     <tr>
-      <td class="lbl">الآيبان<br/>IBAN</td><td colspan="3" dir="ltr">${esc(c.damageFlow?.iban || "")}</td>
+      <td class="lbl">الآيبان<br/>IBAN</td><td colspan="3" dir="ltr">${esc(iban)}</td>
       <td class="lbl">رقم المرجع<br/>Transfer Ref</td><td dir="ltr">${esc(c.transferRef || "")}</td>
     </tr>
   </table>
@@ -2568,16 +2589,29 @@
   </table>
 </body>
 </html>`;
-      const win = window.open("", "_blank", "width=900,height=1050");
-      if (!win) {
-        showToast("Please allow pop-ups to print the compensation form");
-        return;
-      }
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-      win.focus();
-      setTimeout(() => win.print(), 250);
+      const existingFrame = document.getElementById("rush-print-frame");
+      if (existingFrame) existingFrame.remove();
+      const iframe = document.createElement("iframe");
+      iframe.id = "rush-print-frame";
+      iframe.style.position = "fixed";
+      iframe.style.right = "0";
+      iframe.style.bottom = "0";
+      iframe.style.width = "0";
+      iframe.style.height = "0";
+      iframe.style.border = "0";
+      iframe.setAttribute("aria-hidden", "true");
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch {
+            showToast("Could not open print dialog");
+          }
+        }, 150);
+      };
+      iframe.srcdoc = html;
+      document.body.appendChild(iframe);
     }
 
     function renderAllActive() {
