@@ -2,12 +2,13 @@ import { Router, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { AuthedRequest, requireCustomerJwt } from "../middleware/auth";
 import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
+import { asyncHandler } from "../utils/asyncHandler";
 
 export function createCustomerRouter(prisma: PrismaClient) {
   const router = Router();
 
   // Dynamic Visit History / Orders with 7-Day Window and Duplicate Guard
-  router.get("/history", requireCustomerJwt, async (req: AuthedRequest, res: Response) => {
+  router.get("/history", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res: Response) => {
     try {
       const type = String(req.query.type || "UNSATISFIED").toUpperCase();
       const customerId = req.customer!.customerId;
@@ -89,9 +90,10 @@ export function createCustomerRouter(prisma: PrismaClient) {
         })),
       });
     } catch (err: any) {
-      return res.status(500).json({ error: err.message || "Failed to fetch customer history" });
+      console.error("[Customer] History fetch error:", err?.message);
+      return res.status(500).json({ error: "Failed to fetch customer history" });
     }
-  });
+  }));
 
   return router;
 }

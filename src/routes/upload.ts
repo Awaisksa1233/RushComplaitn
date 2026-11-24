@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { uploadFile, ALLOWED_UPLOAD_TYPES, sniffMatches } from "../services/storage";
 import { CUSTOMER_JWT_SECRET, STAFF_JWT_SECRET } from "../config/env";
 import { uploadLimiter } from "../middleware/security";
+import { asyncHandler } from "../utils/asyncHandler";
 
 const CATEGORIES = new Set(["media", "quotations", "invoices", "complaints", "damage"]);
 
@@ -15,7 +16,7 @@ function requireAnyAuth(req: Request, res: Response, next: NextFunction) {
     return next();
   } catch {}
   try {
-    jwt.verify(token, STAFF_JWT_SECRET, { algorithms: ["HS256"] });
+    jwt.verify(token, STAFF_JWT_SECRET, { audience: "rush-staff", issuer: "rush-care", algorithms: ["HS256"] });
     return next();
   } catch {}
   return res.status(401).json({ error: "Invalid or expired session" });
@@ -32,7 +33,7 @@ export function createUploadRouter() {
     },
   });
 
-  router.post("/", uploadLimiter, requireAnyAuth, upload.single("file"), async (req, res) => {
+  router.post("/", uploadLimiter, requireAnyAuth, upload.single("file"), asyncHandler(async (req, res) => {
     try {
       if (!req.file) return res.status(400).json({ error: "No file provided" });
       if (!sniffMatches(req.file.buffer, req.file.mimetype)) {
@@ -45,7 +46,7 @@ export function createUploadRouter() {
     } catch {
       return res.status(500).json({ error: "Failed to upload file" });
     }
-  });
+  }));
 
   return router;
 }

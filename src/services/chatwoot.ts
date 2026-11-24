@@ -10,7 +10,7 @@
  */
 
 const CHATWOOT_BASE_URL = (process.env.CHATWOOT_BASE_URL || "https://chatwoot.rush.com.sa").replace(/\/+$/, "");
-const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || "SnfMedNytvf54baCJBAPYbob";
+const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || "";
 const CHATWOOT_ACCOUNT_ID = process.env.CHATWOOT_ACCOUNT_ID || "1";
 const CHATWOOT_INBOX_ID = parseInt(process.env.CHATWOOT_INBOX_ID || "1", 10);
 const PORTAL_PUBLIC_URL = (process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa").replace(/\/+$/, "");

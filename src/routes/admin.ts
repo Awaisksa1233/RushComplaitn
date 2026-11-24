@@ -3,7 +3,9 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { STAFF_JWT_SECRET } from "../config/env";
-import { staffLoginLimiter } from "../middleware/security";
+import { staffLoginLimiter, ibanRevealLimiter } from "../middleware/security";
+import { deleteFiles } from "../services/storage";
+import { asyncHandler } from "../utils/asyncHandler";
 import { encryptField, decryptField, maskIban, randomCode } from "../utils/crypto";
 import { anonymiseCustomer, exportCustomerData } from "../services/retention";
 import {
@@ -171,7 +173,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   // ==========================================
 
   // Staff login with email & password
-  router.post("/auth/login", staffLoginLimiter, async (req, res) => {
+  router.post("/auth/login", staffLoginLimiter, asyncHandler(async (req, res) => {
     const schema = z.object({
       email: z.string().email().max(200),
       password: z.string().min(1).max(128),
@@ -202,9 +204,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
     const token = jwt.sign(payload, STAFF_JWT_SECRET, { expiresIn: "8h", audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER });
     return res.json({ token, user: payload });
-  });
+  }));
 
-  router.post("/auth/change-password", staffLoginLimiter, requireStaff, async (req: StaffRequest, res) => {
+  router.post("/auth/change-password", staffLoginLimiter, requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const parsed = z.object({ currentPassword: z.string().max(128), newPassword: PASSWORD_POLICY }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const user = await prisma.staffUser.findUnique({ where: { id: req.staff!.staffId } });
@@ -214,7 +216,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     await prisma.staffUser.update({ where: { id: user.id }, data: { passwordHash: await bcrypt.hash(parsed.data.newPassword, 12) } });
     staffCache.delete(user.id);
     return res.json({ success: true });
-  });
+  }));
 
   // Get current logged-in staff info
   router.get("/auth/me", requireStaff, (req: StaffRequest, res) => {
@@ -225,12 +227,12 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   // 2. System Policy Configuration
   // ==========================================
 
-  router.get("/config", requireStaff, async (_req, res) => {
+  router.get("/config", requireStaff, asyncHandler(async (_req, res) => {
     const config = await getSystemConfig();
     return res.json(config);
-  });
+  }));
 
-  router.patch("/config", requireStaff, async (req: StaffRequest, res) => {
+  router.patch("/config", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     if (req.staff!.role !== StaffRole.BUSINESS_OWNER) {
       return res.status(403).json({ error: "Only Business Owner can update policy caps and SLA settings" });
     }
@@ -255,13 +257,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     cachedConfig = updated;
     cachedConfigExpiresAt = Date.now() + 60 * 1000;
     return res.json(updated);
-  });
+  }));
 
   // ==========================================
   // 3. Executive Dashboard & SLA Escalations
   // ==========================================
 
-  router.get("/dashboard", requireStaff, async (req: StaffRequest, res) => {
+  router.get("/dashboard", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const config = await getSystemConfig();
 
     const branch = String(req.query.branch || "all");
@@ -366,13 +368,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         byResolution,
       },
     });
-  });
+  }));
 
   // ==========================================
   // 4. Claims Queue & Filtering
   // ==========================================
 
-  router.get("/claims", requireStaff, async (req: StaffRequest, res) => {
+  router.get("/claims", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const config = await getSystemConfig();
 
     const { status, type, branch, overdueOnly, myQueue, search } = req.query;
@@ -401,7 +403,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       ];
     }
 
-    const cacheKey = JSON.stringify({ where, overdueOnly: Boolean(overdueOnly), role: req.staff!.role, branch: req.staff!.branch });
+    const cacheKey = JSON.stringify({ where, overdueOnly: overdueOnly === "true", role: req.staff!.role, branch: req.staff!.branch });
     if (cachedClaims && cachedClaims.key === cacheKey && cachedClaims.expiresAt > Date.now()) {
       return res.json(cachedClaims.data);
     }
@@ -488,10 +490,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     };
 
     return res.json(mapped);
-  });
+  }));
 
   // Get single claim details
-  router.get("/claims/:id", requireStaff, async (req: StaffRequest, res) => {
+  router.get("/claims/:id", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const complaint = await prisma.complaint.findUnique({
       where: { id: req.params.id },
       include: {
@@ -507,14 +509,14 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
     const { iban, accountHolder, waiverSignature, ...rest } = complaint;
     return res.json({ ...rest, iban: iban ? maskIban(iban) : null, accountHolder: accountHolder ? "••••" : null });
-  });
+  }));
 
   // ==========================================
   // 5. Claims Action Endpoints (role-gated, branch-scoped, state-machine enforced)
   // ==========================================
 
   // Handoff Damage claim from Ops Manager -> CSM
-  router.post("/claims/:id/handoff-csm", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.BUSINESS_OWNER, StaffRole.ADMIN), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/handoff-csm", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.BUSINESS_OWNER, StaffRole.ADMIN), asyncHandler(async (req: StaffRequest, res) => {
     const claim = await loadClaim(req, res);
     if (!claim) return;
     if (claim.type !== "DAMAGE" || isClosed(claim)) return res.status(409).json({ error: "Only open Damage claims can be handed off" });
@@ -548,10 +550,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Overdue SLA Nudge (only when the ticket genuinely is overdue)
-  router.post("/claims/:id/nudge", requireStaff, async (req: StaffRequest, res) => {
+  router.post("/claims/:id/nudge", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const complaint = await loadClaim(req, res);
     if (!complaint) return;
     const config = await getSystemConfig();
@@ -581,10 +583,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Approve Unsatisfied -> Issue Rewash Pass
-  router.post("/claims/:id/unsatisfied/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/unsatisfied/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM), asyncHandler(async (req: StaffRequest, res) => {
     const claim = await loadClaim(req, res);
     if (!claim) return;
     if (claim.type !== "UNSATISFIED" || isClosed(claim)) {
@@ -626,10 +628,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       }
     }
     return res.status(503).json({ error: "Could not generate a unique rewash code, retry" });
-  });
+  }));
 
   // Approve Billing Refund
-  router.post("/claims/:id/billing/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/billing/approve", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const schema = z.object({
       rrn: z.string().regex(/^[A-Za-z0-9]{4,30}$/, "RRN must be 4-30 alphanumeric characters"),
       amount: z.number().positive().max(100000),
@@ -686,10 +688,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Request Repair Quotation & Waiver from Customer
-  router.post("/claims/:id/damage/request-quote", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/damage/request-quote", requireStaff, requireRoles(StaffRole.OPS_MANAGER, StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const parsed = z.object({ resolutionNote: z.string().max(1000).optional() }).safeParse(req.body);
     const note = parsed.success && parsed.data.resolutionNote
       ? parsed.data.resolutionNote
@@ -727,10 +729,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Approve Damage Quotation (cap enforced against the customer-submitted amount stored on the ticket)
-  router.post("/claims/:id/damage/approve-quote", requireStaff, requireRoles(StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/damage/approve-quote", requireStaff, requireRoles(StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const config = await getSystemConfig();
     const complaint = await loadClaim(req, res);
     if (!complaint) return;
@@ -783,10 +785,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Refuse Complaint
-  router.post("/claims/:id/refuse", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), async (req: StaffRequest, res) => {
+  router.post("/claims/:id/refuse", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), asyncHandler(async (req: StaffRequest, res) => {
     const parsed = z.object({ resolutionNote: z.string().min(5).max(1000) }).safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Detailed resolution note is required when refusing a claim" });
@@ -821,10 +823,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Patch non-financial claim fields. Money/closure state may ONLY change through the action endpoints above.
-  router.patch("/claims/:id", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), async (req: StaffRequest, res) => {
+  router.patch("/claims/:id", requireStaff, requireRoles(StaffRole.ADMIN, StaffRole.BUSINESS_OWNER, StaffRole.CSM, StaffRole.OPS_MANAGER), asyncHandler(async (req: StaffRequest, res) => {
     const schema = z.object({
       resolutionNote: z.string().max(1000).nullable().optional(),
       status: z.enum(["SUBMITTED", "INVESTIGATING"]).optional(),
@@ -857,10 +859,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Post Internal or Customer Message
-  router.post("/claims/:id/messages", requireStaff, async (req: StaffRequest, res) => {
+  router.post("/claims/:id/messages", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
     const schema = z.object({
       body: z.string().min(1).max(2000),
       channel: z.nativeEnum(MessageChannel).default(MessageChannel.INTERNAL),
@@ -876,7 +878,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       data: { complaintId: claim.id, sender: req.staff!.name, channel: parsed.data.channel, body: parsed.data.body },
     });
     return res.json(message);
-  });
+  }));
 
   // ==========================================
   // 6. Finance & Bank Transfer Disbursement (Owner/Admin only)
@@ -884,7 +886,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
   const financeRoles = [StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[];
 
-  router.get("/finance", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
+  router.get("/finance", requireStaff, requireRoles(...financeRoles), asyncHandler(async (req: StaffRequest, res) => {
     const complaints = await prisma.complaint.findMany({
       where: {
         OR: [
@@ -915,10 +917,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         updatedAt: c.updatedAt,
       }))
     );
-  });
+  }));
 
   // Reveal full bank details for a pending transfer — audited, rate limited, pending-transfer tickets only
-  router.get("/finance/:id/bank-details", requireStaff, requireRoles(...financeRoles), staffLoginLimiter, async (req: StaffRequest, res) => {
+  router.get("/finance/:id/bank-details", requireStaff, requireRoles(...financeRoles), ibanRevealLimiter, asyncHandler(async (req: StaffRequest, res) => {
     const c = await loadClaim(req, res);
     if (!c) return;
     if (c.payoutStatus !== PayoutStatus.PENDING_BANK_TRANSFER || !c.iban) {
@@ -935,10 +937,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       bankName: c.bankName,
       amountSar: Number(c.approvedAmount || c.quotedAmount || 0),
     });
-  });
+  }));
 
   // Mark Bank Transfer Paid
-  router.post("/finance/:id/mark-paid", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
+  router.post("/finance/:id/mark-paid", requireStaff, requireRoles(...financeRoles), asyncHandler(async (req: StaffRequest, res) => {
     const parsed = z.object({ transferRef: z.string().regex(/^[A-Za-z0-9\-_]{3,40}$/) }).safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json({ error: "Transfer reference (e.g. TRF-994012) is required" });
@@ -980,10 +982,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
 
     return res.json({ success: true, complaint: updated });
-  });
+  }));
 
   // Export Finance CSV (RFC-4180, formula-injection safe, IBAN masked, access logged)
-  router.get("/finance/export.csv", requireStaff, requireRoles(...financeRoles), async (req: StaffRequest, res) => {
+  router.get("/finance/export.csv", requireStaff, requireRoles(...financeRoles), asyncHandler(async (req: StaffRequest, res) => {
     const complaints = await prisma.complaint.findMany({
       include: { customer: true },
       orderBy: { createdAt: "desc" },
@@ -1008,16 +1010,16 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       );
     }
     return res.send(rows.join("\r\n"));
-  });
+  }));
 
   // ==========================================
   // 7. Staff Directory & RBAC Controls
   // ==========================================
 
-  router.get("/staff", requireStaff, requireRoles(...PRIVILEGED), async (_req, res) => {
+  router.get("/staff", requireStaff, requireRoles(...PRIVILEGED), asyncHandler(async (_req, res) => {
     const staff = await prisma.staffUser.findMany({ orderBy: { createdAt: "asc" }, select: STAFF_PUBLIC });
     return res.json(staff);
-  });
+  }));
 
   /** ADMINs may manage only non-privileged staff; only the Business Owner manages ADMIN/OWNER accounts. */
   function canManage(actor: StaffPayload, targetRole: StaffRole, newRole?: StaffRole) {
@@ -1026,7 +1028,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     return !PRIVILEGED.includes(targetRole) && !(newRole && PRIVILEGED.includes(newRole));
   }
 
-  router.post("/staff", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
+  router.post("/staff", requireStaff, requireRoles(...PRIVILEGED), asyncHandler(async (req: StaffRequest, res) => {
     const schema = z.object({
       name: z.string().min(2).max(80),
       email: z.string().email().max(200),
@@ -1058,9 +1060,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     });
     auditLog(req.staff, "STAFF_CREATE", `new=${created.id} role=${created.role}`);
     return res.json(created);
-  });
+  }));
 
-  router.patch("/staff/:id", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
+  router.patch("/staff/:id", requireStaff, requireRoles(...PRIVILEGED), asyncHandler(async (req: StaffRequest, res) => {
     const schema = z.object({
       role: z.nativeEnum(StaffRole).optional(),
       branch: z.string().max(80).optional(),
@@ -1089,9 +1091,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     staffCache.delete(target.id);
     auditLog(req.staff, "STAFF_UPDATE", `target=${target.id} ${JSON.stringify(parsed.data)}`);
     return res.json(updated);
-  });
+  }));
 
-  router.post("/staff/:id/reset-password", requireStaff, requireRoles(...PRIVILEGED), async (req: StaffRequest, res) => {
+  router.post("/staff/:id/reset-password", requireStaff, requireRoles(...PRIVILEGED), asyncHandler(async (req: StaffRequest, res) => {
     const parsed = z.object({ newPassword: PASSWORD_POLICY }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
     const target = await prisma.staffUser.findUnique({ where: { id: req.params.id } });
@@ -1101,31 +1103,43 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     staffCache.delete(target.id);
     auditLog(req.staff, "STAFF_PASSWORD_RESET", `target=${target.id}`);
     return res.json({ success: true });
-  });
+  }));
 
   // ==========================================
   // 8. Data-subject requests (PDPL) — Business Owner only, audited
   // ==========================================
 
-  router.get("/customers/:id/export", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+  router.get("/customers/:id/export", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const data = await exportCustomerData(prisma, req.params.id);
     if (!data) return res.status(404).json({ error: "Customer not found" });
     auditLog(req.staff, "CUSTOMER_EXPORT", `customer=${req.params.id}`);
     return res.json(data);
-  });
+  }));
 
-  router.post("/customers/:id/anonymise", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), async (req: StaffRequest, res) => {
+  router.post("/customers/:id/anonymise", requireStaff, requireRoles(StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const open = await prisma.complaint.count({ where: { customerId: req.params.id, status: { not: TicketStatus.RESOLVED } } });
     if (open) return res.status(409).json({ error: "Customer has open tickets; resolve them first" });
     const ok = await anonymiseCustomer(prisma, req.params.id);
     if (!ok) return res.status(404).json({ error: "Customer not found" });
+    const complaints = await prisma.complaint.findMany({
+      where: { customerId: req.params.id },
+      select: { id: true, mediaUrls: true, invoiceUrl: true, quotationUrl: true, bankSmsUrl: true },
+    });
+    if (complaints.length) {
+      await deleteFiles(complaints.flatMap((c) => [...(c.mediaUrls || []), c.invoiceUrl, c.quotationUrl, c.bankSmsUrl]));
+      const complaintIds = complaints.map((c) => c.id);
+      await prisma.message.updateMany({
+        where: { complaintId: { in: complaintIds } },
+        data: { sender: "Anonymised", body: "[removed on customer request]" },
+      });
+    }
     await prisma.complaint.updateMany({
       where: { customerId: req.params.id },
-      data: { summary: "[removed on customer request]", mediaUrls: [], iban: null, accountHolder: null, bankName: null, bankSmsText: null, bankSmsUrl: null, cardLast4: null, waiverSignature: null },
+      data: { summary: "[removed on customer request]", mediaUrls: [], invoiceUrl: null, quotationUrl: null, iban: null, accountHolder: null, bankName: null, bankSmsText: null, bankSmsUrl: null, cardLast4: null, waiverSignature: null },
     });
     auditLog(req.staff, "CUSTOMER_ANONYMISE", `customer=${req.params.id}`);
     return res.json({ success: true });
-  });
+  }));
 
   return router;
 }

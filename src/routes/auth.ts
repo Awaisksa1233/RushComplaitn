@@ -8,6 +8,7 @@ import { PrismaClient } from "@prisma/client";
 import { normalizePlate, normalizePhone, isSaudiMobile, hashOtp } from "../utils/normalize";
 import { findCustomerInMongo } from "../services/mongo";
 import { sendSmsOtp } from "../services/unifonic";
+import { asyncHandler } from "../utils/asyncHandler";
 
 export function createAuthRouter(prisma: PrismaClient) {
   const router = Router();
@@ -15,7 +16,7 @@ export function createAuthRouter(prisma: PrismaClient) {
   const WINDOW_MS = 15 * 60 * 1000;
 
   // 1. Request OTP (Strict Plate + Phone match)
-  router.post("/request-otp", otpRequestLimiter, async (req, res) => {
+  router.post("/request-otp", otpRequestLimiter, asyncHandler(async (req, res) => {
     const parsed = z
       .object({
         licensePlate: z.string().min(2).max(20),
@@ -110,10 +111,10 @@ export function createAuthRouter(prisma: PrismaClient) {
       message: `OTP sent to +966 ${phone.slice(0, 2)}•••••${phone.slice(-2)}`,
       ...(exposeDevOtp ? { devOtp: code } : {}),
     });
-  });
+  }));
 
   // 2. Verify OTP -> Issue Customer JWT
-  router.post("/verify-otp", otpVerifyLimiter, async (req, res) => {
+  router.post("/verify-otp", otpVerifyLimiter, asyncHandler(async (req, res) => {
     const parsed = z
       .object({
         licensePlate: z.string().min(2).max(20),
@@ -158,17 +159,25 @@ export function createAuthRouter(prisma: PrismaClient) {
 
     const a = Buffer.from(session.codeHash), b = Buffer.from(hashOtp(parsed.data.code));
     if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      await prisma.otpSession.update({
-        where: { id: session.id },
+      await prisma.otpSession.updateMany({
+        where: { id: session.id, verified: false, attempts: { lt: MAX_ATTEMPTS } },
         data: { attempts: { increment: 1 } },
       });
       return res.status(401).json({ error: "Invalid OTP code" });
     }
 
-    await prisma.otpSession.update({
-      where: { id: session.id },
+    const claimed = await prisma.otpSession.updateMany({
+      where: {
+        id: session.id,
+        verified: false,
+        expiresAt: { gt: new Date() },
+        attempts: { lt: MAX_ATTEMPTS },
+      },
       data: { verified: true },
     });
+    if (claimed.count !== 1) {
+      return res.status(400).json({ error: "OTP expired or maximum attempts exceeded" });
+    }
 
     const customer = await prisma.customer.findFirst({
       where: { licensePlate: { in: candidatePlates }, phone },
@@ -190,7 +199,7 @@ export function createAuthRouter(prisma: PrismaClient) {
         phone: customer.phone,
       },
     });
-  });
+  }));
 
   return router;
 }

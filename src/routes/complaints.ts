@@ -5,7 +5,8 @@ import { PrismaClient, ComplaintType, StaffRole, MessageChannel, TicketStatus, P
 import { AuthedRequest, requireCustomerJwt, ownsTicket, signCustomerToken } from "../middleware/auth";
 import { normalizePlate, normalizePhone, isSaudiMobile, isSafeFileUrl } from "../utils/normalize";
 import { encryptField, maskIban } from "../utils/crypto";
-import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET } from "../config/env";
+import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET, CHATWOOT_WEBHOOK_SECRET } from "../config/env";
+import { asyncHandler } from "../utils/asyncHandler";
 import { trackLimiter, webhookLimiter } from "../middleware/security";
 import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
 import { syncComplaintToChatwoot, forwardCustomerMessageToChatwoot } from "../services/chatwoot";
@@ -95,7 +96,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
   }
 
   // 1. Submit New Complaint
-  router.post("/", requireCustomerJwt, async (req: AuthedRequest, res: Response) => {
+  router.post("/", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res: Response) => {
     const schema = z.object({
       type: z.enum(["UNSATISFIED", "BILLING_REFUND", "DAMAGE", "OTHER"]),
       posRecordId: z.string().min(1).max(60),
@@ -203,12 +204,12 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       }
     }
     return res.status(503).json({ error: "Could not allocate a ticket number, please retry." });
-  });
+  }));
 
   // 2. Track Complaint
   //    Ticket-ID lookup (+ phone) -> full customer-safe view and a ticket-scoped token.
   //    Plate lookup (+ phone) -> status summary only (plate/phone are weak secrets).
-  router.post("/track", trackLimiter, async (req, res) => {
+  router.post("/track", trackLimiter, asyncHandler(async (req, res) => {
     const parsed = z
       .object({ query: z.string().min(2).max(30), phone: z.string().min(9).max(20) })
       .safeParse(req.body);
@@ -265,10 +266,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       trackToken,
       tickets: tickets.map((t) => ticketDto(t, byId)),
     });
-  });
+  }));
 
   // 2.5 Damage Document Quick-Upload (Quotation / Invoice) — owner only, and only in the right phase
-  router.post("/:id/damage/upload-doc", requireCustomerJwt, async (req: AuthedRequest, res) => {
+  router.post("/:id/damage/upload-doc", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z.object({ field: z.enum(["quotationUrl", "invoiceUrl"]), url: safeUrl }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
@@ -295,10 +296,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       include: { customer: true, messages: true },
     });
     return res.json({ success: true, ticket: ticketDto(updated, true) });
-  });
+  }));
 
   // 3. Damage Step 1: Upload Quotation + Sign Waiver
-  router.post("/:id/damage/step1", requireCustomerJwt, async (req: AuthedRequest, res) => {
+  router.post("/:id/damage/step1", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z
       .object({
         quotationUrl: safeUrl,
@@ -332,10 +333,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       notice:
         "Uploading a quotation does not constitute payout approval. Final payout is strictly based on verified tax invoice and management discretion.",
     });
-  });
+  }));
 
   // 4. Damage Step 2: Upload Tax Invoice + Saudi IBAN (Gated by quotationApproved === true)
-  router.post("/:id/damage/step2", requireCustomerJwt, async (req: AuthedRequest, res) => {
+  router.post("/:id/damage/step2", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const ticket = await loadOwnedTicket(req, res, ComplaintType.DAMAGE);
     if (!ticket) return;
 
@@ -374,7 +375,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
           create: {
             sender: "Customer",
             channel: MessageChannel.WEB_PORTAL,
-            body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${maskIban(encryptField(parsed.data.iban))}).`,
+            body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${maskIban(parsed.data.iban)}).`,
           },
         },
       },
@@ -382,10 +383,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     });
 
     return res.json(ticketDto(updated, true));
-  });
+  }));
 
   // 5. Customer message (synced to ticket timeline)
-  router.post("/:id/whatsapp", requireCustomerJwt, async (req: AuthedRequest, res) => {
+  router.post("/:id/whatsapp", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z.object({ body: z.string().min(1).max(2000) }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Message body required (max 2000 chars)" });
 
@@ -406,10 +407,36 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     });
 
     return res.status(201).json({ id: msg.id, sender: msg.sender, channel: msg.channel, body: msg.body, createdAt: msg.createdAt });
-  });
+  }));
 
   // 6. Chatwoot Incoming Event Webhook
-  router.post("/webhooks/chatwoot", webhookLimiter, async (req: Request, res) => {
+  router.post("/webhooks/chatwoot", webhookLimiter, asyncHandler(async (req: Request, res) => {
+    if (!CHATWOOT_WEBHOOK_SECRET) {
+      return res.status(503).json({ error: "Webhook not configured" });
+    }
+    const raw: Buffer | undefined = (req as any).rawBody;
+    const sigHeader = String(req.headers["x-chatwoot-signature"] || req.headers["x-hub-signature-256"] || "").replace(/^sha256=/, "");
+    const tokenHeader = String(
+      req.headers["x-chatwoot-webhook-token"] ||
+      req.headers["x-webhook-secret"] ||
+      (req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+    ).trim();
+    const expectedHmac = raw ? crypto.createHmac("sha256", CHATWOOT_WEBHOOK_SECRET).update(raw).digest("hex") : "";
+    const sigValid = Boolean(
+      raw &&
+      sigHeader.length === expectedHmac.length &&
+      expectedHmac.length > 0 &&
+      crypto.timingSafeEqual(Buffer.from(sigHeader), Buffer.from(expectedHmac))
+    );
+    const tokenValid = Boolean(
+      tokenHeader.length === CHATWOOT_WEBHOOK_SECRET.length &&
+      CHATWOOT_WEBHOOK_SECRET.length > 0 &&
+      crypto.timingSafeEqual(Buffer.from(tokenHeader), Buffer.from(CHATWOOT_WEBHOOK_SECRET))
+    );
+    if (!sigValid && !tokenValid) {
+      return res.status(401).json({ error: "Invalid signature" });
+    }
+
     try {
       const event = req.body;
       if (event?.event === "message_created" && event?.message_type === "outgoing" && !event?.private) {
@@ -443,10 +470,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       console.warn("[Chatwoot Webhook] Error processing event:", err?.message || err);
       return res.status(200).json({ ok: false });
     }
-  });
+  }));
 
   // 6. WhatsApp Webhook — HMAC-SHA256 signed (header: x-hub-signature-256 = sha256=<hex of raw body>)
-  router.post("/webhooks/whatsapp", webhookLimiter, async (req: Request, res) => {
+  router.post("/webhooks/whatsapp", webhookLimiter, asyncHandler(async (req: Request, res) => {
     if (!WHATSAPP_WEBHOOK_SECRET) {
       return res.status(503).json({ error: "Webhook not configured" });
     }
@@ -485,10 +512,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       },
     });
     return res.status(201).json({ id: msg.id });
-  });
+  }));
 
   // 7. CSAT Rating (resolved tickets only, once)
-  router.post("/:id/csat", requireCustomerJwt, async (req: AuthedRequest, res) => {
+  router.post("/:id/csat", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
     const parsed = z.object({ rating: z.number().int().min(1).max(5) }).safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: "Rating must be an integer between 1 and 5" });
 
@@ -508,7 +535,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       include: { customer: true, messages: true },
     });
     return res.json(ticketDto(updated, true));
-  });
+  }));
 
   return router;
 }

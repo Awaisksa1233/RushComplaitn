@@ -1,5 +1,6 @@
 import { PrismaClient, PayoutStatus, TicketStatus } from "@prisma/client";
 import { RETENTION } from "../config/env";
+import { deleteFiles } from "./storage";
 
 const DAY = 24 * 3600 * 1000;
 
@@ -22,26 +23,48 @@ export async function runRetention(prisma: PrismaClient, now = new Date()): Prom
     where: { createdAt: { lt: new Date(now.getTime() - RETENTION.otpHours * 3600 * 1000) } },
   });
 
+  const bankWhere = {
+    iban: { not: null },
+    updatedAt: { lt: new Date(now.getTime() - RETENTION.bankDetailsDaysAfterPaid * DAY) },
+    OR: [{ payoutStatus: PayoutStatus.PAID }, { payoutStatus: PayoutStatus.DECLINED }, { status: TicketStatus.RESOLVED }],
+  };
+  const bankDocs = await prisma.complaint.findMany({
+    where: bankWhere,
+    select: { invoiceUrl: true, quotationUrl: true, bankSmsUrl: true },
+  });
+  if (bankDocs.length) {
+    await deleteFiles(bankDocs.flatMap((d) => [d.invoiceUrl, d.quotationUrl, d.bankSmsUrl]));
+  }
   const bank = await prisma.complaint.updateMany({
-    where: {
-      iban: { not: null },
-      updatedAt: { lt: new Date(now.getTime() - RETENTION.bankDetailsDaysAfterPaid * DAY) },
-      OR: [{ payoutStatus: PayoutStatus.PAID }, { payoutStatus: PayoutStatus.DECLINED }, { status: TicketStatus.RESOLVED }],
-    },
+    where: bankWhere,
     data: { iban: null, accountHolder: null, bankName: null, invoiceUrl: null, quotationUrl: null, bankSmsText: null, bankSmsUrl: null, cardLast4: null, waiverSignature: null },
   });
 
   const cutoff = new Date(now.getTime() - RETENTION.anonymiseTicketsAfterDays * DAY);
   const old = await prisma.complaint.findMany({
     where: { status: TicketStatus.RESOLVED, updatedAt: { lt: cutoff } },
-    select: { id: true, customerId: true },
+    select: { id: true, customerId: true, mediaUrls: true, invoiceUrl: true, quotationUrl: true, bankSmsUrl: true },
   });
   let tickets = 0;
   if (old.length) {
+    await deleteFiles(old.flatMap((o) => [...(o.mediaUrls || []), o.invoiceUrl, o.quotationUrl, o.bankSmsUrl]));
     const ids = old.map((o) => o.id);
     const r = await prisma.complaint.updateMany({
       where: { id: { in: ids } },
-      data: { summary: "[removed per retention policy]", mediaUrls: [], resolutionNote: null },
+      data: {
+        summary: "[removed per retention policy]",
+        mediaUrls: [],
+        resolutionNote: null,
+        iban: null,
+        accountHolder: null,
+        bankName: null,
+        invoiceUrl: null,
+        quotationUrl: null,
+        bankSmsText: null,
+        bankSmsUrl: null,
+        cardLast4: null,
+        waiverSignature: null,
+      },
     });
     await prisma.message.deleteMany({ where: { complaintId: { in: ids } } });
     tickets = r.count;

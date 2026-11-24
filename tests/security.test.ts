@@ -59,6 +59,11 @@ describe("Security regression tests (no DB)", () => {
     expect([401, 503]).toContain(r.status);
   });
 
+  it("chatwoot webhook is closed unless correctly signed", async () => {
+    const r = await request(app).post("/api/complaints/webhooks/chatwoot").send({ event: "message_created", message_type: "outgoing" });
+    expect([401, 503]).toContain(r.status);
+  });
+
   it("file proxy only serves server-generated keys", async () => {
     for (const k of ["../.env", "complaints/..%2f..%2f.env", "media/evil.html", "media/1-abc.jpg"]) {
       const r = await request(app).get(`/api/files/${k}`);

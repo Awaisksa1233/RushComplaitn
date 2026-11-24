@@ -23,19 +23,20 @@ export const exposeDevOtp = process.env.NODE_ENV === "development" && process.en
 export const ALLOWED_SITES = (process.env.ALLOWED_SITES || "RUSH Al Kharj").split(",").map((s) => s.trim());
 export const CORS_ORIGINS = (process.env.CORS_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean);
 export const WHATSAPP_WEBHOOK_SECRET = process.env.WHATSAPP_WEBHOOK_SECRET || "";
+export const CHATWOOT_WEBHOOK_SECRET = process.env.CHATWOOT_WEBHOOK_SECRET || "";
 
-// 32-byte key for field-level encryption of bank data (hex or base64). Required in production.
+// 32-byte key for field-level encryption of bank data (hex or base64). Required in all non-test environments.
 export function getFieldKey(): Buffer | null {
   const raw = process.env.FIELD_ENCRYPTION_KEY;
   if (!raw) {
-    if (isProd) throw new Error("FIELD_ENCRYPTION_KEY is required in production");
+    if (!isTest) throw new Error("FIELD_ENCRYPTION_KEY is required in non-test environments");
     return null;
   }
   const buf = /^[0-9a-fA-F]{64}$/.test(raw) ? Buffer.from(raw, "hex") : Buffer.from(raw, "base64");
   if (buf.length !== 32) throw new Error("FIELD_ENCRYPTION_KEY must decode to 32 bytes");
   return buf;
 }
-if (isProd) getFieldKey();
+if (!isTest) getFieldKey();
 
 export const RETENTION = {
   otpHours: Number(process.env.RETENTION_OTP_HOURS || 24),

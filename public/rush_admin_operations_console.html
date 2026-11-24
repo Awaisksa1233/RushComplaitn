@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="notranslate" translate="no">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="google" content="notranslate" />
-  <title>RUSH رش واش | Admin & Operations Console</title>
+  <title>RUSH رش واش | Admin &amp; Operations Console</title>
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
     tailwind.config = {
@@ -26,9 +25,9 @@
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { font-family: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif; }
     .rush-stripe {
       background-image: repeating-linear-gradient(
         -45deg,
@@ -40,12 +39,16 @@
     }
     .car-zone { cursor: pointer; transition: all 0.15s ease; }
     .car-zone:hover { filter: brightness(0.92); stroke: #C91E2F; stroke-width: 2; }
+    .car-zone:focus-visible { outline: 2px solid #000000; outline-offset: 2px; stroke: #000000; stroke-width: 2.5; }
     .car-zone.selected { fill: #C91E2F !important; fill-opacity: 0.78 !important; stroke: #881320 !important; stroke-width: 2.5 !important; }
     .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
     .scrollbar-thin::-webkit-scrollbar-thumb { background: #D4D4D4; border-radius: 9999px; }
+    @media (prefers-reduced-motion: reduce) {
+      .car-zone { transition: none; }
+    }
   </style>
 </head>
-<body class="bg-[#F2F2F2] text-black antialiased min-h-screen flex flex-col notranslate" translate="no">
+<body class="bg-[#F2F2F2] text-black antialiased min-h-screen flex flex-col">
 
   <!-- Top Navigation Bar (RUSH Brand Identity) -->
   <header class="bg-black text-white sticky top-0 z-30 border-b border-neutral-800">
@@ -54,7 +57,7 @@
       <!-- Brand -->
       <div class="flex items-center gap-2.5 shrink-0 notranslate" translate="no">
         <div class="w-9 h-9 rounded-lg bg-[#C91E2F] flex items-center justify-center shadow-sm">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-7 h-5">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-7 h-5" aria-hidden="true">
             <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
             <path fill-rule="evenodd" d="M349.6 195.55A10.65 10.65 0 1 1 349.6 216.85A10.65 10.65 0 1 1 349.6 195.55ZM349.6 197.7A8.5 8.5 0 1 0 349.6 214.7A8.5 8.5 0 1 0 349.6 197.7Z"/>
             <path fill-rule="evenodd" d="M345.9 201.05H349.95C352.35 201.05 353.65 202.25 353.65 204.2C353.65 205.55 352.95 206.5 351.65 206.95L354.15 211.2H351.65L349.45 207.35H348.1V211.2H345.9ZM348.1 202.95V205.5H349.7C350.8 205.5 351.4 205.05 351.4 204.2C351.4 203.35 350.8 202.95 349.7 202.95Z"/>
@@ -65,87 +68,117 @@
             <span class="font-extrabold tracking-wider uppercase text-sm italic">RUSH</span>
             <span class="text-xs font-bold text-white/80">رش واش</span>
           </div>
-          <div class="text-[10px] text-neutral-400">Admin &amp; Ops Console</div>
+          <div class="text-xs text-neutral-300">Admin &amp; Ops Console</div>
         </div>
       </div>
 
       <!-- Primary Navigation -->
-      <nav class="flex items-center bg-neutral-900 p-1 rounded-lg border border-neutral-800 text-xs font-semibold overflow-x-auto">
-        <button id="nav-dashboard" type="button" onclick="switchView('dashboard')" class="whitespace-nowrap px-3 py-1.5 rounded-md bg-[#C91E2F] text-white transition flex items-center gap-1.5">
+      <nav aria-label="Primary Navigation" class="flex items-center bg-neutral-900 p-1 rounded-lg border border-neutral-800 text-xs font-semibold overflow-x-auto">
+        <button id="nav-dashboard" type="button" onclick="switchView('dashboard')" class="whitespace-nowrap px-3 py-1.5 rounded-md bg-[#C91E2F] text-white transition motion-reduce:transition-none flex items-center gap-1.5">
           <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
           <span>Dashboard</span>
         </button>
-        <button id="nav-claims" type="button" onclick="switchView('claims')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition flex items-center gap-1.5">
+        <button id="nav-claims" type="button" onclick="switchView('claims')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition motion-reduce:transition-none flex items-center gap-1.5">
           <i data-lucide="inbox" class="w-3.5 h-3.5"></i>
           <span>Claims</span>
         </button>
-        <button id="nav-payouts" type="button" onclick="switchView('payouts')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition flex items-center gap-1.5">
+        <button id="nav-payouts" type="button" onclick="switchView('payouts')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition motion-reduce:transition-none flex items-center gap-1.5">
           <i data-lucide="landmark" class="w-3.5 h-3.5"></i>
           <span>Finance</span>
         </button>
-        <button id="nav-settings" type="button" onclick="switchView('settings')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition flex items-center gap-1.5">
+        <button id="nav-settings" type="button" onclick="switchView('settings')" class="whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition motion-reduce:transition-none flex items-center gap-1.5">
           <i data-lucide="shield" class="w-3.5 h-3.5"></i>
           <span>Staff &amp; RBAC</span>
         </button>
       </nav>
 
       <!-- Logged-in Staff Profile & Logout -->
-      <div id="user-profile-bar" class="flex items-center gap-2 shrink-0">
+      <div id="user-profile-bar" class="flex items-center gap-2 shrink-0 relative">
         <div class="hidden sm:flex items-center gap-2 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1 text-xs">
           <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
-          <span id="user-display-name" class="font-bold text-white">Administrator</span>
-          <span id="user-display-role" class="text-[10px] uppercase font-mono font-bold bg-[#C91E2F] text-white px-1.5 py-0.5 rounded">Owner</span>
+          <span id="user-display-name" class="font-bold text-white" dir="auto">Not signed in</span>
+          <span id="user-display-role" class="text-xs uppercase font-mono font-bold bg-[#C91E2F] text-white px-1.5 py-0.5 rounded">Guest</span>
         </div>
         <div class="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 border border-neutral-700 text-xs font-bold text-white shadow-xs">
           <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>RUSH Al Kharj</span>
+          <span id="header-branch-label">RUSH Al Kharj</span>
         </div>
-        <button type="button" onclick="exportCsv()" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs font-semibold text-white transition" title="Export Claims CSV">
+        <button id="btn-header-csv" type="button" onclick="exportCsv()" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-xs font-semibold text-white transition motion-reduce:transition-none" title="Export Claims CSV">
           <i data-lucide="download" class="w-3.5 h-3.5 text-[#C91E2F]"></i>
           <span class="hidden lg:inline">Export CSV</span>
         </button>
-        <button type="button" onclick="handleLogout()" class="px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 hover:bg-[#C91E2F] hover:border-[#C91E2F] text-xs font-semibold text-neutral-300 hover:text-white transition flex items-center gap-1.5" title="Sign Out">
+        <button type="button" onclick="handleLogout()" class="hidden sm:flex px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 hover:bg-[#C91E2F] hover:border-[#C91E2F] text-xs font-semibold text-neutral-200 hover:text-white transition motion-reduce:transition-none items-center gap-1.5" title="Sign Out">
           <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-          <span class="hidden sm:inline">Logout</span>
+          <span>Logout</span>
+        </button>
+
+        <!-- Mobile Profile & Actions Menu Trigger -->
+        <button id="btn-mobile-menu" type="button" onclick="toggleMobileMenu()" aria-expanded="false" aria-controls="mobile-header-menu" aria-label="Open account and export menu" class="sm:hidden px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 hover:bg-neutral-800 text-white flex items-center gap-1.5 text-xs font-semibold">
+          <i data-lucide="menu" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Header Dropdown -->
+    <div id="mobile-header-menu" class="hidden sm:hidden bg-neutral-950 border-t border-neutral-800 px-4 py-3 space-y-3 text-xs">
+      <div class="flex items-center justify-between gap-2 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+          <span id="mobile-user-name" class="font-bold text-white truncate" dir="auto">Not signed in</span>
+        </div>
+        <span id="mobile-user-role" class="text-xs uppercase font-mono font-bold bg-[#C91E2F] text-white px-2 py-0.5 rounded shrink-0">Guest</span>
+      </div>
+      <div class="flex items-center justify-between text-neutral-300 px-1">
+        <span>Branch Scope</span>
+        <span id="mobile-branch-label" class="font-bold text-white">RUSH Al Kharj</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <button id="btn-mobile-csv" type="button" onclick="exportCsv(); toggleMobileMenu(false);" class="px-3 py-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-white font-semibold flex items-center justify-center gap-1.5">
+          <i data-lucide="download" class="w-3.5 h-3.5 text-[#C91E2F]"></i>
+          <span>Export CSV</span>
+        </button>
+        <button type="button" onclick="handleLogout(); toggleMobileMenu(false);" class="px-3 py-2 rounded-lg bg-neutral-900 hover:bg-[#C91E2F] border border-neutral-700 text-white font-semibold flex items-center justify-center gap-1.5">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          <span>Logout</span>
         </button>
       </div>
     </div>
   </header>
 
   <!-- Sign-In Screen (Shown when not authenticated) -->
-  <div id="login-modal" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
+  <div id="login-modal" role="dialog" aria-modal="true" aria-labelledby="login-modal-title" class="hidden fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
     <div class="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative">
       <div class="h-1.5 w-full rush-stripe absolute top-0 left-0 rounded-t-2xl"></div>
-      
+
       <div class="flex items-center gap-3 mb-6 mt-2">
-        <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-md">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-8 h-6">
+        <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-md notranslate" translate="no">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-8 h-6" aria-hidden="true">
             <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
           </svg>
         </div>
         <div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 notranslate" translate="no">
             <span class="font-extrabold tracking-wider uppercase text-lg italic text-white">RUSH</span>
             <span class="text-sm font-bold text-white/80">رش</span>
           </div>
-          <div class="text-xs text-neutral-400">Operations Console Sign In</div>
+          <div id="login-modal-title" class="text-xs text-neutral-300">Operations Console Sign In</div>
         </div>
       </div>
 
       <form onsubmit="handleLoginSubmit(event)" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-neutral-300 mb-1.5">Email Address</label>
-          <input id="login-email" type="email" required placeholder="name@rush.com.sa" autocomplete="username" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
+          <label for="login-email" class="block text-xs font-semibold text-neutral-200 mb-1.5">Email Address</label>
+          <input id="login-email" type="email" required placeholder="name@rush.com.sa" autocomplete="username" dir="ltr" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-neutral-300 mb-1.5">Password</label>
-          <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••••••" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
+          <label for="login-password" class="block text-xs font-semibold text-neutral-200 mb-1.5">Password</label>
+          <input id="login-password" type="password" required autocomplete="current-password" placeholder="••••••••••••" dir="ltr" class="w-full bg-neutral-950 border border-neutral-700 focus:border-[#C91E2F] rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#C91E2F]" />
         </div>
 
-        <div id="login-error" class="hidden p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs"></div>
+        <div id="login-error" role="alert" class="hidden p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-200 text-xs"></div>
 
-        <button id="btn-login-submit" type="submit" class="w-full mt-2 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-lg transition flex items-center justify-center gap-2">
+        <button id="btn-login-submit" type="submit" class="w-full mt-2 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-lg transition motion-reduce:transition-none flex items-center justify-center gap-2">
           <i data-lucide="lock" class="w-4 h-4"></i>
           <span>Sign In to Console</span>
         </button>
@@ -164,46 +197,46 @@
     <!-- ==================== VIEW 1: EXECUTIVE DASHBOARD ==================== -->
     <section id="view-dashboard" class="space-y-5">
       <!-- KPI Row -->
-      <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
-          <div class="flex items-center justify-between text-xs text-neutral-500 font-semibold">
+          <div class="flex items-center justify-between text-xs text-neutral-600 font-semibold">
             <span>Open Tickets</span>
             <span class="w-2 h-2 rounded-full bg-[#C91E2F]"></span>
           </div>
           <div id="kpi-open" class="text-2xl font-extrabold text-black mt-1.5">0</div>
-          <div id="kpi-open-sub" class="text-[11px] text-neutral-500 mt-1">Across visible branches</div>
+          <div id="kpi-open-sub" class="text-xs text-neutral-600 mt-1">Across visible branches</div>
         </div>
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
-          <div class="flex items-center justify-between text-xs text-neutral-500 font-semibold">
+          <div class="flex items-center justify-between text-xs text-neutral-600 font-semibold">
             <span>SLA Compliance (≤48h)</span>
-            <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-emerald-700"></i>
           </div>
-          <div id="kpi-sla" class="text-2xl font-extrabold text-black mt-1.5">0%</div>
-          <div id="kpi-sla-breach" class="text-[11px] text-[#C91E2F] font-semibold mt-1">0 breached</div>
+          <div id="kpi-sla" class="text-2xl font-extrabold text-black mt-1.5">100%</div>
+          <div id="kpi-sla-breach" class="text-xs text-[#C91E2F] font-semibold mt-1">0 breached</div>
         </div>
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
-          <div class="flex items-center justify-between text-xs text-neutral-500 font-semibold">
-            <span>Owner Approvals (&gt;200 SAR)</span>
-            <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-600"></i>
+          <div class="flex items-center justify-between text-xs text-neutral-600 font-semibold">
+            <span id="kpi-owner-label">Owner Approvals (&gt;200 SAR)</span>
+            <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-amber-700"></i>
           </div>
           <div id="kpi-owner-approvals" class="text-2xl font-extrabold text-black mt-1.5">0</div>
-          <div id="kpi-cap-note" class="text-[11px] text-amber-700 font-semibold mt-1">Cap: SAR 200</div>
+          <div id="kpi-cap-note" class="text-xs text-amber-800 font-semibold mt-1">Cap: SAR 200</div>
         </div>
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
-          <div class="flex items-center justify-between text-xs text-neutral-500 font-semibold">
+          <div class="flex items-center justify-between text-xs text-neutral-600 font-semibold">
             <span>Payouts (SAR)</span>
             <i data-lucide="landmark" class="w-3.5 h-3.5 text-black"></i>
           </div>
           <div id="kpi-payouts" class="text-2xl font-extrabold text-black mt-1.5">SAR 0</div>
-          <div id="kpi-payouts-sub" class="text-[11px] text-neutral-500 mt-1">Pending &amp; Paid</div>
+          <div id="kpi-payouts-sub" class="text-xs text-neutral-600 mt-1">Pending &amp; Paid</div>
         </div>
-        <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs col-span-2 lg:col-span-1">
-          <div class="flex items-center justify-between text-xs text-neutral-500 font-semibold">
+        <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs col-span-2 md:col-span-1">
+          <div class="flex items-center justify-between text-xs text-neutral-600 font-semibold">
             <span>Avg Customer CSAT</span>
-            <i data-lucide="star" class="w-3.5 h-3.5 text-amber-500"></i>
+            <i data-lucide="star" class="w-3.5 h-3.5 text-amber-600"></i>
           </div>
-          <div id="kpi-csat" class="text-2xl font-extrabold text-black mt-1.5">4.7 / 5</div>
-          <div class="text-[11px] text-emerald-700 font-semibold mt-1">Resolved feedback</div>
+          <div id="kpi-csat" class="text-2xl font-extrabold text-black mt-1.5">— / 5</div>
+          <div class="text-xs text-emerald-800 font-semibold mt-1">Resolved feedback</div>
         </div>
       </div>
 
@@ -212,13 +245,13 @@
         <div class="px-4 py-3 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-2 bg-[#FAFAFA]">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-[#C91E2F]"></span>
-            <h2 class="text-sm font-extrabold text-black">Escalations &amp; Priority Actions (SLA &gt; 48h or Payout &gt; Cap)</h2>
+            <h2 id="escalation-heading" class="text-sm font-extrabold text-black">Escalations &amp; Priority Actions (SLA &gt; 48h or Payout &gt; Cap)</h2>
           </div>
           <button type="button" onclick="switchView('claims')" class="text-xs font-bold text-[#C91E2F] hover:underline">Open Full Queue →</button>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-neutral-50 text-neutral-500 text-[11px] uppercase border-b border-neutral-100">
+            <thead class="bg-neutral-50 text-neutral-600 text-xs uppercase border-b border-neutral-100">
               <tr>
                 <th class="px-4 py-2.5 font-bold">Ticket</th>
                 <th class="px-4 py-2.5 font-bold">Branch &amp; Type</th>
@@ -237,17 +270,17 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
           <h3 class="text-sm font-bold text-black">Complaints by Type</h3>
-          <p class="text-xs text-neutral-500 mb-3">Unsatisfied vs. Billing/Refund vs. Damage</p>
+          <p class="text-xs text-neutral-600 mb-3">Unsatisfied vs. Billing/Refund vs. Damage</p>
           <div class="relative h-60"><canvas id="chart-types"></canvas></div>
         </div>
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
           <h3 class="text-sm font-bold text-black">Resolution Status</h3>
-          <p class="text-xs text-neutral-500 mb-3">Approved vs. Refused vs. Pending Review</p>
+          <p class="text-xs text-neutral-600 mb-3">Approved vs. Refused vs. Pending Review</p>
           <div class="relative h-60"><canvas id="chart-resolutions"></canvas></div>
         </div>
         <div class="bg-white rounded-xl border border-neutral-200 p-4 shadow-xs">
           <h3 class="text-sm font-bold text-black">Staff Workload</h3>
-          <p class="text-xs text-neutral-500 mb-3">Active open tickets per team member</p>
+          <p class="text-xs text-neutral-600 mb-3">Active open tickets per team member</p>
           <div class="relative h-60"><canvas id="chart-workload"></canvas></div>
         </div>
       </div>
@@ -257,20 +290,28 @@
     <section id="view-claims" class="hidden space-y-4">
       <!-- Filter Bar -->
       <div class="bg-white rounded-xl border border-neutral-200 p-3 shadow-xs flex flex-wrap items-center gap-2.5">
-        <button id="btn-my-queue" type="button" onclick="toggleMyQueue()" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition border-neutral-300 bg-neutral-50 text-neutral-700 hover:bg-neutral-100">My Queue</button>
-        <button id="btn-overdue" type="button" onclick="toggleOverdueOnly()" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100">&gt;48h Overdue</button>
+        <button id="btn-my-queue" type="button" onclick="toggleMyQueue()" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100">My Queue</button>
+        <button id="btn-overdue" type="button" onclick="toggleOverdueOnly()" class="px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100">&gt;48h Overdue</button>
         <div class="relative flex-1 min-w-[200px]">
-          <i data-lucide="search" class="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-          <input id="search-input" type="text" placeholder="Search ticket (#C-1042), plate, phone, customer..." oninput="handleSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-sm bg-neutral-50 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C91E2F] focus:bg-white" />
+          <label for="search-input" class="sr-only">Search tickets</label>
+          <i data-lucide="search" class="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2"></i>
+          <input id="search-input" type="text" placeholder="Search ticket (#C-1042), plate, phone, customer..." oninput="handleSearch(this.value)" class="w-full pl-9 pr-3 py-1.5 text-sm bg-neutral-50 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#C91E2F] focus:bg-white" />
         </div>
-        <select id="filter-status" onchange="handleStatusFilter(this.value)" class="text-xs sm:text-sm bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1.5">
+        <label for="branch-select" class="sr-only">Filter by branch</label>
+        <select id="branch-select" onchange="handleBranchChange(this.value)" class="text-xs sm:text-sm bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1.5 font-medium text-neutral-800">
+          <option value="all">All Branches</option>
+          <option value="RUSH Al Kharj">RUSH Al Kharj</option>
+        </select>
+        <label for="filter-status" class="sr-only">Filter by status</label>
+        <select id="filter-status" onchange="handleStatusFilter(this.value)" class="text-xs sm:text-sm bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1.5 font-medium text-neutral-800">
           <option value="all">All Statuses</option>
           <option value="Submitted">Submitted</option>
           <option value="Investigating">Investigating</option>
           <option value="Pending Payout">Pending Payout</option>
           <option value="Resolved">Resolved</option>
         </select>
-        <select id="filter-type" onchange="handleTypeFilter(this.value)" class="text-xs sm:text-sm bg-neutral-50 border border-neutral-200 rounded-lg px-2.5 py-1.5">
+        <label for="filter-type" class="sr-only">Filter by type</label>
+        <select id="filter-type" onchange="handleTypeFilter(this.value)" class="text-xs sm:text-sm bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1.5 font-medium text-neutral-800">
           <option value="all">All Types</option>
           <option value="Unsatisfied">Unsatisfied</option>
           <option value="Billing / Refund">Billing / Refund</option>
@@ -280,15 +321,15 @@
 
       <!-- Master-Detail -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        <div class="lg:col-span-4 bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden">
+        <div id="queue-card" class="lg:col-span-4 bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden">
           <div class="px-4 py-2.5 border-b border-neutral-100 flex items-center justify-between bg-[#FAFAFA]">
-            <span class="text-xs font-bold uppercase tracking-wider text-neutral-500">Ticket Queue</span>
-            <span id="queue-count" class="text-xs font-semibold text-neutral-500">0</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-neutral-600">Ticket Queue</span>
+            <span id="queue-count" class="text-xs font-semibold text-neutral-600">0</span>
           </div>
           <div id="ticket-list" class="divide-y divide-neutral-100 max-h-[650px] overflow-y-auto scrollbar-thin"></div>
         </div>
 
-        <div id="detail-panel" class="lg:col-span-8 bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden"></div>
+        <div id="detail-panel" class="lg:col-span-8 bg-white rounded-xl border border-neutral-200 shadow-xs overflow-hidden scroll-mt-16"></div>
       </div>
     </section>
 
@@ -298,7 +339,7 @@
         <div class="p-4 sm:p-5 border-b border-neutral-100 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-base font-extrabold text-black">Finance &amp; Disbursement Ledger</h2>
-            <p class="text-xs text-neutral-500 mt-0.5">Track Damage IBAN Bank Transfers (Pending → Mark Paid with Transfer Ref #), Billing RRN Refunds, and Rewash Vouchers.</p>
+            <p class="text-xs text-neutral-600 mt-0.5">Track Damage IBAN Bank Transfers (Pending → Mark Paid with Transfer Ref #), Billing RRN Refunds, and Rewash Vouchers.</p>
           </div>
           <button type="button" onclick="exportCsv()" class="px-3.5 py-2 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold flex items-center gap-1.5">
             <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Accounting CSV
@@ -306,7 +347,7 @@
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-neutral-50 text-neutral-500 text-[11px] uppercase border-b border-neutral-100">
+            <thead class="bg-neutral-50 text-neutral-600 text-xs uppercase border-b border-neutral-100">
               <tr>
                 <th class="px-4 py-2.5 font-bold">Ticket &amp; Type</th>
                 <th class="px-4 py-2.5 font-bold">Customer &amp; Branch</th>
@@ -330,34 +371,34 @@
           <div class="flex items-center justify-between">
             <div>
               <h2 class="text-sm font-extrabold text-black">Approval Thresholds &amp; SLA Configuration</h2>
-              <p class="text-xs text-neutral-500">Configurable by Business Owner — applies live across all claims.</p>
+              <p class="text-xs text-neutral-600">Configurable by Business Owner — applies live across all claims.</p>
             </div>
-            <span class="px-2 py-0.5 rounded bg-[#FDF2F3] text-[#C91E2F] text-[11px] font-bold">Live Config</span>
+            <span class="px-2 py-0.5 rounded bg-[#FDF2F3] text-[#C91E2F] text-xs font-bold">Live Config</span>
           </div>
           <form onsubmit="saveSystemConfig(event)" class="space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">CSM / Ops Damage Approval Cap (SAR)</label>
+                <label for="cfg-cap" class="block text-xs font-bold text-neutral-700 mb-1">CSM / Ops Damage Approval Cap (SAR)</label>
                 <input id="cfg-cap" type="number" min="0" step="10" value="200" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold" />
-                <p class="text-[11px] text-neutral-500 mt-1">Claims above this require Business Owner approval.</p>
+                <p class="text-xs text-neutral-600 mt-1">Claims above this require Business Owner approval.</p>
               </div>
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">Max Resolution SLA (Hours)</label>
+                <label for="cfg-sla" class="block text-xs font-bold text-neutral-700 mb-1">Max Resolution SLA (Hours)</label>
                 <input id="cfg-sla" type="number" min="4" max="168" value="48" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold" />
-                <p class="text-[11px] text-neutral-500 mt-1">Breached tickets auto-escalate to Owner dashboard.</p>
+                <p class="text-xs text-neutral-600 mt-1">Breached tickets auto-escalate to Owner dashboard.</p>
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">Rush VAT / Tax Number</label>
-                <input id="cfg-vat" type="text" value="310482917400003" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+                <label for="cfg-vat" class="block text-xs font-bold text-neutral-700 mb-1">Rush VAT / Tax Number</label>
+                <input id="cfg-vat" type="text" dir="ltr" value="310482917400003" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
               </div>
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">Rush CR Number</label>
-                <input id="cfg-cr" type="text" value="1010684920" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+                <label for="cfg-cr" class="block text-xs font-bold text-neutral-700 mb-1">Rush CR Number</label>
+                <input id="cfg-cr" type="text" dir="ltr" value="1010684920" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
               </div>
             </div>
-            <button id="btn-save-cfg" type="submit" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">Save Configuration</button>
+            <button id="btn-save-cfg" type="submit" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition motion-reduce:transition-none">Save Configuration</button>
           </form>
         </div>
 
@@ -378,7 +419,7 @@
               <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 font-bold">Hand Off → CSM (≤ Cap) / Owner (&gt; Cap)</span>
             </div>
           </div>
-          <p class="text-[11px] text-neutral-500">Uploading a repair quotation never auto-approves payout; final disbursement is strictly based on verified Tax Invoice &amp; management discretion.</p>
+          <p class="text-xs text-neutral-600">Uploading a repair quotation never auto-approves payout; final disbursement is strictly based on verified Tax Invoice &amp; management discretion.</p>
         </div>
       </div>
 
@@ -387,25 +428,29 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-sm font-extrabold text-black">Staff Directory &amp; Role Management</h2>
-            <p class="text-xs text-neutral-500">Add team members, assign RBAC roles and branch scope, or pause access.</p>
+            <p class="text-xs text-neutral-600">Add team members, assign RBAC roles and branch scope, or pause access.</p>
           </div>
-          <form onsubmit="addStaffMember(event)" class="flex flex-wrap items-center gap-2 text-xs">
+          <form id="form-add-staff-bar" onsubmit="openAddStaffModal(event)" class="flex flex-wrap items-center gap-2 text-xs">
+            <label for="new-staff-name" class="sr-only">Staff full name</label>
             <input id="new-staff-name" type="text" required placeholder="Full name" class="rounded-lg border border-neutral-300 px-2.5 py-1.5" />
+            <label for="new-staff-role" class="sr-only">Staff role</label>
             <select id="new-staff-role" class="rounded-lg border border-neutral-300 px-2.5 py-1.5 bg-white">
               <option value="Admin">Admin</option>
               <option value="Ops Manager">Ops Manager</option>
               <option value="CSM">CSM</option>
               <option value="Business Owner">Business Owner</option>
             </select>
+            <label for="new-staff-branch" class="sr-only">Staff branch scope</label>
             <select id="new-staff-branch" class="rounded-lg border border-neutral-300 px-2.5 py-1.5 bg-white">
               <option value="RUSH Al Kharj">RUSH Al Kharj</option>
+              <option value="All Branches">All Branches</option>
             </select>
-            <button type="submit" class="px-3 py-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white font-bold">+ Add Staff</button>
+            <button id="btn-open-add-staff" type="submit" class="px-3 py-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white font-bold">+ Add Staff</button>
           </form>
         </div>
         <div class="overflow-x-auto border border-neutral-200 rounded-xl">
           <table class="w-full text-left text-xs sm:text-sm">
-            <thead class="bg-neutral-50 text-neutral-500 text-[11px] uppercase border-b border-neutral-100">
+            <thead class="bg-neutral-50 text-neutral-600 text-xs uppercase border-b border-neutral-100">
               <tr>
                 <th class="px-4 py-2.5 font-bold">Staff Member</th>
                 <th class="px-4 py-2.5 font-bold">Role</th>
@@ -421,37 +466,177 @@
     </section>
   </main>
 
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- Add Staff Modal -->
+  <div id="modal-add-staff" role="dialog" aria-modal="true" aria-labelledby="modal-add-staff-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-add-staff-title" class="text-base font-extrabold text-black">Add Staff Member</h3>
+        <button type="button" onclick="closeModal('modal-add-staff')" aria-label="Close modal" class="p-1 rounded-lg text-neutral-500 hover:text-black hover:bg-neutral-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form onsubmit="submitAddStaffModal(event)" class="space-y-3 text-xs">
+        <div>
+          <label for="modal-staff-name" class="block font-bold text-neutral-700 mb-1">Full Name</label>
+          <input id="modal-staff-name" type="text" required minlength="2" maxlength="80" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label for="modal-staff-role" class="block font-bold text-neutral-700 mb-1">Role</label>
+            <select id="modal-staff-role" class="w-full rounded-lg border border-neutral-300 px-2.5 py-2 text-xs font-semibold bg-white">
+              <option value="Admin">Admin</option>
+              <option value="Ops Manager">Ops Manager</option>
+              <option value="CSM">CSM</option>
+              <option value="Business Owner">Business Owner</option>
+            </select>
+          </div>
+          <div>
+            <label for="modal-staff-branch" class="block font-bold text-neutral-700 mb-1">Branch Scope</label>
+            <select id="modal-staff-branch" class="w-full rounded-lg border border-neutral-300 px-2.5 py-2 text-xs font-semibold bg-white">
+              <option value="RUSH Al Kharj">RUSH Al Kharj</option>
+              <option value="All Branches">All Branches</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="modal-staff-email" class="block font-bold text-neutral-700 mb-1">Work Email</label>
+          <input id="modal-staff-email" type="email" required dir="ltr" placeholder="name@rush.com.sa" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" />
+        </div>
+        <div>
+          <label for="modal-staff-password" class="block font-bold text-neutral-700 mb-1">Initial Password</label>
+          <input id="modal-staff-password" type="password" required minlength="12" maxlength="128" dir="ltr" placeholder="Min 12 chars (upper, lower, digit, symbol)" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" />
+          <p class="text-xs text-neutral-600 mt-1">Share securely; staff member should change it on first login.</p>
+        </div>
+        <div id="modal-staff-err" role="alert" class="hidden p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold"></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-add-staff')" class="px-3.5 py-2 rounded-lg border border-neutral-300 text-neutral-700 font-bold hover:bg-neutral-50">Cancel</button>
+          <button id="btn-submit-add-staff" type="submit" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold">Create Staff Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Mark Bank Transfer Paid Modal -->
+  <div id="modal-mark-paid" role="dialog" aria-modal="true" aria-labelledby="modal-mark-paid-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-mark-paid-title" class="text-base font-extrabold text-black">Confirm Bank Transfer Paid</h3>
+        <button type="button" onclick="closeModal('modal-mark-paid')" aria-label="Close modal" class="p-1 rounded-lg text-neutral-500 hover:text-black hover:bg-neutral-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="modal-mark-paid-summary" class="p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-xs space-y-1"></div>
+      <form onsubmit="submitMarkPaidModal(event)" class="space-y-3 text-xs">
+        <input id="modal-paid-ticket-id" type="hidden" />
+        <div>
+          <label for="modal-paid-ref" class="block font-bold text-neutral-700 mb-1">Bank Transfer Reference #</label>
+          <input id="modal-paid-ref" type="text" required pattern="[A-Za-z0-9\-_]{3,40}" dir="ltr" placeholder="e.g. TRF-994012" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-mono" />
+          <p class="text-xs text-neutral-600 mt-1">3–40 alphanumeric characters, hyphens, or underscores. Customer will be notified via WhatsApp.</p>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-mark-paid')" class="px-3.5 py-2 rounded-lg border border-neutral-300 text-neutral-700 font-bold hover:bg-neutral-50">Cancel</button>
+          <button id="btn-submit-mark-paid" type="submit" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold">Confirm &amp; Mark Paid</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Refuse Claim Confirmation Modal -->
+  <div id="modal-refuse" role="dialog" aria-modal="true" aria-labelledby="modal-refuse-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-refuse-title" class="text-base font-extrabold text-black">Confirm Claim Refusal</h3>
+        <button type="button" onclick="closeModal('modal-refuse')" aria-label="Close modal" class="p-1 rounded-lg text-neutral-500 hover:text-black hover:bg-neutral-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p id="modal-refuse-desc" class="text-xs text-neutral-700"></p>
+      <form onsubmit="submitRefuseModal(event)" class="space-y-3 text-xs">
+        <input id="modal-refuse-ticket-id" type="hidden" />
+        <div>
+          <label for="modal-refuse-note" class="block font-bold text-neutral-700 mb-1">Customer-Facing Refusal Reason (min 5 characters)</label>
+          <textarea id="modal-refuse-note" required minlength="5" maxlength="1000" rows="3" dir="auto" placeholder="Explain clearly why this claim is declined..." class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modal-refuse')" class="px-3.5 py-2 rounded-lg border border-neutral-300 text-neutral-700 font-bold hover:bg-neutral-50">Cancel</button>
+          <button id="btn-submit-refuse" type="submit" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold">Refuse &amp; Close Claim</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Pause / Resume Staff Confirmation Modal -->
+  <div id="modal-staff-toggle" role="dialog" aria-modal="true" aria-labelledby="modal-staff-toggle-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-neutral-200 max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-staff-toggle-title" class="text-base font-extrabold text-black">Confirm Access Change</h3>
+        <button type="button" onclick="closeModal('modal-staff-toggle')" aria-label="Close modal" class="p-1 rounded-lg text-neutral-500 hover:text-black hover:bg-neutral-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p id="modal-staff-toggle-desc" class="text-xs text-neutral-700 leading-relaxed"></p>
+      <div class="flex justify-end gap-2 pt-1 text-xs">
+        <input id="modal-staff-toggle-id" type="hidden" />
+        <button type="button" onclick="closeModal('modal-staff-toggle')" class="px-3.5 py-2 rounded-lg border border-neutral-300 text-neutral-700 font-bold hover:bg-neutral-50">Cancel</button>
+        <button id="btn-confirm-staff-toggle" type="button" onclick="confirmStaffToggle()" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-neutral-700 flex items-center gap-2">
+  <div id="toast" role="status" aria-live="polite" class="hidden fixed bottom-5 right-5 z-50 bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-neutral-700 flex items-center gap-2 max-w-sm">
     <i data-lucide="check-circle" class="w-4 h-4 text-[#C91E2F] shrink-0"></i>
-    <span id="toast-msg">Saved</span>
+    <span id="toast-msg" dir="auto">Saved</span>
   </div>
 
   <script>
-    // ---- Safety helpers ----
-    function esc(v) { return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
-    function escDeep(v, skip) {
-      if (typeof v === "string") return esc(v);
-      if (Array.isArray(v)) return v.map(x => escDeep(x, skip));
-      if (v && typeof v === "object" && !(v instanceof Date)) { const o = {}; for (const k in v) o[k] = (skip && skip.includes(k)) ? v[k] : escDeep(v[k], skip); return o; }
-      return v;
+    // ---- Safety helpers (render-time escaping) ----
+    function esc(v) {
+      return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     }
-    // Surface server-side rejections (role/state/cap rules are enforced server-side) and resync the optimistic UI.
+    function safeUrl(u) {
+      if (!u) return "";
+      const s = String(u).trim();
+      if (s.startsWith("//") || s.startsWith("/\\")) return "";
+      if (s.startsWith("/") || /^https?:\/\//i.test(s)) return esc(s);
+      return "";
+    }
+    function formatApiError(errBody, fallback) {
+      if (!errBody) return fallback;
+      if (typeof errBody.error === "string") return errBody.error;
+      if (errBody.error && typeof errBody.error === "object") {
+        const fe = errBody.error.fieldErrors || {};
+        const formErrs = errBody.error.formErrors || [];
+        const parts = [...formErrs];
+        for (const k in fe) {
+          if (Array.isArray(fe[k]) && fe[k].length) parts.push(`${k}: ${fe[k].join(", ")}`);
+        }
+        if (parts.length) return parts.join(" · ");
+      }
+      return fallback;
+    }
+
+    // Surface server-side rejections and handle 401
     const _origFetch = window.fetch.bind(window);
     window.fetch = async (url, opts) => {
       const res = await _origFetch(url, opts);
       try {
         const isAdminApi = typeof url === "string" && url.startsWith("/api/admin/") && !url.startsWith("/api/admin/auth/login");
         const method = ((opts && opts.method) || "GET").toUpperCase();
-        if (isAdminApi && res.status === 401) { setTimeout(() => handleLogout(), 0); }
-        else if (isAdminApi && !res.ok && method !== "GET") {
-          const msg = await res.clone().json().then(j => (typeof j.error === "string" ? j.error : "Action rejected by server")).catch(() => "Action rejected by server");
-          setTimeout(() => { showToast(msg); loadLiveAdminData(); }, 0);
+        if (isAdminApi && res.status === 401) {
+          setTimeout(() => handleLogout(), 0);
+        } else if (isAdminApi && !res.ok && method !== "GET") {
+          const body = await res.clone().json().catch(() => null);
+          const msg = formatApiError(body, "Action rejected by server");
+          setTimeout(() => { showToast(msg); }, 0);
         }
       } catch (e) {}
       return res;
     };
-    // ---- System Config (Configurable by Business Owner) ----
+
+    // ---- System Config ----
     let sysConfig = {
       damageApprovalCapSar: 200,
       maxSlaHours: 48,
@@ -459,17 +644,15 @@
       crNumber: "1010684920"
     };
 
-    // ---- Staff Directory ----
     let staffUsers = [];
-
-    // ---- Grounded Multi-Branch Claims Dataset ----
     let claims = [];
+    let adminToken = sessionStorage.getItem("rush_staff_token") || null;
 
     let uiState = {
       view: "dashboard",
-      role: "Business Owner",
+      role: "Guest",
       opsBranch: "RUSH Al Kharj",
-      branchFilter: "RUSH Al Kharj",
+      branchFilter: "all",
       statusFilter: "all",
       typeFilter: "all",
       onlyMyQueue: false,
@@ -477,17 +660,114 @@
       search: "",
       selectedId: null,
       detailTab: "overview",
-      currentUser: null
+      currentUser: null,
+      loading: false
     };
 
     let charts = { types: null, resolutions: null, workload: null };
+    let lastFocusedEl = null;
 
     function showToast(msg) {
       const t = document.getElementById("toast");
       document.getElementById("toast-msg").textContent = msg;
       t.classList.remove("hidden");
       clearTimeout(window._tt);
-      window._tt = setTimeout(() => t.classList.add("hidden"), 3000);
+      window._tt = setTimeout(() => t.classList.add("hidden"), 3500);
+    }
+
+    function prefersReducedMotion() {
+      return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
+
+    // ---- Modal helpers ----
+    function openModal(id) {
+      lastFocusedEl = document.activeElement;
+      const m = document.getElementById(id);
+      if (!m) return;
+      m.classList.remove("hidden");
+      lucide.createIcons();
+      const firstInput = m.querySelector("input:not([type='hidden']), textarea, select, button");
+      if (firstInput) setTimeout(() => firstInput.focus(), 10);
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.add("hidden");
+      if (lastFocusedEl && typeof lastFocusedEl.focus === "function") {
+        lastFocusedEl.focus();
+        lastFocusedEl = null;
+      }
+    }
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        ["modal-add-staff", "modal-mark-paid", "modal-refuse", "modal-staff-toggle"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && !el.classList.contains("hidden")) closeModal(id);
+        });
+      }
+    });
+
+    function toggleMobileMenu(force) {
+      const menu = document.getElementById("mobile-header-menu");
+      const btn = document.getElementById("btn-mobile-menu");
+      if (!menu || !btn) return;
+      const open = typeof force === "boolean" ? force : menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", !open);
+      btn.setAttribute("aria-expanded", String(open));
+    }
+
+    // ---- Role / Branch helpers ----
+    function isOwnerRole() { return uiState.role === "Business Owner"; }
+    function isFinanceRole() { return uiState.role === "Business Owner" || uiState.role === "Admin"; }
+    function roleToEnum(role) {
+      return { "Business Owner": "BUSINESS_OWNER", "Admin": "ADMIN", "Ops Manager": "OPS_MANAGER", "CSM": "CSM" }[role] || "CSM";
+    }
+    function enumToRole(en) {
+      return { BUSINESS_OWNER: "Business Owner", ADMIN: "Admin", OPS_MANAGER: "Ops Manager", CSM: "CSM" }[en] || en;
+    }
+
+    function syncRolePermissionsUI() {
+      const navSettings = document.getElementById("nav-settings");
+      const navPayouts = document.getElementById("nav-payouts");
+      const csvBtn = document.getElementById("btn-header-csv");
+      const mobCsvBtn = document.getElementById("btn-mobile-csv");
+      const ownerOnly = isOwnerRole();
+      const financeAllowed = isFinanceRole();
+
+      if (navSettings) navSettings.classList.toggle("hidden", !ownerOnly);
+      if (navPayouts) navPayouts.classList.toggle("hidden", !financeAllowed);
+      if (csvBtn) csvBtn.classList.toggle("hidden", !financeAllowed);
+      if (mobCsvBtn) mobCsvBtn.classList.toggle("hidden", !financeAllowed);
+
+      if (uiState.view === "settings" && !ownerOnly) uiState.view = "dashboard";
+      if (uiState.view === "payouts" && !financeAllowed) uiState.view = "dashboard";
+
+      const bSel = document.getElementById("branch-select");
+      if (bSel) {
+        if (uiState.role === "Ops Manager") {
+          uiState.branchFilter = uiState.opsBranch;
+          bSel.value = uiState.opsBranch;
+          bSel.disabled = true;
+        } else {
+          bSel.disabled = false;
+        }
+      }
+      const hBranch = document.getElementById("header-branch-label");
+      const mBranch = document.getElementById("mobile-branch-label");
+      const branchTxt = uiState.role === "Ops Manager" ? uiState.opsBranch : (uiState.branchFilter === "all" ? "All Branches" : uiState.branchFilter);
+      if (hBranch) hBranch.textContent = branchTxt;
+      if (mBranch) mBranch.textContent = branchTxt;
+    }
+
+    function populateBranchOptions() {
+      const bSel = document.getElementById("branch-select");
+      if (!bSel) return;
+      const set = new Set(["RUSH Al Kharj"]);
+      claims.forEach(c => { if (c.branch) set.add(c.branch); });
+      staffUsers.forEach(u => { if (u.branch && u.branch !== "All Branches") set.add(u.branch); });
+      const prev = uiState.branchFilter;
+      bSel.innerHTML = `<option value="all">All Branches</option>` +
+        Array.from(set).map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join("");
+      bSel.value = set.has(prev) || prev === "all" ? prev : "all";
     }
 
     function getVisibleClaims() {
@@ -503,6 +783,11 @@
       if (exact) return exact.name;
       const fallback = staffUsers.find(u => u.role === role);
       return fallback ? fallback.name : role;
+    }
+
+    function getTicketAssigneeName(c) {
+      if (c.assignedStaffName && c.assignedStaffName !== "Unassigned") return c.assignedStaffName;
+      return getStaffNameByRole(c.assignedRole, c.branch);
     }
 
     function getQueueClaims() {
@@ -533,76 +818,98 @@
       return c.status !== "Resolved" && c.ageHours > sysConfig.maxSlaHours;
     }
 
+    function payoutBadgeClass(status) {
+      if (status === "Declined") return "bg-rose-100 text-rose-800";
+      if (status.includes("Paid") || status === "Rewash Issued") return "bg-emerald-100 text-emerald-800";
+      return "bg-amber-100 text-amber-900";
+    }
+
     // ---- Top Nav & RBAC Banner ----
     function switchView(v) {
+      if (v === "settings" && !isOwnerRole()) {
+        showToast("Staff & RBAC settings are restricted to Business Owner");
+        return;
+      }
+      if (v === "payouts" && !isFinanceRole()) {
+        showToast("Finance ledger is restricted to Business Owner and Admin");
+        return;
+      }
       uiState.view = v;
       ["dashboard", "claims", "payouts", "settings"].forEach(name => {
         document.getElementById(`view-${name}`).classList.toggle("hidden", name !== v);
         const btn = document.getElementById(`nav-${name}`);
-        btn.className = name === v
-          ? "whitespace-nowrap px-3 py-1.5 rounded-md bg-[#C91E2F] text-white transition flex items-center gap-1.5"
-          : "whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition flex items-center gap-1.5";
+        if (btn) {
+          btn.className = name === v
+            ? "whitespace-nowrap px-3 py-1.5 rounded-md bg-[#C91E2F] text-white transition motion-reduce:transition-none flex items-center gap-1.5"
+            : "whitespace-nowrap px-3 py-1.5 rounded-md text-neutral-300 hover:text-white transition motion-reduce:transition-none flex items-center gap-1.5";
+        }
       });
-      if (v === "dashboard") renderDashboard();
-      if (v === "claims") { renderTicketList(); renderDetail(); }
-      if (v === "payouts") renderFinance();
-      if (v === "settings") renderSettings();
-      lucide.createIcons();
+      renderAllActive();
     }
 
     async function handleRoleChange(role) {
+      if (adminToken) {
+        showToast("Role switching is locked while signed in with a staff account");
+        return;
+      }
       uiState.role = role;
       const bSel = document.getElementById("branch-select");
       if (role === "Ops Manager") {
         uiState.branchFilter = uiState.opsBranch;
-        bSel.value = uiState.opsBranch;
-        bSel.disabled = true;
+        if (bSel) { bSel.value = uiState.opsBranch; bSel.disabled = true; }
       } else {
-        bSel.disabled = false;
+        if (bSel) { bSel.disabled = false; bSel.value = "all"; }
         uiState.branchFilter = "all";
-        bSel.value = "all";
       }
+      syncRolePermissionsUI();
       renderRbacBanner();
       renderAllActive();
       showToast(`Switched to ${role}`);
-      await loadLiveAdminData();
     }
 
     function handleBranchChange(b) {
       uiState.branchFilter = b;
+      syncRolePermissionsUI();
       renderRbacBanner();
       renderAllActive();
     }
 
     function renderRbacBanner() {
       const desc = {
-        "Business Owner": `Full oversight of RUSH Al Kharj · Approves Damage payouts > SAR ${sysConfig.damageApprovalCapSar} & SLA escalations (> ${sysConfig.maxSlaHours}h).`,
-        "Admin": "RUSH Al Kharj · Handles Unsatisfied (Rewash QR) & Billing / Refund (RRN + Unlisted Bank SMS).",
-        "Ops Manager": `RUSH Al Kharj · Handles Damage Stage 1 inspection before handing off to CSM.`,
-        "CSM": `RUSH Al Kharj · Handles Damage Stage 2 settlement (can approve up to SAR ${sysConfig.damageApprovalCapSar}; > SAR ${sysConfig.damageApprovalCapSar} escalates to Owner).`
+        "Business Owner": `Full oversight · Approves Damage payouts > SAR ${sysConfig.damageApprovalCapSar} & SLA escalations (> ${sysConfig.maxSlaHours}h).`,
+        "Admin": "Handles Unsatisfied (Rewash QR) & Billing / Refund (RRN) & Finance disbursements.",
+        "Ops Manager": `${uiState.opsBranch} · Handles Damage Stage 1 inspection before handing off to CSM.`,
+        "CSM": `Handles Damage Stage 2 settlement (can approve up to SAR ${sysConfig.damageApprovalCapSar}; > SAR ${sysConfig.damageApprovalCapSar} escalates to Owner).`
       };
       const vis = getVisibleClaims();
       const myCount = uiState.role === "Business Owner" ? vis.length : vis.filter(c => c.assignedRole === uiState.role).length;
-      const activeName = getStaffNameByRole(uiState.role, uiState.opsBranch);
+      const activeName = uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch);
       const overdueCount = vis.filter(isSlaBreached).length;
       document.getElementById("rbac-banner").innerHTML = `
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="px-2 py-0.5 rounded bg-[#C91E2F] text-white font-bold">${activeName}</span>
-          <span class="text-neutral-300">${desc[uiState.role]}</span>
+          <span class="px-2 py-0.5 rounded bg-[#C91E2F] text-white font-bold" dir="auto">${esc(activeName)}</span>
+          <span class="text-neutral-200">${esc(desc[uiState.role] || "")}</span>
         </div>
         <div class="flex items-center gap-3">
-          ${overdueCount ? `<span class="px-2 py-0.5 rounded bg-rose-600 text-white font-bold animate-pulse">${overdueCount} Overdue (&gt;${sysConfig.maxSlaHours}h)</span>` : ""}
-          <span class="text-neutral-300 font-semibold">${myCount} ticket${myCount === 1 ? "" : "s"} in scope</span>
+          ${overdueCount ? `<span class="px-2 py-0.5 rounded bg-rose-600 text-white font-bold motion-safe:animate-pulse">${overdueCount} Overdue (&gt;${sysConfig.maxSlaHours}h)</span>` : ""}
+          <span class="text-neutral-200 font-semibold">${myCount} ticket${myCount === 1 ? "" : "s"} in scope</span>
         </div>
       `;
     }
 
     // ---- VIEW 1: DASHBOARD ----
     function renderDashboard() {
+      if (uiState.loading) {
+        document.getElementById("escalation-tbody").innerHTML = Array.from({ length: 3 }).map(() => `
+          <tr><td colspan="6" class="px-4 py-3"><div class="h-5 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div></td></tr>
+        `).join("");
+        return;
+      }
+
       const vis = getVisibleClaims();
       const open = vis.filter(c => c.status !== "Resolved");
       const breached = open.filter(isSlaBreached);
-      const slaRate = vis.length ? Math.round(((vis.length - breached.length) / vis.length) * 100) : 100;
+      const slaRate = open.length ? Math.round(((open.length - breached.length) / open.length) * 100) : 100;
       const needOwner = vis.filter(c => requiresOwnerApproval(c) && !c.damageFlow.quotationApproved && c.status !== "Resolved");
       const totalSar = vis.reduce((s, c) => s + (Number(c.approvedSar) || 0), 0);
       const rated = vis.filter(c => c.csat > 0);
@@ -610,30 +917,37 @@
 
       document.getElementById("kpi-open").textContent = open.length;
       document.getElementById("kpi-sla").textContent = `${slaRate}%`;
-      document.getElementById("kpi-sla-breach").textContent = `${breached.length} breached (> ${sysConfig.maxSlaHours}h)`;
+      document.getElementById("kpi-sla-breach").textContent = open.length
+        ? `${breached.length} of ${open.length} open breached (> ${sysConfig.maxSlaHours}h)`
+        : `0 open tickets`;
+      document.getElementById("kpi-owner-label").textContent = `Owner Approvals (>${sysConfig.damageApprovalCapSar} SAR)`;
       document.getElementById("kpi-owner-approvals").textContent = needOwner.length;
       document.getElementById("kpi-cap-note").textContent = `Cap: SAR ${sysConfig.damageApprovalCapSar}`;
       document.getElementById("kpi-payouts").textContent = `SAR ${totalSar.toLocaleString()}`;
       document.getElementById("kpi-csat").textContent = `${avgCsat} / 5`;
+      document.getElementById("escalation-heading").textContent = `Escalations & Priority Actions (SLA > ${sysConfig.maxSlaHours}h or Payout > Cap)`;
 
       const escalations = vis.filter(c => isSlaBreached(c) || (requiresOwnerApproval(c) && !c.damageFlow.quotationApproved) || c.payoutStatus === "Pending Bank Transfer");
       const tbody = document.getElementById("escalation-tbody");
       if (!escalations.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-neutral-500">No SLA breaches, cap escalations, or pending bank transfers right now.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-xs text-neutral-600">No SLA breaches, cap escalations, or pending bank transfers right now.</td></tr>`;
       } else {
         tbody.innerHTML = escalations.map(c => {
           const alerts = [];
-          if (isSlaBreached(c)) alerts.push(`<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-[10px]">SLA Breach (${c.ageHours}h)</span>`);
-          if (requiresOwnerApproval(c) && !c.damageFlow.quotationApproved) alerts.push(`<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-[10px]">Owner Sign-Off (&gt;SAR ${sysConfig.damageApprovalCapSar})</span>`);
-          if (c.payoutStatus === "Pending Bank Transfer") alerts.push(`<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">Ready for Bank Transfer</span>`);
+          if (isSlaBreached(c)) alerts.push(`<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold text-xs">SLA Breach (${c.ageHours}h)</span>`);
+          if (requiresOwnerApproval(c) && !c.damageFlow.quotationApproved) alerts.push(`<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-xs">Owner Sign-Off (&gt;SAR ${sysConfig.damageApprovalCapSar})</span>`);
+          if (c.payoutStatus === "Pending Bank Transfer") alerts.push(`<span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-xs">Ready for Bank Transfer</span>`);
           return `
             <tr class="hover:bg-neutral-50">
-              <td class="px-4 py-3 font-mono font-bold text-black">${c.id}</td>
-              <td class="px-4 py-3"><div class="font-semibold text-black">${c.branch}</div><div class="text-xs text-neutral-500">${c.type} · ${c.customer.name}</div></td>
-              <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-neutral-100 text-black font-bold text-xs">${getStaffNameByRole(c.assignedRole, c.branch)}</span></td>
-              <td class="px-4 py-3 flex flex-wrap gap-1">${alerts.join("")}</td>
-              <td class="px-4 py-3 font-bold">SAR ${c.quotedSar || c.approvedSar || 0}</td>
-              <td class="px-4 py-3 text-right"><button type="button" onclick="openTicket('${c.id}')" class="px-3 py-1 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold transition">Review</button></td>
+              <td class="px-4 py-3 font-mono font-bold text-black notranslate" translate="no" dir="ltr">${esc(c.id)}</td>
+              <td class="px-4 py-3">
+                <div class="font-semibold text-black" dir="auto">${esc(c.branch)}</div>
+                <div class="text-xs text-neutral-600" dir="auto">${esc(c.type)} · ${esc(c.customer.name)}</div>
+              </td>
+              <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-neutral-100 text-black font-bold text-xs" dir="auto">${esc(getTicketAssigneeName(c))}</span></td>
+              <td class="px-4 py-3"><div class="flex flex-wrap gap-1">${alerts.join("")}</div></td>
+              <td class="px-4 py-3 font-bold" dir="ltr">SAR ${Number(c.quotedSar || c.approvedSar || 0).toLocaleString()}</td>
+              <td class="px-4 py-3 text-right"><button type="button" onclick="openTicket('${esc(c.id)}')" class="px-3 py-1 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold transition motion-reduce:transition-none">Review</button></td>
             </tr>
           `;
         }).join("");
@@ -666,13 +980,13 @@
         data: {
           labels: ["Approved", "Refused", "Pending"],
           datasets: [{
-            label: "Al Kharj Tickets",
+            label: "Tickets",
             data: [
               vis.filter(c => c.resolutionStatus === "Approved").length,
               vis.filter(c => c.resolutionStatus === "Refused").length,
               vis.filter(c => c.resolutionStatus === "Pending" || !c.resolutionStatus).length
             ],
-            backgroundColor: ["#10B981", "#E11D48", "#F59E0B"],
+            backgroundColor: ["#10B981", "#C91E2F", "#F59E0B"],
             borderRadius: 6
           }]
         },
@@ -683,7 +997,7 @@
       charts.workload = new Chart(document.getElementById("chart-workload"), {
         type: "bar",
         data: {
-          labels: roles.map(r => getStaffNameByRole(r, "RUSH Al Kharj")),
+          labels: roles.map(r => getStaffNameByRole(r, uiState.opsBranch)),
           datasets: [{
             label: "Open Tickets",
             data: roles.map(r => vis.filter(c => c.assignedRole === r && c.status !== "Resolved").length),
@@ -699,31 +1013,37 @@
     function openTicket(id) {
       uiState.selectedId = id;
       switchView("claims");
+      scrollToDetailIfMobile();
+    }
+
+    function scrollToDetailIfMobile() {
+      if (window.innerWidth < 1024) {
+        const dp = document.getElementById("detail-panel");
+        if (dp) {
+          setTimeout(() => dp.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" }), 50);
+        }
+      }
+    }
+
+    function scrollToQueue() {
+      const qc = document.getElementById("queue-card");
+      if (qc) qc.scrollIntoView({ behavior: prefersReducedMotion() ? "auto" : "smooth", block: "start" });
     }
 
     function toggleOverdueOnly() {
       uiState.overdueOnly = !uiState.overdueOnly;
       document.getElementById("btn-overdue").className = uiState.overdueOnly
-        ? "px-3 py-1.5 rounded-lg border text-xs font-bold transition border-[#C91E2F] bg-[#C91E2F] text-white"
-        : "px-3 py-1.5 rounded-lg border text-xs font-bold transition border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100";
+        ? "px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-[#C91E2F] bg-[#C91E2F] text-white"
+        : "px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100";
       renderTicketList();
       renderDetail();
-    }
-
-    function sendOverdueNudge(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const assigneeName = getStaffNameByRole(c.assignedRole, c.branch);
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "Internal", time: "Just now", text: `SLA escalation reminder sent to ${assigneeName} (Ticket ${id} is ${c.ageHours}h old, exceeding ${sysConfig.maxSlaHours}h limit).` });
-      renderDetail();
-      showToast(`Sent >${sysConfig.maxSlaHours}h overdue reminder to ${assigneeName}`);
     }
 
     function toggleMyQueue() {
       uiState.onlyMyQueue = !uiState.onlyMyQueue;
       document.getElementById("btn-my-queue").className = uiState.onlyMyQueue
-        ? "px-3 py-1.5 rounded-lg border text-xs font-bold transition border-[#C91E2F] bg-[#C91E2F] text-white"
-        : "px-3 py-1.5 rounded-lg border text-xs font-bold transition border-neutral-300 bg-neutral-50 text-neutral-700 hover:bg-neutral-100";
+        ? "px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-[#C91E2F] bg-[#C91E2F] text-white"
+        : "px-3 py-1.5 rounded-lg border text-xs font-bold transition motion-reduce:transition-none border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100";
       renderTicketList();
       renderDetail();
     }
@@ -733,89 +1053,158 @@
     function handleTypeFilter(v) { uiState.typeFilter = v; renderTicketList(); renderDetail(); }
 
     function renderTicketList() {
+      const el = document.getElementById("ticket-list");
+      if (uiState.loading) {
+        el.innerHTML = Array.from({ length: 4 }).map(() => `
+          <div class="p-3.5 space-y-2">
+            <div class="h-4 w-1/3 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div>
+            <div class="h-4 w-3/4 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div>
+          </div>
+        `).join("");
+        return;
+      }
+
       const list = getQueueClaims();
       document.getElementById("queue-count").textContent = `${list.length} ticket${list.length === 1 ? "" : "s"}`;
-      const el = document.getElementById("ticket-list");
       if (!list.length) {
-        el.innerHTML = `<div class="p-8 text-center text-xs text-neutral-500">No tickets match your current role &amp; filters.</div>`;
+        el.innerHTML = `<div class="p-8 text-center text-xs text-neutral-600">No tickets match your current role &amp; filters.</div>`;
         return;
       }
       el.innerHTML = list.map(c => {
         const active = c.id === uiState.selectedId;
         const breached = isSlaBreached(c);
         return `
-          <button type="button" onclick="selectTicket('${c.id}')" class="w-full text-left p-3.5 transition hover:bg-neutral-50 ${active ? "bg-[#FDF2F3] border-l-4 border-l-[#C91E2F]" : breached ? "bg-rose-50/40 border-l-4 border-l-rose-500" : "border-l-4 border-l-transparent"}">
+          <button type="button" onclick="selectTicket('${esc(c.id)}')" class="w-full text-left p-3.5 transition motion-reduce:transition-none hover:bg-neutral-50 ${active ? "bg-[#FDF2F3] border-l-4 border-l-[#C91E2F]" : breached ? "bg-rose-50/40 border-l-4 border-l-rose-500" : "border-l-4 border-l-transparent"}">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-1.5">
-                <span class="font-mono text-xs font-bold bg-black text-white px-1.5 py-0.5 rounded">${c.id}</span>
-                <span class="text-[11px] font-semibold text-neutral-500">${c.branch.replace("RUSH ", "")}</span>
+                <span class="font-mono text-xs font-bold bg-black text-white px-1.5 py-0.5 rounded notranslate" translate="no" dir="ltr">${esc(c.id)}</span>
+                <span class="text-xs font-semibold text-neutral-600" dir="auto">${esc(c.branch.replace("RUSH ", ""))}</span>
               </div>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.status === "Resolved" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-neutral-100 text-neutral-800 border border-neutral-200"}">${c.status}</span>
+              <span class="text-xs font-bold px-2 py-0.5 rounded-full ${c.status === "Resolved" ? "bg-emerald-50 text-emerald-800 border border-emerald-200" : "bg-neutral-100 text-neutral-800 border border-neutral-200"}">${esc(c.status)}</span>
             </div>
-            <div class="text-sm font-bold text-black mt-1.5 line-clamp-1">${c.title}</div>
-            <div class="flex items-center justify-between text-xs text-neutral-500 mt-1">
-              <span class="truncate">${c.type} · ${c.customer.name}</span>
-              <span class="shrink-0 px-1.5 py-0.5 rounded bg-neutral-100 text-black font-bold text-[10px]">${getStaffNameByRole(c.assignedRole, c.branch)}</span>
+            <div class="text-sm font-bold text-black mt-1.5 line-clamp-1" dir="auto">${esc(c.title)}</div>
+            <div class="flex items-center justify-between text-xs text-neutral-600 mt-1 gap-2">
+              <span class="truncate" dir="auto">${esc(c.type)} · ${esc(c.customer.name)}</span>
+              <span class="shrink-0 px-1.5 py-0.5 rounded bg-neutral-100 text-black font-bold text-xs" dir="auto">${esc(getTicketAssigneeName(c))}</span>
             </div>
-            <div class="mt-2 flex items-center justify-between text-[11px]">
-              <span class="${breached ? "text-[#C91E2F] font-bold" : "text-neutral-500"}">${breached ? `⚠️ SLA Breached (${c.ageHours}h / ${sysConfig.maxSlaHours}h)` : `Age: ${c.ageHours}h / ${sysConfig.maxSlaHours}h SLA`}</span>
-              ${requiresOwnerApproval(c) && !c.damageFlow.quotationApproved ? `<span class="text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded font-bold text-[10px]">&gt; SAR ${sysConfig.damageApprovalCapSar}</span>` : ""}
+            <div class="mt-2 flex items-center justify-between text-xs">
+              <span class="${breached ? "text-[#C91E2F] font-bold" : "text-neutral-600"}">${breached ? `⚠️ SLA Breached (${c.ageHours}h / ${sysConfig.maxSlaHours}h)` : `Age: ${c.ageHours}h / ${sysConfig.maxSlaHours}h SLA`}</span>
+              ${requiresOwnerApproval(c) && !c.damageFlow.quotationApproved ? `<span class="text-amber-900 bg-amber-100 px-1.5 py-0.5 rounded font-bold text-xs">&gt; SAR ${sysConfig.damageApprovalCapSar}</span>` : ""}
             </div>
           </button>
         `;
       }).join("");
     }
 
-    function selectTicket(id) { uiState.selectedId = id; renderTicketList(); renderDetail(); }
+    function selectTicket(id) {
+      uiState.selectedId = id;
+      renderTicketList();
+      renderDetail();
+      scrollToDetailIfMobile();
+    }
     function switchDetailTab(t) { uiState.detailTab = t; renderDetail(); }
+
+    function renderDamageStepper(c) {
+      const refused = c.payoutStatus === "Declined" || c.resolutionStatus === "Refused";
+      const s1Done = (c.zones && c.zones.length > 0) || c.assignedRole !== "Ops Manager";
+      const s2Done = c.assignedRole === "CSM" || c.assignedRole === "Business Owner" || c.assignedRole === "Admin" || c.status !== "Submitted";
+      const s3Done = c.resolutionStatus === "Approved" || Boolean(c.damageFlow.quotationFile) || c.damageFlow.quotationApproved || c.payoutStatus !== "Pending Review";
+      const s4Done = Boolean(c.damageFlow.quotationApproved);
+      const s5Done = Boolean(c.damageFlow.invoiceFile && c.damageFlow.iban) || c.payoutStatus === "Pending Bank Transfer" || c.payoutStatus === "Paid";
+      const s6Done = c.payoutStatus === "Paid";
+
+      const steps = [
+        { label: "1. Site Inspection", done: s1Done },
+        { label: "2. CSM Handoff", done: s2Done },
+        { label: "3. Quote Requested", done: s3Done },
+        { label: "4. Quote Approved", done: s4Done },
+        { label: "5. Invoice & IBAN", done: s5Done },
+        { label: "6. Paid", done: s6Done }
+      ];
+      const activeIdx = steps.findIndex(s => !s.done);
+
+      return `
+        <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-extrabold text-black">Damage Claim Progress</span>
+            ${refused ? `<span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold">Declined</span>` : ""}
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            ${steps.map((st, idx) => {
+              const isCurrent = !refused && idx === activeIdx;
+              const cls = st.done
+                ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+                : isCurrent
+                  ? "bg-[#FDF2F3] border-[#C91E2F] text-[#C91E2F]"
+                  : "bg-neutral-50 border-neutral-200 text-neutral-600";
+              return `
+                <div class="rounded-lg border px-2.5 py-2 text-xs font-bold flex items-center gap-1.5 ${cls}">
+                  <span class="w-2 h-2 rounded-full shrink-0 ${st.done ? "bg-emerald-600" : isCurrent ? "bg-[#C91E2F]" : "bg-neutral-400"}"></span>
+                  <span class="truncate">${esc(st.label)}</span>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `;
+    }
 
     function renderDetail() {
       const box = document.getElementById("detail-panel");
+      if (uiState.loading) {
+        box.innerHTML = `<div class="p-6 space-y-4"><div class="h-6 w-1/3 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div><div class="h-32 bg-neutral-100 rounded-xl animate-pulse motion-reduce:animate-none"></div></div>`;
+        return;
+      }
       const c = getQueueClaims().find(x => x.id === uiState.selectedId) || getQueueClaims()[0];
       if (!c) {
-        box.innerHTML = `<div class="p-12 text-center text-sm text-neutral-500">Select a ticket to inspect.</div>`;
+        box.innerHTML = `<div class="p-12 text-center text-sm text-neutral-600">Select a ticket to inspect.</div>`;
         return;
       }
       uiState.selectedId = c.id;
       const editable = canEditClaim(c);
       const breached = isSlaBreached(c);
       const needsOwner = requiresOwnerApproval(c);
+      const isClosed = c.status === "Resolved";
 
       box.innerHTML = `
         <div class="p-5 border-b border-neutral-100 space-y-3">
+          <div class="lg:hidden">
+            <button type="button" onclick="scrollToQueue()" class="text-xs font-bold text-[#C91E2F] hover:underline flex items-center gap-1">← Back to Queue</button>
+          </div>
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded">${c.id}</span>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F3] text-[#C91E2F] border border-[#F7C5CA]">${c.type}</span>
-                <span class="text-xs font-semibold text-neutral-500">${c.branch} · ${c.status}</span>
-                ${breached ? `<span class="text-[11px] font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">SLA Breached (${c.ageHours}h)</span>` : `<span class="text-[11px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full">SLA OK (${c.ageHours}h / ${sysConfig.maxSlaHours}h)</span>`}
+                <span class="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded notranslate" translate="no" dir="ltr">${esc(c.id)}</span>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F3] text-[#C91E2F] border border-[#F7C5CA]">${esc(c.type)}</span>
+                <span class="text-xs font-semibold text-neutral-600" dir="auto">${esc(c.branch)} · ${esc(c.status)}</span>
+                ${breached ? `<span class="text-xs font-bold bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full">SLA Breached (${c.ageHours}h)</span>` : `<span class="text-xs font-semibold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-full">SLA OK (${c.ageHours}h / ${sysConfig.maxSlaHours}h)</span>`}
               </div>
-              <h2 class="text-base sm:text-lg font-extrabold text-black mt-1.5">${c.title}</h2>
+              <h2 class="text-base sm:text-lg font-extrabold text-black mt-1.5" dir="auto">${esc(c.title)}</h2>
             </div>
-            <div class="flex items-center gap-2">
-              ${c.type === "Damage" && c.assignedRole === "Ops Manager" && (uiState.role === "Ops Manager" || uiState.role === "Business Owner") ? `
-                <button type="button" onclick="handoffToCsm('${c.id}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs">Hand Off to ${getStaffNameByRole("CSM", c.branch)} →</button>
+            <div class="flex items-center gap-2 flex-wrap">
+              ${c.type === "Damage" && c.assignedRole === "Ops Manager" && !isClosed && (uiState.role === "Ops Manager" || uiState.role === "Business Owner") ? `
+                <button type="button" onclick="handoffToCsm('${esc(c.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs">Hand Off to ${esc(getStaffNameByRole("CSM", c.branch))} →</button>
               ` : ""}
-              <select onchange="reassignRole('${c.id}', this.value)" ${uiState.role === "Business Owner" ? "" : "disabled"} class="text-xs bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1.5 font-bold disabled:opacity-75">
-                <option value="Admin" ${c.assignedRole === "Admin" ? "selected" : ""}>Assigned: ${getStaffNameByRole("Admin", c.branch)}</option>
-                <option value="Ops Manager" ${c.assignedRole === "Ops Manager" ? "selected" : ""}>Assigned: ${getStaffNameByRole("Ops Manager", c.branch)}</option>
-                <option value="CSM" ${c.assignedRole === "CSM" ? "selected" : ""}>Assigned: ${getStaffNameByRole("CSM", c.branch)}</option>
-                <option value="Business Owner" ${c.assignedRole === "Business Owner" ? "selected" : ""}>Assigned: ${getStaffNameByRole("Business Owner", c.branch)}</option>
+              <label for="select-reassign-${esc(c.id)}" class="sr-only">Assigned role</label>
+              <select id="select-reassign-${esc(c.id)}" onchange="reassignRole('${esc(c.id)}', this.value)" ${isOwnerRole() && !isClosed ? "" : "disabled"} class="text-xs bg-neutral-50 border border-neutral-300 rounded-lg px-2.5 py-1.5 font-bold disabled:opacity-75">
+                <option value="Admin" ${c.assignedRole === "Admin" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Admin", c.branch))}</option>
+                <option value="Ops Manager" ${c.assignedRole === "Ops Manager" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Ops Manager", c.branch))}</option>
+                <option value="CSM" ${c.assignedRole === "CSM" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("CSM", c.branch))}</option>
+                <option value="Business Owner" ${c.assignedRole === "Business Owner" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Business Owner", c.branch))}</option>
               </select>
             </div>
           </div>
 
           ${breached ? `
             <div class="rounded-lg bg-rose-50 border border-rose-200 px-3.5 py-2.5 text-xs text-rose-900 flex flex-wrap items-center justify-between gap-2">
-              <span><strong>⚠️ Overdue Alert (${c.ageHours}h old · Exceeds ${sysConfig.maxSlaHours}h SLA):</strong> Auto-escalated to <strong>${getStaffNameByRole("Business Owner", c.branch)}</strong>. Currently with <strong>${getStaffNameByRole(c.assignedRole, c.branch)}</strong>.</span>
-              <button type="button" onclick="sendOverdueNudge('${c.id}')" class="px-2.5 py-1 rounded-md bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold text-[11px] shrink-0">Nudge ${getStaffNameByRole(c.assignedRole, c.branch)}</button>
+              <span><strong>⚠️ Overdue Alert (${c.ageHours}h old · Exceeds ${sysConfig.maxSlaHours}h SLA):</strong> Auto-escalated to <strong>${esc(getStaffNameByRole("Business Owner", c.branch))}</strong>. Currently with <strong dir="auto">${esc(getTicketAssigneeName(c))}</strong>.</span>
+              <button type="button" onclick="sendOverdueNudge('${esc(c.id)}')" class="px-2.5 py-1 rounded-md bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold text-xs shrink-0">Nudge ${esc(getTicketAssigneeName(c))}</button>
             </div>
           ` : ""}
           ${!editable ? `
-            <div class="rounded-lg bg-neutral-100 border border-neutral-200 px-3.5 py-2 text-xs text-neutral-700 flex items-center justify-between">
-              <span><strong>View-Only (${getStaffNameByRole(uiState.role, uiState.opsBranch)}):</strong> Currently assigned to <strong>${getStaffNameByRole(c.assignedRole, c.branch)}</strong>.</span>
-              <button type="button" onclick="handleRoleChange('${c.assignedRole}')" class="text-[#C91E2F] font-bold hover:underline">Switch to ${getStaffNameByRole(c.assignedRole, c.branch)}</button>
+            <div class="rounded-lg bg-neutral-100 border border-neutral-200 px-3.5 py-2 text-xs text-neutral-800 flex items-center justify-between gap-2 flex-wrap">
+              <span><strong>View-Only (${esc(uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch))}):</strong> Currently assigned to <strong dir="auto">${esc(getTicketAssigneeName(c))}</strong>.</span>
+              ${adminToken ? `<span class="text-xs font-semibold text-neutral-600">Role locked to signed-in account</span>` : `<button type="button" onclick="handleRoleChange('${esc(c.assignedRole)}')" class="text-[#C91E2F] font-bold hover:underline">Switch to ${esc(getStaffNameByRole(c.assignedRole, c.branch))}</button>`}
             </div>
           ` : ""}
 
@@ -823,7 +1212,7 @@
             ${["overview", "resolution", "messages"].map(t => {
               const labels = { overview: "Overview & Evidence", resolution: "Resolution & Payout", messages: `WhatsApp / History (${c.messages.length})` };
               const act = uiState.detailTab === t;
-              return `<button type="button" onclick="switchDetailTab('${t}')" class="px-3.5 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition ${act ? "border-[#C91E2F] text-[#C91E2F]" : "border-transparent text-neutral-500 hover:text-black"}">${labels[t]}</button>`;
+              return `<button type="button" onclick="switchDetailTab('${t}')" class="px-3.5 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition motion-reduce:transition-none ${act ? "border-[#C91E2F] text-[#C91E2F]" : "border-transparent text-neutral-600 hover:text-black"}">${labels[t]}</button>`;
             }).join("")}
           </div>
         </div>
@@ -833,49 +1222,66 @@
       lucide.createIcons();
     }
 
+    function renderCarZone(c, zoneName, shapeTag, attrs, editable, isClosed) {
+      const selected = c.zones.includes(zoneName);
+      const interactive = editable && !isClosed;
+      return `<${shapeTag} ${attrs} class="car-zone ${selected ? "selected" : ""}" tabindex="0" role="button" aria-pressed="${selected}" aria-label="${esc(zoneName)}" ${interactive ? `onclick="toggleZone('${esc(c.id)}', '${esc(zoneName)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('${esc(c.id)}', '${esc(zoneName)}');}"` : `onclick="showToast('Zone map is read-only for this ticket')"`} />`;
+    }
+
     function renderDetailBody(c, editable, needsOwner) {
+      const isClosed = c.status === "Resolved";
+
       if (uiState.detailTab === "overview") {
         return `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="space-y-3">
-              <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-1.5">
-                <div class="font-bold uppercase tracking-wider text-neutral-500">Customer &amp; Receipt</div>
-                <div class="text-sm font-bold text-black">${c.customer.name}</div>
-                <div class="text-neutral-600">${c.customer.phone} · Callback: <strong>${c.customer.callbackWindow}</strong></div>
-                <div class="pt-1 border-t border-neutral-200 font-mono text-[#C91E2F] font-bold">${c.receipt}</div>
+          <div class="space-y-4">
+            ${c.type === "Damage" ? renderDamageStepper(c) : ""}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-1.5">
+                  <div class="font-bold uppercase tracking-wider text-neutral-600">Customer &amp; Receipt</div>
+                  <div class="text-sm font-bold text-black" dir="auto">${esc(c.customer.name)}</div>
+                  <div class="text-neutral-700"><span dir="ltr" class="font-mono">${esc(c.customer.phone)}</span> · Callback: <strong>${esc(c.customer.callbackWindow)}</strong></div>
+                  <div class="pt-1 border-t border-neutral-200 font-mono text-[#C91E2F] font-bold" dir="ltr">${esc(c.receipt)}</div>
+                </div>
+                <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-1.5">
+                  <div class="font-bold uppercase tracking-wider text-neutral-600">Vehicle &amp; Site Inspection</div>
+                  <div class="text-sm font-bold text-black"><span dir="auto">${esc(c.vehicle.model)}</span> (<span dir="ltr" class="font-mono notranslate" translate="no">${esc(c.vehicle.plate)}</span>)</div>
+                  <div class="text-neutral-700"><strong>Evidence Files:</strong> ${c.evidence.filesCount} · <strong>Work Order:</strong> <span dir="ltr" class="font-mono notranslate" translate="no">${esc(c.evidence.workOrder)}</span></div>
+                  <div class="text-neutral-800 bg-white border border-neutral-200 rounded-lg p-2.5" dir="auto">${esc(c.evidence.note || "No inspection or resolution note recorded yet.")}</div>
+                </div>
+                <div class="bg-white border border-neutral-200 rounded-xl p-3.5 text-xs">
+                  <div class="font-bold uppercase tracking-wider text-neutral-600 mb-1">Customer Description</div>
+                  <p class="text-neutral-800 leading-relaxed" dir="auto">${esc(c.summary)}</p>
+                </div>
               </div>
-              <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-1.5">
-                <div class="font-bold uppercase tracking-wider text-neutral-500">Vehicle &amp; Site Inspection</div>
-                <div class="text-sm font-bold text-black">${c.vehicle.model} (${c.vehicle.plate})</div>
-                <div class="text-neutral-600"><strong>Evidence Files:</strong> ${c.evidence.filesCount} · <strong>Work Order:</strong> ${c.evidence.workOrder}</div>
-                <div class="text-neutral-700 bg-white border border-neutral-200 rounded-lg p-2.5">${c.evidence.note}</div>
-              </div>
-              <div class="bg-white border border-neutral-200 rounded-xl p-3.5 text-xs">
-                <div class="font-bold uppercase tracking-wider text-neutral-500 mb-1">Customer Description</div>
-                <p class="text-neutral-800 leading-relaxed">${c.summary}</p>
-              </div>
-            </div>
 
-            <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-bold uppercase tracking-wider text-neutral-500">2D Vehicle Zone Map</span>
-                <span class="text-[11px] font-bold text-[#C91E2F]">${c.zones.join(", ") || "No zones tagged"}</span>
-              </div>
-              <div class="bg-white border border-neutral-200 rounded-xl p-3 flex justify-center">
-                <svg viewBox="0 0 360 150" class="w-full max-w-[300px] h-auto select-none">
-                  <rect x="45" y="25" width="270" height="100" rx="28" fill="#E5E5E5" stroke="#A3A3A3" stroke-width="2" />
-                  <path d="M25,40 Q15,75 25,110 L45,115 L45,35 Z" fill="#D4D4D4" stroke="#737373" class="car-zone ${c.zones.includes("Front Bumper") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Front Bumper')" />
-                  <rect x="48" y="34" width="68" height="82" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone ${c.zones.includes("Hood") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Hood')" />
-                  <polygon points="118,36 146,42 146,108 118,114" fill="#E5E5E5" stroke="#525252" class="car-zone ${c.zones.includes("Windshield") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Windshield')" />
-                  <rect x="148" y="42" width="88" height="66" rx="4" fill="#FFFFFF" stroke="#737373" class="car-zone ${c.zones.includes("Roof") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Roof')" />
-                  <rect x="122" y="14" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone ${c.zones.includes("Driver Side & Mirror") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Driver Side & Mirror')" />
-                  <rect x="122" y="120" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone ${c.zones.includes("Passenger Side & Mirror") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Passenger Side & Mirror')" />
-                  <rect x="240" y="36" width="66" height="78" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone ${c.zones.includes("Rear Trunk / Quarter") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Rear Trunk / Quarter')" />
-                  <path d="M315,35 L335,40 Q345,75 335,110 L315,115 Z" fill="#D4D4D4" stroke="#737373" class="car-zone ${c.zones.includes("Rear Bumper") ? "selected" : ""}" onclick="toggleZone('${c.id}', 'Rear Bumper')" />
-                  <text x="180" y="79" text-anchor="middle" font-size="10" fill="#404040" font-weight="700" pointer-events="none">ROOF</text>
-                  <text x="82" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">HOOD</text>
-                  <text x="273" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">REAR</text>
-                </svg>
+              <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold uppercase tracking-wider text-neutral-600">2D Vehicle Zone Map</span>
+                  <span class="text-xs font-bold text-[#C91E2F]" dir="auto">${c.zones.length ? esc(c.zones.join(", ")) : "No zones tagged"}</span>
+                </div>
+                <div class="bg-white border border-neutral-200 rounded-xl p-3 flex justify-center">
+                  <svg viewBox="0 0 360 156" class="w-full max-w-[320px] h-auto select-none" role="group" aria-label="2D Vehicle Damage Zone Selector">
+                    <rect x="45" y="26" width="270" height="104" rx="28" fill="#E5E5E5" stroke="#A3A3A3" stroke-width="2" />
+                    ${renderCarZone(c, "Front Bumper", "path", 'd="M25,42 Q15,78 25,114 L45,119 L45,37 Z" fill="#D4D4D4" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Hood", "rect", 'x="48" y="36" width="68" height="84" rx="6" fill="#F5F5F5" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Windshield", "polygon", 'points="118,38 146,44 146,112 118,118" fill="#E5E5E5" stroke="#525252"', editable, isClosed)}
+                    ${renderCarZone(c, "Roof", "rect", 'x="148" y="44" width="88" height="68" rx="4" fill="#FFFFFF" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Driver Side & Mirror", "rect", 'x="122" y="10" width="110" height="18" rx="4" fill="#D4D4D4" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Passenger Side & Mirror", "rect", 'x="122" y="128" width="110" height="18" rx="4" fill="#D4D4D4" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Rear Trunk / Quarter", "rect", 'x="240" y="38" width="66" height="80" rx="6" fill="#F5F5F5" stroke="#737373"', editable, isClosed)}
+                    ${renderCarZone(c, "Rear Bumper", "path", 'd="M315,37 L335,42 Q345,78 335,114 L315,119 Z" fill="#D4D4D4" stroke="#737373"', editable, isClosed)}
+                    <text x="29" y="81" text-anchor="middle" font-size="7" fill="#262626" font-weight="700" pointer-events="none">F.BMP</text>
+                    <text x="82" y="81" text-anchor="middle" font-size="9" fill="#262626" font-weight="700" pointer-events="none">HOOD</text>
+                    <text x="132" y="81" text-anchor="middle" font-size="7" fill="#262626" font-weight="700" pointer-events="none" transform="rotate(-90 132 81)">WINDSHIELD</text>
+                    <text x="192" y="81" text-anchor="middle" font-size="10" fill="#262626" font-weight="700" pointer-events="none">ROOF</text>
+                    <text x="177" y="22" text-anchor="middle" font-size="8" fill="#262626" font-weight="700" pointer-events="none">DRIVER SIDE</text>
+                    <text x="177" y="140" text-anchor="middle" font-size="8" fill="#262626" font-weight="700" pointer-events="none">PASSENGER SIDE</text>
+                    <text x="273" y="81" text-anchor="middle" font-size="9" fill="#262626" font-weight="700" pointer-events="none">REAR</text>
+                    <text x="331" y="81" text-anchor="middle" font-size="7" fill="#262626" font-weight="700" pointer-events="none">R.BMP</text>
+                  </svg>
+                </div>
+                <p class="text-xs text-neutral-600">Click or press Enter/Space on any vehicle zone to tag or untag damage.</p>
               </div>
             </div>
           </div>
@@ -885,80 +1291,110 @@
       if (uiState.detailTab === "resolution") {
         const lockClass = editable ? "" : "opacity-60 pointer-events-none";
         const canApproveQuote = uiState.role === "Business Owner" || (!needsOwner && (uiState.role === "CSM" || uiState.role === "Ops Manager"));
+        const qUrl = safeUrl(c.damageFlow.quotationFile);
+        const invUrl = safeUrl(c.damageFlow.invoiceFile);
 
         return `
           <div class="space-y-4 ${lockClass}">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">Resolution Outcome</label>
-                <select onchange="updateClaimField('${c.id}', 'resolutionStatus', this.value)" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold bg-white">
-                  <option value="Pending" ${c.resolutionStatus === "Pending" ? "selected" : ""}>Pending Review</option>
-                  <option value="Approved" ${c.resolutionStatus === "Approved" ? "selected" : ""}>Approved</option>
-                  <option value="Refused" ${c.resolutionStatus === "Refused" ? "selected" : ""}>Refused / Declined</option>
-                </select>
+                <div class="block text-xs font-bold text-neutral-700 mb-1">Resolution Outcome</div>
+                <div class="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                  <span class="text-sm font-bold ${c.resolutionStatus === "Approved" ? "text-emerald-800" : c.resolutionStatus === "Refused" ? "text-rose-800" : "text-neutral-800"}">
+                    ${c.resolutionStatus === "Approved" ? (c.type === "Damage" && !c.damageFlow.quotationApproved ? "Approved for Repair Quote" : "Approved") : c.resolutionStatus === "Refused" ? "Refused / Declined" : "Pending Review"}
+                  </span>
+                  ${!isClosed && editable ? `
+                    <button type="button" onclick="openRefuseModal('${esc(c.id)}')" class="px-2.5 py-1 rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-800 text-xs font-bold">Refuse Claim</button>
+                  ` : ""}
+                </div>
               </div>
               <div>
-                <label class="block text-xs font-bold text-neutral-700 mb-1">Customer-Facing Resolution Note</label>
-                <input type="text" value="${(c.resolutionNote || "").replace(/"/g, '&quot;')}" onchange="updateClaimField('${c.id}', 'resolutionNote', this.value)" placeholder="Shown directly to customer..." class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm" />
+                <label for="inp-resolution-note-${esc(c.id)}" class="block text-xs font-bold text-neutral-700 mb-1">Customer-Facing Resolution / Inspection Note</label>
+                <div class="flex gap-2">
+                  <input id="inp-resolution-note-${esc(c.id)}" type="text" dir="auto" value="${esc(c.resolutionNote || "")}" ${isClosed ? "disabled" : ""} placeholder="Shown directly to customer..." class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm disabled:bg-neutral-100" />
+                  ${!isClosed ? `<button type="button" onclick="saveResolutionNote('${esc(c.id)}')" class="px-3 py-2 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold shrink-0">Save</button>` : ""}
+                </div>
               </div>
             </div>
 
             ${c.type === "Unsatisfied" ? `
-              <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 flex items-center justify-between gap-3">
-                <div class="text-xs"><strong>Unsatisfied Flow:</strong> Approving issues a Rewash QR pass to the customer tracker.</div>
-                <button type="button" onclick="issueRewash('${c.id}')" class="px-3.5 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shrink-0">${c.rewashCode ? `Issued: ${c.rewashCode}` : "Approve & Issue Rewash QR"}</button>
+              <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 flex flex-wrap items-center justify-between gap-3">
+                <div class="text-xs text-neutral-800"><strong>Unsatisfied Flow:</strong> Approving issues a Rewash QR pass to the customer tracker.</div>
+                <button type="button" onclick="issueRewash('${esc(c.id)}')" ${c.rewashCode || isClosed ? "disabled" : ""} class="px-3.5 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] disabled:opacity-60 text-white text-xs font-bold shrink-0 notranslate" translate="no">${c.rewashCode ? `Issued: ${esc(c.rewashCode)}` : "Approve & Issue Rewash QR"}</button>
               </div>
             ` : ""}
 
             ${c.type === "Billing / Refund" ? `
               <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
                 <div class="text-xs font-bold text-emerald-900">Billing / Refund Execution (Enter RRN when approved)</div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <input id="inp-rrn" type="text" value="${c.rrn || ""}" placeholder="Bank RRN (e.g. 432618904512)" class="sm:col-span-2 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-mono" />
-                  <button type="button" onclick="saveBillingRrn('${c.id}')" class="py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Save RRN &amp; Close</button>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5">
+                  <div class="sm:col-span-2">
+                    <label for="inp-rrn" class="sr-only">Bank RRN</label>
+                    <input id="inp-rrn" type="text" dir="ltr" value="${esc(c.rrn || "")}" ${isClosed ? "disabled" : ""} placeholder="Bank RRN (e.g. 432618904512)" class="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-mono disabled:bg-neutral-100" />
+                  </div>
+                  <div>
+                    <label for="inp-billing-amount" class="sr-only">Refund Amount (SAR)</label>
+                    <input id="inp-billing-amount" type="number" min="1" step="0.01" dir="ltr" value="${c.approvedSar || c.requestedSar || c.quotedSar || ""}" ${isClosed ? "disabled" : ""} placeholder="SAR Amount" class="w-full rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-bold disabled:bg-neutral-100" />
+                  </div>
+                  <button type="button" onclick="saveBillingRrn('${esc(c.id)}')" ${isClosed ? "disabled" : ""} class="py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 disabled:opacity-60 text-white text-xs font-bold">Save RRN &amp; Close</button>
                 </div>
               </div>
             ` : ""}
 
             ${c.type === "Damage" ? `
-              <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <div class="text-xs font-extrabold text-amber-950">Damage 2-Step Settlement &amp; Approval Cap (SAR ${sysConfig.damageApprovalCapSar})</div>
-                    <div class="text-xs text-neutral-700 mt-0.5">Quoted: <strong>SAR ${c.quotedSar}</strong> · Quotation File: <span class="font-mono text-[#C91E2F]">${c.damageFlow.quotationFile ? `<a href="${c.damageFlow.quotationFile}" target="_blank" class="font-bold underline text-[#C91E2F] hover:text-black">View Quotation File ↗</a>` : `<span class="text-neutral-400">Pending</span>`}</span> · Waiver: <strong>${c.damageFlow.waiverSigned ? "Signed" : "Pending"}</strong></div>
-                  </div>
-                  ${c.resolutionStatus !== "Approved"
-                    ? `<button type="button" onclick="requestDamageQuote('${c.id}')" class="px-3.5 py-1.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-xs">Request Repair Quotation &amp; Waiver →</button>`
-                    : c.damageFlow.quotationApproved
-                      ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">✓ Quotation Approved</span>`
-                      : c.damageFlow.quotationFile
-                        ? `<div class="flex items-center gap-2">
-                            <input id="inp-quoted-sar-${c.id}" type="number" step="1" min="0" value="${c.quotedSar || ''}" placeholder="SAR" class="w-20 px-2 py-1 rounded border border-neutral-300 text-xs font-bold bg-white" title="Quoted SAR Amount" />
-                            ${canApproveQuote
-                              ? `<button type="button" onclick="approveQuotation('${c.id}')" class="px-3 py-1.5 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold">Approve Quote &amp; Unlock Invoice</button>`
-                              : `<span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 text-xs font-bold">Escalated: Requires Business Owner (&gt; SAR ${sysConfig.damageApprovalCapSar})</span>`}
-                          </div>`
-                        : `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">Awaiting Customer Quotation &amp; Waiver</span>`
-                  }
-                </div>
-
-                <!-- Step 2 Finance Payout Box -->
-                <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2.5 text-xs">
-                  <div class="flex items-center justify-between">
-                    <span class="font-bold text-black">Step 2: Tax Invoice &amp; IBAN Bank Transfer</span>
-                    <span class="px-2 py-0.5 rounded-full font-bold ${c.payoutStatus === "Paid" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}">${c.payoutStatus}</span>
-                  </div>
-                  <div class="text-neutral-600">
-                    Invoice: <span class="font-mono text-[#C91E2F]">${c.damageFlow.invoiceFile ? `<a href="${c.damageFlow.invoiceFile}" target="_blank" class="font-bold underline text-[#C91E2F] hover:text-black">View Invoice ↗</a>` : `<span class="text-neutral-400">Pending customer upload</span>`}</span> ·
-                    Bank: <strong>${c.damageFlow.bankName || "—"}</strong> ·
-                    IBAN: <span class="font-mono">${c.damageFlow.iban || "—"}</span> ${c.damageFlow.iban && c.payoutStatus === "Pending Bank Transfer" ? `<button type="button" onclick="revealIban('${c.id}', this)" class="ml-1 underline text-[#C91E2F] font-bold">Reveal (logged)</button>` : ""}
-                  </div>
-                  ${c.damageFlow.invoiceFile && c.payoutStatus !== "Paid" ? `
-                    <div class="flex gap-2 pt-1">
-                      <input id="inp-transfer-ref" type="text" placeholder="Enter Bank Transfer Ref # (e.g. TRF-994012)" class="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-mono" />
-                      <button type="button" onclick="markBankPaid('${c.id}')" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Mark Paid</button>
+              <div class="space-y-3">
+                ${renderDamageStepper(c)}
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div class="text-xs font-extrabold text-amber-950">Damage 2-Step Settlement &amp; Approval Cap (SAR ${sysConfig.damageApprovalCapSar})</div>
+                      <div class="text-xs text-neutral-700 mt-0.5">
+                        Quoted: <strong>SAR ${Number(c.quotedSar || 0)}</strong> ·
+                        Quotation File: <span class="font-mono text-[#C91E2F]">${qUrl ? `<a href="${qUrl}" target="_blank" rel="noopener noreferrer" class="font-bold underline text-[#C91E2F] hover:text-black">View Quotation File ↗</a>` : `<span class="text-neutral-600">Pending</span>`}</span> ·
+                        Waiver: <strong>${c.damageFlow.waiverSigned ? "Signed" : "Pending"}</strong>
+                      </div>
                     </div>
-                  ` : c.transferRef ? `<div class="text-emerald-700 font-bold">✓ Paid · Transfer Ref: <span class="font-mono">${c.transferRef}</span></div>` : ""}
+                    ${!c.damageFlow.quotationApproved && c.payoutStatus === "Pending Review" && !isClosed
+                      ? `<button type="button" onclick="requestDamageQuote('${esc(c.id)}')" class="px-3.5 py-1.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-xs">Request Repair Quotation &amp; Waiver →</button>`
+                      : c.damageFlow.quotationApproved
+                        ? `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">✓ Quotation Approved</span>`
+                        : c.damageFlow.quotationFile && !isClosed
+                          ? `<div class="flex flex-col items-end gap-1.5">
+                              <div class="flex items-center gap-2">
+                                <label for="inp-quoted-sar-${esc(c.id)}" class="sr-only">Quoted SAR Amount</label>
+                                <input id="inp-quoted-sar-${esc(c.id)}" type="number" step="1" min="0" dir="ltr" value="${c.quotedSar || ""}" oninput="checkQuoteCapLive('${esc(c.id)}', this.value)" ${isOwnerRole() ? "" : "readonly"} placeholder="SAR" class="w-24 px-2 py-1 rounded border border-neutral-300 text-xs font-bold bg-white read-only:bg-neutral-100" title="Quoted SAR Amount" />
+                                <button id="btn-approve-quote-${esc(c.id)}" type="button" onclick="approveQuotation('${esc(c.id)}')" ${canApproveQuote ? "" : "disabled"} class="px-3 py-1.5 rounded-lg bg-black hover:bg-[#C91E2F] disabled:bg-neutral-300 disabled:text-neutral-600 text-white text-xs font-bold">Approve Quote &amp; Unlock Invoice</button>
+                              </div>
+                              <div id="quote-cap-warn-${esc(c.id)}" class="text-xs font-bold text-rose-800 ${canApproveQuote ? "hidden" : ""}">
+                                Escalated: Exceeds SAR ${sysConfig.damageApprovalCapSar} cap — Business Owner approval required.
+                              </div>
+                            </div>`
+                          : `<span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold">${isClosed ? "Closed" : "Awaiting Customer Quotation & Waiver"}</span>`
+                    }
+                  </div>
+
+                  <!-- Step 2 Finance Payout Box -->
+                  <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-black">Step 2: Tax Invoice &amp; IBAN Bank Transfer</span>
+                      <span class="px-2 py-0.5 rounded-full font-bold ${payoutBadgeClass(c.payoutStatus)}">${esc(c.payoutStatus)}</span>
+                    </div>
+                    <div class="text-neutral-700 flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span>Invoice: <span class="font-mono text-[#C91E2F]">${invUrl ? `<a href="${invUrl}" target="_blank" rel="noopener noreferrer" class="font-bold underline text-[#C91E2F] hover:text-black">View Invoice ↗</a>` : `<span class="text-neutral-600">Pending customer upload</span>`}</span></span>
+                      <span>· Bank: <strong>${esc(c.damageFlow.bankName || "—")}</strong></span>
+                      <span>· IBAN: <span id="detail-iban-${esc(c.id)}" class="font-mono notranslate" translate="no" dir="ltr">${esc(c.damageFlow.iban || "—")}</span></span>
+                      ${c.damageFlow.iban && c.payoutStatus === "Pending Bank Transfer" ? `
+                        <button type="button" onclick="revealIban('${esc(c.id)}', 'detail-iban-${esc(c.id)}', this)" class="underline text-[#C91E2F] font-bold">Reveal (logged)</button>
+                      ` : ""}
+                    </div>
+                    ${c.damageFlow.invoiceFile && c.payoutStatus === "Pending Bank Transfer" ? `
+                      <div class="flex gap-2 pt-1">
+                        <label for="inp-transfer-ref" class="sr-only">Bank Transfer Reference</label>
+                        <input id="inp-transfer-ref" type="text" dir="ltr" placeholder="Enter Bank Transfer Ref # (e.g. TRF-994012)" class="flex-1 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-mono" />
+                        <button type="button" onclick="markBankPaid('${esc(c.id)}')" class="px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold">Mark Paid</button>
+                      </div>
+                    ` : c.transferRef ? `<div class="text-emerald-800 font-bold">✓ Paid · Transfer Ref: <span class="font-mono notranslate" translate="no" dir="ltr">${esc(c.transferRef)}</span></div>` : ""}
+                  </div>
                 </div>
               </div>
             ` : ""}
@@ -972,20 +1408,22 @@
             ${c.messages.map(m => `
               <div class="rounded-xl border p-3 ${m.channel === "WhatsApp" ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-[#FAFAFA]"}">
                 <div class="flex items-center justify-between text-xs mb-1">
-                  <span class="font-bold text-black">${m.sender} <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] ${m.channel === "WhatsApp" ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"}">${m.channel}</span></span>
-                  <span class="text-neutral-400">${m.time}</span>
+                  <span class="font-bold text-black" dir="auto">${esc(m.sender)} <span class="ml-1 px-1.5 py-0.5 rounded text-xs ${m.channel === "WhatsApp" ? "bg-emerald-700 text-white" : "bg-neutral-200 text-neutral-800"}">${esc(m.channel)}</span></span>
+                  <span class="text-neutral-600">${esc(m.time)}</span>
                 </div>
-                <p class="text-xs sm:text-sm text-neutral-700">${m.text}</p>
+                <p class="text-xs sm:text-sm text-neutral-800" dir="auto">${esc(m.text)}</p>
               </div>
             `).join("")}
           </div>
-          <form onsubmit="sendStaffMsg(event, '${c.id}')" class="flex gap-2 pt-2 border-t border-neutral-100">
+          <form onsubmit="sendStaffMsg(event, '${esc(c.id)}')" class="flex gap-2 pt-2 border-t border-neutral-100">
+            <label for="staff-msg-channel" class="sr-only">Message channel</label>
             <select id="staff-msg-channel" class="rounded-lg border border-neutral-300 px-2.5 py-2 text-xs font-bold bg-white">
               <option value="WhatsApp">WhatsApp</option>
               <option value="Internal">Internal Note</option>
             </select>
-            <input id="staff-msg-input" type="text" required placeholder="Reply to customer or log internal note..." class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
-            <button type="submit" class="px-4 py-2 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold transition">Send</button>
+            <label for="staff-msg-input" class="sr-only">Message text</label>
+            <input id="staff-msg-input" type="text" required dir="auto" placeholder="Reply to customer or log internal note..." class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
+            <button type="submit" class="px-4 py-2 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold transition motion-reduce:transition-none">Send</button>
           </form>
         </div>
       `;
@@ -993,26 +1431,54 @@
 
     // ---- VIEW 3: FINANCE & PAYOUTS ----
     function renderFinance() {
-      const vis = getVisibleClaims();
       const tbody = document.getElementById("finance-tbody");
+      if (uiState.loading) {
+        tbody.innerHTML = Array.from({ length: 3 }).map(() => `
+          <tr><td colspan="6" class="px-4 py-3"><div class="h-5 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div></td></tr>
+        `).join("");
+        return;
+      }
+
+      const vis = getVisibleClaims();
+      if (!vis.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-10 text-center text-xs text-neutral-600">No disbursement or payout records match the current branch scope.</td></tr>`;
+        return;
+      }
+
       tbody.innerHTML = vis.map(c => {
-        const refDetail = c.type === "Damage"
-          ? (c.damageFlow.iban ? `${c.damageFlow.bankName} · <span class="font-mono">${c.damageFlow.iban}</span>` : "Awaiting IBAN / Invoice")
-          : c.type === "Billing / Refund"
-            ? (c.rrn ? `RRN: <span class="font-mono font-bold">${c.rrn}</span>` : "Pending RRN")
-            : (c.rewashCode ? `Rewash QR: <span class="font-mono font-bold">${c.rewashCode}</span>` : "Pending Rewash");
+        let refDetail = "";
+        if (c.type === "Damage") {
+          if (c.damageFlow.iban) {
+            const revealBtn = c.payoutStatus === "Pending Bank Transfer"
+              ? ` <button type="button" onclick="revealIban('${esc(c.id)}', 'fin-iban-${esc(c.id)}', this)" class="ml-1 underline text-[#C91E2F] font-bold">Reveal (logged)</button>`
+              : "";
+            refDetail = `${esc(c.damageFlow.bankName || "Bank")} · <span id="fin-iban-${esc(c.id)}" class="font-mono notranslate" translate="no" dir="ltr">${esc(c.damageFlow.iban)}</span>${revealBtn}`;
+          } else {
+            refDetail = `<span class="text-neutral-600">Awaiting IBAN / Invoice</span>`;
+          }
+        } else if (c.type === "Billing / Refund") {
+          refDetail = c.rrn ? `RRN: <span class="font-mono font-bold notranslate" translate="no" dir="ltr">${esc(c.rrn)}</span>` : `<span class="text-neutral-600">Pending RRN</span>`;
+        } else {
+          refDetail = c.rewashCode ? `Rewash QR: <span class="font-mono font-bold notranslate" translate="no" dir="ltr">${esc(c.rewashCode)}</span>` : `<span class="text-neutral-600">Pending Rewash</span>`;
+        }
         const canPay = c.type === "Damage" && c.payoutStatus === "Pending Bank Transfer";
         return `
           <tr class="hover:bg-neutral-50">
-            <td class="px-4 py-3"><span class="font-mono font-bold text-black">${c.id}</span><div class="text-[11px] text-neutral-500">${c.type}</div></td>
-            <td class="px-4 py-3"><div class="font-semibold text-black">${c.customer.name}</div><div class="text-[11px] text-neutral-500">${c.branch}</div></td>
-            <td class="px-4 py-3 text-xs text-neutral-700">${refDetail}</td>
-            <td class="px-4 py-3 font-bold">SAR ${c.approvedSar || c.quotedSar || 0}</td>
-            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${c.payoutStatus.includes("Paid") || c.payoutStatus === "Rewash Issued" ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-900"}">${c.payoutStatus}</span></td>
+            <td class="px-4 py-3">
+              <span class="font-mono font-bold text-black notranslate" translate="no" dir="ltr">${esc(c.id)}</span>
+              <div class="text-xs text-neutral-600">${esc(c.type)}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="font-semibold text-black" dir="auto">${esc(c.customer.name)}</div>
+              <div class="text-xs text-neutral-600" dir="auto">${esc(c.branch)}</div>
+            </td>
+            <td class="px-4 py-3 text-xs text-neutral-800">${refDetail}</td>
+            <td class="px-4 py-3 font-bold" dir="ltr">SAR ${Number(c.approvedSar || c.quotedSar || c.requestedSar || 0).toLocaleString()}</td>
+            <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold ${payoutBadgeClass(c.payoutStatus)}">${esc(c.payoutStatus)}</span></td>
             <td class="px-4 py-3 text-right">
               ${canPay
-                ? `<button type="button" onclick="quickMarkPaid('${c.id}')" class="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold">Mark Paid</button>`
-                : `<button type="button" onclick="openTicket('${c.id}')" class="text-xs font-bold text-[#C91E2F] hover:underline">View</button>`}
+                ? `<button type="button" onclick="openMarkPaidModal('${esc(c.id)}')" class="px-3 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold">Mark Paid</button>`
+                : `<button type="button" onclick="openTicket('${esc(c.id)}')" class="text-xs font-bold text-[#C91E2F] hover:underline">View</button>`}
             </td>
           </tr>
         `;
@@ -1025,27 +1491,46 @@
       document.getElementById("cfg-sla").value = sysConfig.maxSlaHours;
       document.getElementById("cfg-vat").value = sysConfig.vatNumber;
       document.getElementById("cfg-cr").value = sysConfig.crNumber;
-      const isOwner = uiState.role === "Business Owner";
-      document.getElementById("btn-save-cfg").disabled = !isOwner;
-      document.getElementById("btn-save-cfg").className = isOwner
-        ? "px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition"
-        : "px-4 py-2 rounded-lg bg-neutral-200 text-neutral-400 text-xs font-bold cursor-not-allowed";
+      const isOwner = isOwnerRole();
 
-      document.getElementById("staff-tbody").innerHTML = staffUsers.map(u => `
+      const btnSaveCfg = document.getElementById("btn-save-cfg");
+      btnSaveCfg.disabled = !isOwner;
+      btnSaveCfg.className = isOwner
+        ? "px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition motion-reduce:transition-none"
+        : "px-4 py-2 rounded-lg bg-neutral-200 text-neutral-500 text-xs font-bold cursor-not-allowed";
+
+      const addBtn = document.getElementById("btn-open-add-staff");
+      if (addBtn) addBtn.disabled = !isOwner;
+
+      const tbody = document.getElementById("staff-tbody");
+      if (uiState.loading) {
+        tbody.innerHTML = Array.from({ length: 3 }).map(() => `
+          <tr><td colspan="5" class="px-4 py-3"><div class="h-5 bg-neutral-200 rounded animate-pulse motion-reduce:animate-none"></div></td></tr>
+        `).join("");
+        return;
+      }
+
+      if (!staffUsers.length) {
+        tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-8 text-center text-xs text-neutral-600">No staff accounts found. Use "+ Add Staff" to create a team member.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = staffUsers.map(u => `
         <tr class="hover:bg-neutral-50">
-          <td class="px-4 py-3 font-bold text-black">${u.name}</td>
-          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-neutral-100 font-bold text-xs">${u.role}</span></td>
-          <td class="px-4 py-3 text-xs text-neutral-600">${u.branch}</td>
-          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${u.active ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-600"}">${u.active ? "Active" : "Paused"}</span></td>
+          <td class="px-4 py-3 font-bold text-black" dir="auto">${esc(u.name)}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded bg-neutral-100 font-bold text-xs">${esc(u.role)}</span></td>
+          <td class="px-4 py-3 text-xs text-neutral-700" dir="auto">${esc(u.branch)}</td>
+          <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-xs font-bold ${u.active ? "bg-emerald-100 text-emerald-800" : "bg-neutral-200 text-neutral-700"}">${u.active ? "Active" : "Paused"}</span></td>
           <td class="px-4 py-3 text-right">
-            <button type="button" onclick="toggleStaffActive('${u.id}')" class="text-xs font-bold ${u.active ? "text-[#C91E2F]" : "text-emerald-700"} hover:underline">${u.active ? "Pause" : "Resume"}</button>
+            ${isOwner
+              ? `<button type="button" onclick="openStaffToggleModal('${esc(u.id)}')" class="text-xs font-bold ${u.active ? "text-[#C91E2F]" : "text-emerald-800"} hover:underline">${u.active ? "Pause" : "Resume"}</button>`
+              : `<span class="text-xs text-neutral-500">Owner only</span>`}
           </td>
         </tr>
       `).join("");
     }
 
-    let adminToken = sessionStorage.getItem("rush_staff_token") || null;
-
+    // ---- Auth & Live Data ----
     async function ensureStaffLogin() {
       if (adminToken) return adminToken;
       const modal = document.getElementById("login-modal");
@@ -1082,19 +1567,14 @@
         adminToken = data.token;
         sessionStorage.setItem("rush_staff_token", adminToken);
         uiState.currentUser = data.user;
-        const roleDisplay = (data.user.role || "").replace(/_/g, " ");
-        uiState.role = roleDisplay === "BUSINESS OWNER" ? "Business Owner" :
-                       roleDisplay === "OPS MANAGER" ? "Ops Manager" :
-                       roleDisplay === "ADMIN" ? "Admin" : "CSM";
+        uiState.role = enumToRole(data.user.role);
         uiState.opsBranch = data.user.branch || "RUSH Al Kharj";
+        uiState.branchFilter = uiState.role === "Ops Manager" ? uiState.opsBranch : "all";
 
-        const nameEl = document.getElementById("user-display-name");
-        const roleEl = document.getElementById("user-display-role");
-        if (nameEl) nameEl.textContent = data.user.name;
-        if (roleEl) roleEl.textContent = uiState.role;
-
+        updateUserDisplay(data.user.name, uiState.role);
         document.getElementById("login-modal").classList.add("hidden");
         document.getElementById("login-password").value = "";
+        syncRolePermissionsUI();
         await loadLiveAdminData();
         renderRbacBanner();
         renderAllActive();
@@ -1113,29 +1593,60 @@
       }
     }
 
-    async function revealIban(id, btn) {
+    function updateUserDisplay(name, role) {
+      const nameEl = document.getElementById("user-display-name");
+      const roleEl = document.getElementById("user-display-role");
+      const mName = document.getElementById("mobile-user-name");
+      const mRole = document.getElementById("mobile-user-role");
+      if (nameEl) nameEl.textContent = name;
+      if (roleEl) roleEl.textContent = role;
+      if (mName) mName.textContent = name;
+      if (mRole) mRole.textContent = role;
+    }
+
+    async function revealIban(id, targetSpanId, btn) {
       const token = await ensureStaffLogin();
       if (!token) return;
-      const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/bank-details`, { headers: { "Authorization": `Bearer ${token}` } });
-      if (!res.ok) { showToast("Not permitted or no pending transfer"); return; }
+      const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/bank-details`, {
+        headers: { "Authorization": `Bearer ${token}` }
+      });
+      if (!res.ok) return;
       const d = await res.json();
-      const span = btn.previousElementSibling;
-      if (span) span.textContent = `${d.iban} · ${d.accountHolder} · ${d.bankName}`;
-      btn.remove();
+      const span = document.getElementById(targetSpanId);
+      if (span) {
+        span.innerHTML = `<span dir="ltr" class="font-mono font-bold text-black">${esc(d.iban)}</span> · <span dir="auto">${esc(d.accountHolder || "")}</span> · <span dir="auto">${esc(d.bankName || "")}</span>`;
+      }
+      if (btn && btn.parentElement) {
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.className = "ml-1.5 px-2 py-0.5 rounded bg-neutral-100 hover:bg-neutral-200 border border-neutral-300 text-black font-bold text-xs";
+        copyBtn.textContent = "Copy IBAN";
+        copyBtn.onclick = () => copyIbanValue(d.iban);
+        btn.replaceWith(copyBtn);
+      }
+      showToast("Full IBAN revealed (audit logged)");
+    }
+
+    async function copyIbanValue(iban) {
+      try {
+        await navigator.clipboard.writeText(String(iban));
+        showToast("IBAN copied to clipboard");
+      } catch {
+        showToast("Copy failed — select and copy manually");
+      }
     }
 
     function handleLogout() {
       sessionStorage.removeItem("rush_staff_token");
       adminToken = null;
       uiState.currentUser = null;
+      uiState.role = "Guest";
       claims = [];
       staffUsers = [];
       uiState.selectedId = null;
+      syncRolePermissionsUI();
       document.getElementById("login-modal").classList.remove("hidden");
-      const nameEl = document.getElementById("user-display-name");
-      const roleEl = document.getElementById("user-display-role");
-      if (nameEl) nameEl.textContent = "Not signed in";
-      if (roleEl) roleEl.textContent = "Guest";
+      updateUserDisplay("Not signed in", "Guest");
       renderRbacBanner();
       renderAllActive();
       showToast("Signed out");
@@ -1145,14 +1656,27 @@
       try {
         const token = await ensureStaffLogin();
         if (!token) return;
-        const headers = { "Authorization": `Bearer ${token}` };
+        uiState.loading = true;
+        renderAllActive();
 
-        // Fetch config, staff, and claims simultaneously in parallel
-        const [cfgRes, staffRes, claimsRes] = await Promise.all([
+        const headers = { "Authorization": `Bearer ${token}` };
+        const [meRes, cfgRes, staffRes, claimsRes] = await Promise.all([
+          fetch("/api/admin/auth/me", { headers }),
           fetch("/api/admin/config", { headers }),
-          fetch("/api/admin/staff", { headers }),
+          isOwnerRole() || isFinanceRole() ? fetch("/api/admin/staff", { headers }) : Promise.resolve({ ok: false }),
           fetch("/api/admin/claims", { headers })
         ]);
+
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData.staff) {
+            uiState.currentUser = meData.staff;
+            uiState.role = enumToRole(meData.staff.role);
+            uiState.opsBranch = meData.staff.branch || "RUSH Al Kharj";
+            updateUserDisplay(meData.staff.name, uiState.role);
+            syncRolePermissionsUI();
+          }
+        }
 
         if (cfgRes.ok) {
           const cfg = await cfgRes.json();
@@ -1164,27 +1688,21 @@
 
         if (staffRes.ok) {
           const staffList = await staffRes.json();
-          if (staffList.length) {
-            staffUsers = staffList.map(s => ({
-              id: s.id,
-              name: s.name,
-              role: s.role === "BUSINESS_OWNER" ? "Business Owner" : s.role === "OPS_MANAGER" ? "Ops Manager" : s.role,
-              branch: s.branch,
-              active: s.active
-            })).map(x => escDeep(x));
-          } else {
-            staffUsers = [];
-          }
+          staffUsers = Array.isArray(staffList) ? staffList.map(s => ({
+            id: s.id,
+            name: s.name,
+            role: enumToRole(s.role),
+            branch: s.branch,
+            active: s.active
+          })) : [];
         }
 
-        // 3. Process claims
         if (claimsRes.ok) {
           const claimsList = await claimsRes.json();
-          if (claimsList.length) {
+          if (Array.isArray(claimsList) && claimsList.length) {
             const typeMap = { UNSATISFIED: "Unsatisfied", BILLING_REFUND: "Billing / Refund", DAMAGE: "Damage", OTHER: "Other" };
             const statusMap = { SUBMITTED: "Submitted", INVESTIGATING: "Investigating", PENDING_PAYOUT: "Pending Payout", RESOLVED: "Resolved" };
             const resMap = { PENDING: "Pending", APPROVED: "Approved", REFUSED: "Refused" };
-            const roleMap = { BUSINESS_OWNER: "Business Owner", ADMIN: "Admin", OPS_MANAGER: "Ops Manager", CSM: "CSM" };
             const payoutMap = {
               PENDING_REVIEW: "Pending Review",
               AWAITING_QUOTE_APPROVAL: "Awaiting Quote Approval",
@@ -1198,13 +1716,14 @@
 
             claims = claimsList.map(c => ({
               id: c.id,
-              title: c.summary?.slice(0, 40) || `Claim ${c.id}`,
+              title: (c.summary || "").slice(0, 40) || `Claim ${c.id}`,
               type: typeMap[c.type] || c.type,
               status: statusMap[c.status] || c.status,
               resolutionStatus: resMap[c.resolutionStatus] || c.resolutionStatus,
               resolutionNote: c.resolutionNote || "",
               branch: c.branch || "RUSH Al Kharj",
-              assignedRole: roleMap[c.assignedRole] || c.assignedRole,
+              assignedRole: enumToRole(c.assignedRole),
+              assignedStaffName: c.assignedStaffName || "Unassigned",
               ageHours: c.ageHours || 0,
               customer: {
                 name: c.customer?.name || "Customer",
@@ -1216,13 +1735,14 @@
                 plate: c.customer?.plate || ""
               },
               receipt: c.receipt || "",
-              zones: c.vehicleZones || [],
+              zones: Array.isArray(c.vehicleZones) ? c.vehicleZones : [],
               summary: c.summary || "",
               evidence: {
                 filesCount: (c.mediaUrls?.length || 0) + (c.quotationUrl ? 1 : 0) + (c.invoiceUrl ? 1 : 0),
                 workOrder: c.rewashCode || "None",
                 note: c.resolutionNote || ""
               },
+              requestedSar: c.requestedAmount || 0,
               quotedSar: c.quotedAmount || 0,
               approvedSar: c.approvedAmount || 0,
               rewashCode: c.rewashCode || "",
@@ -1238,14 +1758,14 @@
                 accountHolder: c.accountHolder || "",
                 iban: c.iban || ""
               },
-              csat: c.csatRating || 5,
+              csat: c.csatRating || 0,
               messages: (c.messages || []).map(m => ({
                 sender: m.sender,
                 channel: m.channel === "WHATSAPP" ? "WhatsApp" : m.channel === "INTERNAL" ? "Internal" : "Web Portal",
-                time: new Date(m.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                time: new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
                 text: m.text
               }))
-            })).map(x => escDeep(x, ["resolutionNote"]));
+            }));
             if (!claims.find(x => x.id === uiState.selectedId) && claims[0]) {
               uiState.selectedId = claims[0].id;
             }
@@ -1254,373 +1774,503 @@
             uiState.selectedId = null;
           }
         }
-        renderAllActive();
+        populateBranchOptions();
       } catch (err) {
         console.warn("loadLiveAdminData error:", err);
+      } finally {
+        uiState.loading = false;
+        syncRolePermissionsUI();
+        renderRbacBanner();
+        renderAllActive();
       }
     }
 
+    // ---- Config & Staff Mutations (strict res.ok) ----
     async function saveSystemConfig(e) {
       e.preventDefault();
-      if (uiState.role !== "Business Owner") return showToast("Only Business Owner can edit config");
-      const cap = Number(document.getElementById("cfg-cap").value) || 200;
-      const sla = Number(document.getElementById("cfg-sla").value) || 48;
+      if (!isOwnerRole()) return showToast("Only Business Owner can edit config");
+      const cap = Number(document.getElementById("cfg-cap").value);
+      const sla = Number(document.getElementById("cfg-sla").value);
       const vat = document.getElementById("cfg-vat").value.trim();
       const cr = document.getElementById("cfg-cr").value.trim();
 
-      sysConfig.damageApprovalCapSar = cap;
-      sysConfig.maxSlaHours = sla;
-      sysConfig.vatNumber = vat;
-      sysConfig.crNumber = cr;
-
-      try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch("/api/admin/config", {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ damageApprovalCapSar: cap, maxSlaHours: sla, vatNumber: vat, crNumber: cr })
-          });
-        }
-      } catch (err) {
-        console.warn("Config update API error:", err);
-      }
-
-      renderRbacBanner();
-      showToast(`Saved: Damage cap SAR ${sysConfig.damageApprovalCapSar}, SLA ${sysConfig.maxSlaHours}h`);
-    }
-
-    async function addStaffMember(e) {
-      e.preventDefault();
-      const name = document.getElementById("new-staff-name").value.trim();
-      const role = document.getElementById("new-staff-role").value;
-      const branch = document.getElementById("new-staff-branch").value;
-      if (!name) return;
-      const email = prompt("Work email for " + name + ":", "");
-      if (!email) return;
-      const password = prompt("Set an initial password (min 12 chars, upper/lower/digit/symbol). Share it securely; the user should change it at first login:", "");
-      if (!password) return;
-
-      const roleMap = { "Business Owner": "BUSINESS_OWNER", "Admin": "ADMIN", "Ops Manager": "OPS_MANAGER", "CSM": "CSM" };
       const token = await ensureStaffLogin();
       if (!token) return;
+      try {
+        const res = await fetch("/api/admin/config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ damageApprovalCapSar: cap, maxSlaHours: sla, vatNumber: vat, crNumber: cr })
+        });
+        if (!res.ok) return;
+        const updated = await res.json();
+        sysConfig.damageApprovalCapSar = Number(updated.damageApprovalCapSar);
+        sysConfig.maxSlaHours = Number(updated.maxSlaHours);
+        sysConfig.vatNumber = updated.vatNumber;
+        sysConfig.crNumber = updated.crNumber;
+        renderRbacBanner();
+        renderAllActive();
+        showToast(`Saved: Damage cap SAR ${sysConfig.damageApprovalCapSar}, SLA ${sysConfig.maxSlaHours}h`);
+      } catch {
+        showToast("Could not reach the server");
+      }
+    }
+
+    function openAddStaffModal(e) {
+      e.preventDefault();
+      if (!isOwnerRole()) return showToast("Only Business Owner can add staff");
+      document.getElementById("modal-staff-name").value = document.getElementById("new-staff-name").value.trim();
+      document.getElementById("modal-staff-role").value = document.getElementById("new-staff-role").value;
+      document.getElementById("modal-staff-branch").value = document.getElementById("new-staff-branch").value;
+      document.getElementById("modal-staff-email").value = "";
+      document.getElementById("modal-staff-password").value = "";
+      document.getElementById("modal-staff-err").classList.add("hidden");
+      openModal("modal-add-staff");
+    }
+
+    async function submitAddStaffModal(e) {
+      e.preventDefault();
+      const name = document.getElementById("modal-staff-name").value.trim();
+      const role = document.getElementById("modal-staff-role").value;
+      const branch = document.getElementById("modal-staff-branch").value;
+      const email = document.getElementById("modal-staff-email").value.trim();
+      const password = document.getElementById("modal-staff-password").value;
+      const errEl = document.getElementById("modal-staff-err");
+      const btn = document.getElementById("btn-submit-add-staff");
+      errEl.classList.add("hidden");
+
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      btn.disabled = true;
       try {
         const res = await fetch("/api/admin/staff", {
           method: "POST",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ name, role: roleMap[role] || "CSM", branch, email, password })
+          body: JSON.stringify({ name, role: roleToEnum(role), branch, email, password })
         });
-        if (!res.ok) return; // wrapper already toasted the server error
-        const created = await res.json();
-        staffUsers.push(escDeep({ id: created.id, name: created.name, role, branch: created.branch, active: true }));
+        const body = await res.json().catch(() => null);
+        if (!res.ok) {
+          errEl.textContent = formatApiError(body, "Failed to create staff account");
+          errEl.classList.remove("hidden");
+          return;
+        }
+        staffUsers.push({ id: body.id, name: body.name, role, branch: body.branch, active: true });
+        document.getElementById("new-staff-name").value = "";
+        closeModal("modal-add-staff");
+        populateBranchOptions();
+        renderSettings();
+        showToast(`Added ${name} (${role})`);
       } catch {
-        showToast("Could not reach the server");
-        return;
+        errEl.textContent = "Could not reach the server";
+        errEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
       }
-
-      document.getElementById("new-staff-name").value = "";
-      renderSettings();
-      showToast(`Added ${esc(name)} (${role})`);
     }
 
-    async function toggleStaffActive(id) {
+    function openStaffToggleModal(id) {
+      if (!isOwnerRole()) return showToast("Only Business Owner can manage staff access");
       const u = staffUsers.find(x => x.id === id);
       if (!u) return;
-      u.active = !u.active;
-      try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/staff/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ active: u.active })
-          });
-        }
-      } catch (err) {
-        console.warn("Toggle staff active error:", err);
-      }
-      renderSettings();
-      showToast(`${u.name} ${u.active ? "resumed" : "paused"}`);
+      document.getElementById("modal-staff-toggle-id").value = id;
+      const action = u.active ? "Pause" : "Resume";
+      document.getElementById("modal-staff-toggle-title").textContent = `${action} Staff Access`;
+      document.getElementById("modal-staff-toggle-desc").textContent = u.active
+        ? `Pause ${u.name} (${u.role})? They will immediately lose access to the operations console until resumed.`
+        : `Resume ${u.name} (${u.role})? They will regain access to the operations console.`;
+      const btn = document.getElementById("btn-confirm-staff-toggle");
+      btn.textContent = `${action} Account`;
+      btn.className = u.active
+        ? "px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold"
+        : "px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold";
+      openModal("modal-staff-toggle");
     }
 
-    // ---- Claim Mutations ----
-    function toggleZone(id, z) {
+    async function confirmStaffToggle() {
+      const id = document.getElementById("modal-staff-toggle-id").value;
+      const u = staffUsers.find(x => x.id === id);
+      if (!u) return;
+      const nextActive = !u.active;
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      const btn = document.getElementById("btn-confirm-staff-toggle");
+      btn.disabled = true;
+      try {
+        const res = await fetch(`/api/admin/staff/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ active: nextActive })
+        });
+        if (!res.ok) return;
+        u.active = nextActive;
+        closeModal("modal-staff-toggle");
+        renderSettings();
+        showToast(`${u.name} ${u.active ? "resumed" : "paused"}`);
+      } catch {
+        showToast("Could not reach the server");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ---- Claim Mutations (strict res.ok) ----
+    async function toggleZone(id, z) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      const i = c.zones.indexOf(z);
-      if (i >= 0) c.zones.splice(i, 1); else c.zones.push(z);
-      renderDetail();
+      if (!canEditClaim(c) || c.status === "Resolved") {
+        showToast("Zone map cannot be modified on closed or read-only tickets");
+        return;
+      }
+      const nextZones = c.zones.includes(z) ? c.zones.filter(x => x !== z) : [...c.zones, z];
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      try {
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ vehicleZones: nextZones })
+        });
+        if (!res.ok) return;
+        c.zones = nextZones;
+        renderDetail();
+        showToast(`Updated zones on ${id}`);
+      } catch {
+        showToast("Could not save vehicle zones");
+      }
     }
 
     async function handoffToCsm(id) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      c.assignedRole = "CSM";
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "Internal", time: "Just now", text: "Site inspection completed. Handed off to CSM for customer settlement." });
-
-      try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/claims/${id}/handoff-csm`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-        }
-      } catch (err) {
-        console.warn("Handoff API error:", err);
-      }
-
-      renderRbacBanner(); renderAllActive();
-      showToast(`${id} handed off to CSM`);
-    }
-
-    function reassignRole(id, r) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      c.assignedRole = r;
-      renderRbacBanner(); renderAllActive();
-      showToast(`Reassigned ${id} to ${r}`);
-    }
-
-    async function updateClaimField(id, field, val) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      c[field] = val;
-      if (field === "resolutionStatus" && val === "Refused") {
-        c.status = "Resolved"; c.payoutStatus = "Declined";
-        await refuseClaim(id, c.resolutionNote || "Declined upon operational review");
+      const hasZones = Array.isArray(c.zones) && c.zones.length > 0;
+      const hasNote = Boolean((c.resolutionNote && c.resolutionNote.trim()) || (c.evidence?.note && c.evidence.note.trim()));
+      if (!hasZones || !hasNote) {
+        showToast("Tag at least 1 damaged zone and save an inspection note before handing off to CSM");
         return;
       }
-      if (field === "resolutionStatus" && val === "Approved" && c.type === "Damage") {
-        await requestDamageQuote(id, c.resolutionNote);
-        return;
-      }
-      renderAllActive();
-      showToast(`Updated ${id}`);
-
-      // Real-time backend persistence
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const payload = {};
-          if (field === "resolutionStatus") {
-            payload.resolutionStatus = val === "Approved" ? "APPROVED" : (val === "Refused" ? "REFUSED" : "PENDING");
-          } else if (field === "resolutionNote") {
-            payload.resolutionNote = val;
-          } else if (field === "status") {
-            payload.status = val.toUpperCase().replace(/\s+/g, "_");
-          }
-          await fetch(`/api/admin/claims/${id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify(payload)
-          });
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/handoff-csm`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        c.assignedRole = "CSM";
+        c.status = "Investigating";
+        if (data?.complaint?.assignedStaffName) c.assignedStaffName = data.complaint.assignedStaffName;
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "Internal",
+          time: "Just now",
+          text: "Site inspection completed. Handed off to CSM for customer settlement."
+        });
+        renderRbacBanner();
+        renderAllActive();
+        showToast(`${id} handed off to CSM`);
+      } catch {
+        showToast("Could not reach the server");
+      }
+    }
+
+    async function reassignRole(id, r) {
+      const c = claims.find(x => x.id === id);
+      if (!c) return;
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      try {
+        const staffName = getStaffNameByRole(r, c.branch);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ assignedRole: roleToEnum(r), assignedStaffName: staffName })
+        });
+        if (!res.ok) {
+          renderDetail();
+          return;
         }
-      } catch (err) {
-        console.warn("Update claim field API error:", err);
+        c.assignedRole = r;
+        c.assignedStaffName = staffName;
+        renderRbacBanner();
+        renderAllActive();
+        showToast(`Reassigned ${id} to ${r}`);
+      } catch {
+        showToast("Could not reach the server");
+        renderDetail();
+      }
+    }
+
+    async function saveResolutionNote(id) {
+      const c = claims.find(x => x.id === id);
+      const inp = document.getElementById(`inp-resolution-note-${id}`);
+      if (!c || !inp) return;
+      const val = inp.value.trim();
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      try {
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ resolutionNote: val })
+        });
+        if (!res.ok) return;
+        c.resolutionNote = val;
+        c.evidence.note = val;
+        renderAllActive();
+        showToast(`Saved note on ${id}`);
+      } catch {
+        showToast("Could not reach the server");
       }
     }
 
     async function requestDamageQuote(id, customNote) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      const note = customNote || c.resolutionNote || "Your damage claim has been approved for repair review. Please upload an official repair quotation and sign the liability waiver in your tracker.";
-      c.resolutionStatus = "Approved";
-      c.status = "Investigating";
-      c.payoutStatus = "Awaiting Quote Approval";
-      c.resolutionNote = note;
-
+      const noteInput = document.getElementById(`inp-resolution-note-${id}`);
+      const note = (customNote || noteInput?.value.trim() || c.resolutionNote || "Your damage claim has been approved for repair review. Please upload an official repair quotation and sign the liability waiver in your tracker.").trim();
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const res = await fetch(`/api/admin/claims/${id}/damage/request-quote`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ resolutionNote: note })
-          });
-          if (res.ok) {
-            c.messages.push({
-              sender: getStaffNameByRole(uiState.role, uiState.opsBranch),
-              channel: "WhatsApp",
-              time: "Just now",
-              text: `Damage claim approved for repair quotation: ${note}`
-            });
-          }
-        }
-      } catch (err) {
-        console.warn("Request quote API error:", err);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/request-quote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ resolutionNote: note })
+        });
+        if (!res.ok) return;
+        c.resolutionStatus = "Approved";
+        c.status = "Investigating";
+        c.payoutStatus = "Awaiting Quote Approval";
+        c.resolutionNote = note;
+        c.evidence.note = note;
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "WhatsApp",
+          time: "Just now",
+          text: `Damage claim approved for repair quotation: ${note}`
+        });
+        renderAllActive();
+        showToast(`Quotation requested from customer for ${id}`);
+      } catch {
+        showToast("Could not reach the server");
       }
-
-      renderAllActive();
-      showToast(`Quotation requested from customer for ${id}`);
     }
 
-    async function refuseClaim(id, note) {
+    function openRefuseModal(id) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      const resNote = note || c.resolutionNote || "Claim refused upon detailed review";
-      c.resolutionStatus = "Refused";
-      c.status = "Resolved";
-      c.payoutStatus = "Declined";
+      document.getElementById("modal-refuse-ticket-id").value = id;
+      document.getElementById("modal-refuse-desc").textContent = `Refuse ticket ${id} (${c.type} · ${c.customer.name})? This will close the ticket and notify the customer via WhatsApp.`;
+      document.getElementById("modal-refuse-note").value = c.resolutionNote || "";
+      openModal("modal-refuse");
+    }
+
+    async function submitRefuseModal(e) {
+      e.preventDefault();
+      const id = document.getElementById("modal-refuse-ticket-id").value;
+      const resNote = document.getElementById("modal-refuse-note").value.trim();
+      const c = claims.find(x => x.id === id);
+      if (!c || resNote.length < 5) return;
+
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      const btn = document.getElementById("btn-submit-refuse");
+      btn.disabled = true;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/claims/${id}/refuse`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ resolutionNote: resNote })
-          });
-        }
-      } catch (err) {
-        console.warn("Refuse claim API error:", err);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/refuse`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ resolutionNote: resNote })
+        });
+        if (!res.ok) return;
+        c.resolutionStatus = "Refused";
+        c.status = "Resolved";
+        c.payoutStatus = "Declined";
+        c.resolutionNote = resNote;
+        c.evidence.note = resNote;
+        closeModal("modal-refuse");
+        renderAllActive();
+        showToast(`Declined ${id}`);
+      } catch {
+        showToast("Could not reach the server");
+      } finally {
+        btn.disabled = false;
       }
-      renderAllActive();
-      showToast(`Declined ${id}`);
     }
 
     async function issueRewash(id) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      c.resolutionStatus = "Approved";
-      c.payoutStatus = "Rewash Issued";
-      c.status = "Resolved";
-
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const res = await fetch(`/api/admin/claims/${id}/unsatisfied/approve`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            c.rewashCode = data.rewashCode;
-          }
-        }
-      } catch (err) {
-        console.warn("Issue rewash API error:", err);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/unsatisfied/approve`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        c.resolutionStatus = "Approved";
+        c.payoutStatus = "Rewash Issued";
+        c.status = "Resolved";
+        c.rewashCode = data.rewashCode;
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "WhatsApp",
+          time: "Just now",
+          text: `Approved complimentary Rewash QR pass: ${c.rewashCode}`
+        });
+        renderAllActive();
+        showToast(`Issued Rewash QR ${c.rewashCode}`);
+      } catch {
+        showToast("Could not reach the server");
       }
-
-      if (!c.rewashCode) c.rewashCode = "RW-" + (8850 + Math.floor(Math.random() * 140));
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "WhatsApp", time: "Just now", text: `Approved complimentary Rewash QR pass: ${c.rewashCode}` });
-      renderAllActive();
-      showToast(`Issued Rewash QR ${c.rewashCode}`);
     }
 
     async function saveBillingRrn(id) {
       const c = claims.find(x => x.id === id);
       const rrn = document.getElementById("inp-rrn")?.value.trim();
+      const amtVal = parseFloat(document.getElementById("inp-billing-amount")?.value || "");
+      const amount = !isNaN(amtVal) && amtVal > 0 ? amtVal : Number(c?.approvedSar || c?.requestedSar || c?.quotedSar || 0);
       if (!c || !rrn) return showToast("Enter RRN first");
-      c.rrn = rrn;
-      c.resolutionStatus = "Approved";
-      c.payoutStatus = "Paid (RRN)";
-      c.transferRef = rrn;
-      c.status = "Resolved";
+      if (!(amount > 0)) return showToast("Enter a valid positive refund amount (SAR)");
 
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/claims/${id}/billing/approve`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ rrn, amount: c.approvedSar || c.quotedSar || 0 })
-          });
-        }
-      } catch (err) {
-        console.warn("Billing refund API error:", err);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/billing/approve`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ rrn, amount })
+        });
+        if (!res.ok) return;
+        c.rrn = rrn;
+        c.approvedSar = amount;
+        c.resolutionStatus = "Approved";
+        c.payoutStatus = "Paid (RRN)";
+        c.transferRef = rrn;
+        c.status = "Resolved";
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "WhatsApp",
+          time: "Just now",
+          text: `Refund of SAR ${amount} approved & processed. Your RRN is ${rrn}.`
+        });
+        renderAllActive();
+        showToast(`Saved RRN ${rrn} & resolved ${id}`);
+      } catch {
+        showToast("Could not reach the server");
       }
+    }
 
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "WhatsApp", time: "Just now", text: `Refund approved & processed. Your RRN is ${rrn}.` });
-      renderAllActive();
-      showToast(`Saved RRN ${rrn} & resolved ${id}`);
+    function checkQuoteCapLive(id, rawVal) {
+      const val = parseFloat(rawVal);
+      const warn = document.getElementById(`quote-cap-warn-${id}`);
+      const btn = document.getElementById(`btn-approve-quote-${id}`);
+      const overCap = !isNaN(val) && val > sysConfig.damageApprovalCapSar;
+      const blocked = overCap && !isOwnerRole();
+      if (warn) {
+        warn.classList.toggle("hidden", !overCap);
+        warn.textContent = blocked
+          ? `Escalated: SAR ${val} exceeds SAR ${sysConfig.damageApprovalCapSar} cap — Business Owner approval required.`
+          : `Note: SAR ${val} exceeds SAR ${sysConfig.damageApprovalCapSar} cap (Owner override).`;
+      }
+      if (btn) btn.disabled = blocked;
     }
 
     async function approveQuotation(id) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-
       const quotedInp = document.getElementById(`inp-quoted-sar-${id}`);
       const quotedSar = quotedInp && quotedInp.value ? parseFloat(quotedInp.value) : c.quotedSar;
-      if (quotedSar !== undefined && !isNaN(quotedSar)) {
+      if (quotedSar === undefined || isNaN(quotedSar) || quotedSar <= 0) {
+        showToast("Enter a valid positive quotation amount (SAR)");
+        return;
+      }
+
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      try {
+        const payload = isOwnerRole() ? { quotedAmount: quotedSar } : {};
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/approve-quote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) return;
         c.quotedSar = quotedSar;
+        c.damageFlow.quotationApproved = true;
+        c.payoutStatus = "Awaiting Invoice & IBAN";
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "WhatsApp",
+          time: "Just now",
+          text: `Quotation (SAR ${c.quotedSar || 0}) approved. Step 2 (Tax Invoice & IBAN) is now unlocked in your tracker.`
+        });
+        renderAllActive();
+        showToast(`Quotation approved on ${id} — Invoice step unlocked`);
+      } catch {
+        showToast("Could not reach the server");
       }
-
-      try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const res = await fetch(`/api/admin/claims/${id}/damage/approve-quote`, {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}` 
-            },
-            body: JSON.stringify({ quotedAmount: quotedSar })
-          });
-          if (!res.ok) {
-            const errData = await res.json();
-            return alert(errData.error || "Approval rejected by server policy.");
-          }
-        }
-      } catch (err) {
-        console.warn("Approve quote API error:", err);
-      }
-
-      c.damageFlow.quotationApproved = true;
-      c.payoutStatus = "Awaiting Invoice & IBAN";
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "WhatsApp", time: "Just now", text: `Quotation (SAR ${c.quotedSar || 0}) approved. Step 2 (Tax Invoice & IBAN) is now unlocked in your tracker.` });
-      renderAllActive();
-      showToast(`Quotation approved on ${id} — Invoice step unlocked`);
     }
 
-    async function markBankPaid(id) {
-      const c = claims.find(x => x.id === id);
-      const ref = document.getElementById("inp-transfer-ref")?.value.trim();
-      if (!c || !ref) return showToast("Enter Bank Transfer Ref #");
-      c.transferRef = ref;
-      c.payoutStatus = "Paid";
-      c.status = "Resolved";
-
-      try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/finance/${id}/mark-paid`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ transferRef: ref })
-          });
-        }
-      } catch (err) {
-        console.warn("Mark paid API error:", err);
-      }
-
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "WhatsApp", time: "Just now", text: `Bank transfer of SAR ${c.approvedSar} completed (Ref: ${ref}).` });
-      renderAllActive();
-      showToast(`Marked ${id} Paid (Ref: ${ref})`);
-    }
-
-    async function quickMarkPaid(id) {
+    function openMarkPaidModal(id, prefillRef) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      const ref = "TRF-" + (994000 + Math.floor(Math.random() * 999));
-      c.transferRef = ref;
-      c.payoutStatus = "Paid";
-      c.status = "Resolved";
+      const amount = Number(c.approvedSar || c.quotedSar || 0);
+      document.getElementById("modal-paid-ticket-id").value = id;
+      document.getElementById("modal-paid-ref").value = prefillRef || "";
+      document.getElementById("modal-mark-paid-summary").innerHTML = `
+        <div><strong>Ticket:</strong> <span class="font-mono notranslate" translate="no" dir="ltr">${esc(c.id)}</span> · <span dir="auto">${esc(c.customer.name)}</span></div>
+        <div><strong>Bank / IBAN:</strong> <span dir="auto">${esc(c.damageFlow.bankName || "—")}</span> · <span class="font-mono notranslate" translate="no" dir="ltr">${esc(c.damageFlow.iban || "—")}</span></div>
+        <div><strong>Payout Amount:</strong> <span class="font-bold text-emerald-800" dir="ltr">SAR ${amount.toLocaleString()}</span></div>
+      `;
+      openModal("modal-mark-paid");
+    }
 
+    function markBankPaid(id) {
+      const ref = document.getElementById("inp-transfer-ref")?.value.trim() || "";
+      openMarkPaidModal(id, ref);
+    }
+
+    async function submitMarkPaidModal(e) {
+      e.preventDefault();
+      const id = document.getElementById("modal-paid-ticket-id").value;
+      const ref = document.getElementById("modal-paid-ref").value.trim();
+      const c = claims.find(x => x.id === id);
+      if (!c || !ref) return;
+
+      const token = await ensureStaffLogin();
+      if (!token) return;
+      const btn = document.getElementById("btn-submit-mark-paid");
+      btn.disabled = true;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/finance/${id}/mark-paid`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ transferRef: ref })
-          });
-        }
-      } catch (err) {
-        console.warn("Quick mark paid API error:", err);
+        const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/mark-paid`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ transferRef: ref })
+        });
+        if (!res.ok) return;
+        const paidAmount = Number(c.approvedSar || c.quotedSar || 0);
+        c.approvedSar = paidAmount;
+        c.transferRef = ref;
+        c.payoutStatus = "Paid";
+        c.status = "Resolved";
+        c.resolutionStatus = "Approved";
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "WhatsApp",
+          time: "Just now",
+          text: `Bank transfer of SAR ${paidAmount} completed (Ref: ${ref}).`
+        });
+        closeModal("modal-mark-paid");
+        renderAllActive();
+        showToast(`Marked ${id} Paid (Ref: ${ref})`);
+      } catch {
+        showToast("Could not reach the server");
+      } finally {
+        btn.disabled = false;
       }
-
-      renderAllActive();
-      showToast(`Marked ${id} Paid (Ref: ${ref})`);
     }
 
     async function sendStaffMsg(e, id) {
@@ -1631,63 +2281,93 @@
       if (!c || !inp.value.trim()) return;
       const text = inp.value.trim();
 
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          const chEnum = ch === "WhatsApp" ? "WHATSAPP" : ch === "Internal" ? "INTERNAL" : "WEB_PORTAL";
-          await fetch(`/api/admin/claims/${id}/messages`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ body: text, channel: chEnum })
-          });
-        }
-      } catch (err) {
-        console.warn("Send staff msg API error:", err);
+        const chEnum = ch === "WhatsApp" ? "WHATSAPP" : ch === "Internal" ? "INTERNAL" : "WEB_PORTAL";
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+          body: JSON.stringify({ body: text, channel: chEnum })
+        });
+        if (!res.ok) return;
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: ch,
+          time: "Just now",
+          text
+        });
+        inp.value = "";
+        renderDetail();
+        showToast(`Sent via ${ch}`);
+      } catch {
+        showToast("Could not reach the server");
       }
-
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: ch, time: "Just now", text });
-      inp.value = "";
-      renderDetail();
-      showToast(`Sent via ${ch}`);
     }
 
     async function sendOverdueNudge(id) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
-      const assigneeName = getStaffNameByRole(c.assignedRole, c.branch);
-      c.messages.push({ sender: getStaffNameByRole(uiState.role, uiState.opsBranch), channel: "Internal", time: "Just now", text: `SLA escalation reminder sent to ${assigneeName} (Ticket ${id} is ${c.ageHours}h old, exceeding ${sysConfig.maxSlaHours}h limit).` });
-
+      const assigneeName = getTicketAssigneeName(c);
+      const token = await ensureStaffLogin();
+      if (!token) return;
       try {
-        const token = await ensureStaffLogin();
-        if (token) {
-          await fetch(`/api/admin/claims/${id}/nudge`, {
-            method: "POST",
-            headers: { "Authorization": `Bearer ${token}` }
-          });
-        }
-      } catch (err) {
-        console.warn("SLA nudge API error:", err);
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/nudge`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) return;
+        c.messages.push({
+          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+          channel: "Internal",
+          time: "Just now",
+          text: `SLA escalation reminder sent to ${assigneeName} (Ticket ${id} is ${c.ageHours}h old, exceeding ${sysConfig.maxSlaHours}h limit).`
+        });
+        renderDetail();
+        showToast(`Sent >${sysConfig.maxSlaHours}h overdue reminder to ${assigneeName}`);
+      } catch {
+        showToast("Could not reach the server");
       }
-
-      renderDetail();
-      showToast(`Sent >${sysConfig.maxSlaHours}h overdue reminder to ${assigneeName}`);
     }
 
-    function exportCsv() {
+    async function exportCsv() {
+      if (!isFinanceRole()) {
+        showToast("CSV export is restricted to Business Owner and Admin");
+        return;
+      }
       if (adminToken) {
-        window.open("/api/admin/finance/export.csv", "_blank");
-        showToast("Exporting live CSV from server...");
+        try {
+          const res = await fetch("/api/admin/finance/export.csv", {
+            headers: { "Authorization": `Bearer ${adminToken}` }
+          });
+          if (!res.ok) return;
+          const blob = await res.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `rush_finance_export_${Date.now()}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+          showToast("Exported live CSV from server");
+        } catch {
+          showToast("Could not download CSV from server");
+        }
         return;
       }
       const rows = [["Ticket", "Branch", "Type", "Status", "Assigned Role", "SLA Hours", "Customer", "Quoted SAR", "Approved SAR", "Payout Status", "Ref / RRN / Rewash"]];
       getVisibleClaims().forEach(c => {
-        rows.push([c.id, c.branch, c.type, c.status, getStaffNameByRole(c.assignedRole, c.branch), c.ageHours, c.customer.name, c.quotedSar, c.approvedSar, c.payoutStatus, c.transferRef || c.rrn || c.rewashCode || ""]);
+        rows.push([c.id, c.branch, c.type, c.status, getTicketAssigneeName(c), c.ageHours, c.customer.name, c.quotedSar, c.approvedSar, c.payoutStatus, c.transferRef || c.rrn || c.rewashCode || ""]);
       });
-      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const csvCell = v => {
+        let s = String(v ?? "");
+        if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+        return `"${s.replace(/"/g, '""')}"`;
+      };
+      const csv = rows.map(r => r.map(csvCell).join(",")).join("\n");
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
       a.download = "rush_admin_claims_export.csv";
       a.click();
+      URL.revokeObjectURL(a.href);
       showToast("Exported CSV");
     }
 
@@ -1700,6 +2380,7 @@
     }
 
     window.addEventListener("DOMContentLoaded", async () => {
+      syncRolePermissionsUI();
       renderRbacBanner();
       renderDashboard();
       lucide.createIcons();

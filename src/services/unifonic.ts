@@ -3,9 +3,14 @@
  * Dispatches verification SMS OTPs to customer mobile numbers.
  */
 
-const UNIFONIC_APP_ID = process.env.UNIFONIC_APP_ID || "Yo2Ui5FSzyM6BJ56YmOXVpGmqstcjk";
+const UNIFONIC_APP_ID = process.env.UNIFONIC_APP_ID || "";
 const UNIFONIC_SENDER_ID = process.env.UNIFONIC_SENDER_ID || "RushWash";
 const UNIFONIC_BASE_URL = process.env.UNIFONIC_BASE_URL || "https://el.cloud.unifonic.com";
+
+function maskPhone(digits: string): string {
+  if (!digits || digits.length <= 4) return "••••";
+  return `${digits.slice(0, 3)}•••••${digits.slice(-2)}`;
+}
 
 export async function sendSmsOtp(phone: string, code: string): Promise<boolean> {
   if (!UNIFONIC_APP_ID) {
@@ -22,6 +27,7 @@ export async function sendSmsOtp(phone: string, code: string): Promise<boolean> 
     digits = "966" + digits;
   }
 
+  const maskedRecipient = maskPhone(digits);
   const message = `رمز التحقق الخاص بك في رش واش: ${code}\nYour Rush Wash verification code is: ${code}`;
 
   try {
@@ -46,13 +52,13 @@ export async function sendSmsOtp(phone: string, code: string): Promise<boolean> 
     const data: any = await res.json().catch(() => null);
     const success = res.ok && String(data?.success).toLowerCase() === "true";
     if (success) {
-      console.log(`[Unifonic] Successfully dispatched OTP SMS to ${digits}`);
+      console.log(`[Unifonic] Successfully dispatched OTP SMS to ${maskedRecipient}`);
     } else {
       console.warn(`[Unifonic] SMS dispatch response:`, res.status, data);
     }
     return success;
   } catch (err: any) {
-    console.error(`[Unifonic] Error sending OTP SMS to ${digits}:`, err?.message || err);
+    console.error(`[Unifonic] Error sending OTP SMS to ${maskedRecipient}:`, err?.message || err);
     return false;
   }
 }

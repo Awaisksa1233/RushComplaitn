@@ -15,7 +15,7 @@
               red: '#C91E2F',
               dark: '#A61726',
               black: '#000000',
-              surface: '#F7F7F8',
+              surface: '#F2F2F2',
             }
           }
         }
@@ -25,11 +25,13 @@
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { font-family: 'Inter', 'IBM Plex Sans Arabic', -apple-system, BlinkMacSystemFont, sans-serif; }
+    html[lang="ar"] body { font-family: 'IBM Plex Sans Arabic', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     .car-zone { cursor: pointer; transition: all 0.15s ease; }
     .car-zone:hover { filter: brightness(0.92); stroke: #C91E2F; stroke-width: 2; }
+    .car-zone:focus-visible { outline: 2px solid #C91E2F; outline-offset: 2px; stroke: #C91E2F; stroke-width: 2.5; }
     .car-zone.selected { fill: #C91E2F !important; fill-opacity: 0.78 !important; stroke: #881320 !important; stroke-width: 2.5 !important; }
     .rush-hero-bg {
       background: radial-gradient(circle at 85% 15%, rgba(201, 30, 47, 0.15) 0%, rgba(10, 10, 10, 0.96) 55%, #000000 100%);
@@ -49,254 +51,280 @@
 </head>
 <body class="bg-white text-black antialiased min-h-screen notranslate" translate="no">
 
-  <div id="portal-root" class="min-h-screen bg-[#F7F7F8] flex flex-col justify-start items-center sm:py-8 notranslate" translate="no">
+  <div id="portal-root" class="min-h-screen bg-[#F2F2F2] flex flex-col justify-start items-center sm:py-8 notranslate" translate="no">
 
-    <main class="w-full max-w-xl bg-white sm:rounded-3xl shadow-sm sm:border sm:border-neutral-200/80 p-4 sm:p-8 flex flex-col justify-between min-h-screen sm:min-h-0 space-y-5">
-      <div class="w-full space-y-5">
-        <!-- Sleek Brand & Language Header -->
-        <header class="flex items-center justify-between border-b border-neutral-100 pb-4">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-xs shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-6 h-4">
-                <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
-                <path fill-rule="evenodd" d="M349.6 195.55A10.65 10.65 0 1 1 349.6 216.85A10.65 10.65 0 1 1 349.6 195.55ZM349.6 197.7A8.5 8.5 0 1 0 349.6 214.7A8.5 8.5 0 1 0 349.6 197.7Z"/>
-                <path fill-rule="evenodd" d="M345.9 201.05H349.95C352.35 201.05 353.65 202.25 353.65 204.2C353.65 205.55 352.95 206.5 351.65 206.95L354.15 211.2H351.65L349.45 207.35H348.1V211.2H345.9ZM348.1 202.95V205.5H349.7C350.8 205.5 351.4 205.05 351.4 204.2C351.4 203.35 350.8 202.95 349.7 202.95Z"/>
-              </svg>
-            </div>
-            <div class="leading-none notranslate" translate="no">
-              <span class="font-extrabold tracking-widest text-base italic text-black notranslate">RUSH</span>
-              <span class="text-xs font-bold text-neutral-800 ml-1 notranslate">رش واش</span>
-              <span id="brand-sub" class="block text-[10px] font-semibold text-neutral-400 mt-1 notranslate">خدمة العملاء · Customer Care</span>
-            </div>
-          </div>
+    <main class="w-full max-w-xl bg-white sm:rounded-3xl shadow-sm sm:border sm:border-neutral-200/80 overflow-hidden flex flex-col justify-between min-h-screen sm:min-h-0">
+      <div class="h-1.5 w-full rush-stripe shrink-0" aria-hidden="true"></div>
 
-          <button id="lang-btn" type="button" onclick="toggleLang()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4F4F5] hover:bg-neutral-200 border border-neutral-200 text-xs font-semibold text-black transition notranslate" translate="no">
-            <span class="text-[#C91E2F] font-bold">EN</span>
-            <span>English</span>
-          </button>
-        </header>
-
-        <!-- Top Bar: Mode Switcher -->
-        <div class="w-full inline-flex items-center bg-[#F4F4F5] p-1 rounded-full border border-neutral-200 text-xs font-semibold notranslate" translate="no">
-          <button id="tab-file" type="button" onclick="switchMode('file')" class="flex-1 py-2 text-center rounded-full bg-black text-white shadow-xs transition">تقديم بلاغ</button>
-          <button id="tab-track" type="button" onclick="switchMode('track')" class="flex-1 py-2 text-center rounded-full text-neutral-600 hover:text-black transition">تتبع البلاغ</button>
-        </div>
-
-        <!-- Minimal Progress Dots (File Mode) -->
-        <div id="stepper" class="flex items-center gap-2 text-[11px] font-semibold notranslate" translate="no">
-          <div id="step-ind-1" class="flex items-center gap-1.5 text-black">
-            <span class="w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]">1</span>
-            <span>المركبة</span>
-          </div>
-          <div class="h-px flex-1 bg-neutral-200"></div>
-          <div id="step-ind-2" class="flex items-center gap-1.5 text-neutral-400">
-            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">2</span>
-            <span>رمز التحقق</span>
-          </div>
-          <div class="h-px flex-1 bg-neutral-200"></div>
-          <div id="step-ind-3" class="flex items-center gap-1.5 text-neutral-400">
-            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">3</span>
-            <span>اختيار الزيارة</span>
-          </div>
-          <div class="h-px flex-1 bg-neutral-200"></div>
-          <div id="step-ind-4" class="flex items-center gap-1.5 text-neutral-400">
-            <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]">4</span>
-            <span>تفاصيل البلاغ</span>
-          </div>
-        </div>
-
-        <!-- ================= STEP 1: WELCOME TO RUSH (Plate + +966 Phone) ================= -->
-        <div id="step-1" class="space-y-5 notranslate" translate="no">
-          <div>
-            <h2 id="s1-title" class="text-2xl font-extrabold tracking-tight text-black notranslate">مرحباً بك في رش واش</h2>
-            <p id="s1-sub" class="text-sm text-neutral-500 mt-1 notranslate">أدخل رقم اللوحة ورقم الجوال للبدء.</p>
-          </div>
-
-          <form onsubmit="verifyPlateAndPhone(event)" class="space-y-4">
-            <div>
-              <label id="step1-plate-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم اللوحة *</label>
-              <input id="inp-plate" type="text" required placeholder="أ ب ج 1234" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm uppercase font-mono font-semibold tracking-wider focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none transition notranslate" translate="no" />
-            </div>
-
-            <div>
-              <label id="step1-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم الجوال *</label>
-              <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] focus-within:border-[#C91E2F] overflow-hidden transition" dir="ltr">
-                <span class="inline-flex items-center gap-1.5 px-3.5 bg-[#F4F4F5] border-r border-neutral-200 text-sm font-semibold text-neutral-700 shrink-0 notranslate" translate="no">
-                  <span>🇸🇦</span>
-                  <span>+966</span>
-                </span>
-                <input id="inp-phone" type="tel" required placeholder="50 000 0000" class="w-full px-3.5 py-3 text-sm font-medium focus:outline-none notranslate" translate="no" />
+      <div class="w-full p-4 sm:p-8 flex-1 flex flex-col justify-between space-y-5">
+        <div class="w-full space-y-5">
+          <!-- Sticky Brand, Language Header & Mode Switcher -->
+          <div class="sticky top-0 z-30 bg-white/95 backdrop-blur-sm -mx-4 px-4 sm:-mx-8 sm:px-8 pt-1 pb-3 border-b border-neutral-100 space-y-3">
+            <header class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-[#C91E2F] flex items-center justify-center shadow-sm shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 277" fill="#FFFFFF" class="w-6 h-4" aria-hidden="true">
+                    <path d="M93.65 61.3H273.05C302.6 61.3 319.1 83.25 315.45 113.95C312.35 140.2 294.2 158.95 268.1 165.9L300.8 216.8H228.25L196.7 167.45H152.7L146.35 216.8H9.8L12.35 197.55H76.9L87.45 114.35H159.5L157.3 131.5H222.3C233.7 131.5 241.8 124.85 243.1 114.2C244.4 104.15 239.5 97.3 230 97.3H89.05Z"/>
+                    <path fill-rule="evenodd" d="M349.6 195.55A10.65 10.65 0 1 1 349.6 216.85A10.65 10.65 0 1 1 349.6 195.55ZM349.6 197.7A8.5 8.5 0 1 0 349.6 214.7A8.5 8.5 0 1 0 349.6 197.7Z"/>
+                    <path fill-rule="evenodd" d="M345.9 201.05H349.95C352.35 201.05 353.65 202.25 353.65 204.2C353.65 205.55 352.95 206.5 351.65 206.95L354.15 211.2H351.65L349.45 207.35H348.1V211.2H345.9ZM348.1 202.95V205.5H349.7C350.8 205.5 351.4 205.05 351.4 204.2C351.4 203.35 350.8 202.95 349.7 202.95Z"/>
+                  </svg>
+                </div>
+                <h1 class="leading-none notranslate" translate="no">
+                  <span class="font-extrabold tracking-widest text-base italic text-black notranslate">RUSH</span>
+                  <span class="text-xs font-bold text-neutral-800 ms-1 notranslate">رش واش</span>
+                  <span id="brand-sub" class="block text-[11px] font-semibold text-neutral-600 mt-1 notranslate">خدمة العملاء · Customer Care</span>
+                </h1>
               </div>
+
+              <button id="lang-btn" type="button" onclick="toggleLang()" class="inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-full bg-[#F2F2F2] hover:bg-neutral-200 border border-neutral-200 text-xs font-semibold text-black transition notranslate" translate="no">
+                <span class="text-[#C91E2F] font-bold">EN</span>
+                <span>English</span>
+              </button>
+            </header>
+
+            <!-- Top Bar: Mode Switcher -->
+            <div role="tablist" aria-label="Portal Mode" class="w-full inline-flex items-center bg-[#F2F2F2] p-1 rounded-full border border-neutral-200 text-xs font-semibold notranslate" translate="no">
+              <button id="tab-file" role="tab" aria-selected="true" type="button" onclick="switchMode('file')" class="flex-1 min-h-[44px] py-2 text-center rounded-full bg-black text-white shadow-sm transition">تقديم بلاغ</button>
+              <button id="tab-track" role="tab" aria-selected="false" type="button" onclick="switchMode('track')" class="flex-1 min-h-[44px] py-2 text-center rounded-full text-neutral-600 hover:text-black transition">تتبع البلاغ</button>
             </div>
-
-            <div id="step1-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
-
-            <button id="btn-step1" type="submit" class="w-full py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition notranslate" translate="no">إرسال رمز التحقق</button>
-          </form>
-        </div>
-
-        <!-- ================= STEP 2: OTP VERIFICATION ================= -->
-        <div id="step-2" class="hidden space-y-5">
-          <div>
-            <h2 id="s2-title" class="text-2xl font-extrabold tracking-tight text-black">Verify your number</h2>
-            <p id="s2-sub" class="text-sm text-neutral-500 mt-1">We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr"></span>.</p>
           </div>
 
-          <div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-700 flex items-center justify-between gap-2">
-            <span id="otp-demo-label"><code id="otp-demo-code" class="ml-1 bg-white px-2.5 py-0.5 rounded-md border border-neutral-300 font-mono font-extrabold text-sm text-black"></code></span>
-            <button id="btn-resend-otp" type="button" onclick="resendOtp()" class="text-[#C91E2F] font-bold hover:underline">Resend</button>
-          </div>
-
-          <form onsubmit="verifyOtp(event)" class="space-y-4">
-            <input id="inp-otp" type="text" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required placeholder="• • • • • •" class="w-full rounded-xl border border-neutral-300 px-4 py-3.5 text-center text-2xl tracking-[0.6em] font-mono font-bold focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none" />
-            <div id="step2-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
-            <div class="flex gap-2.5">
-              <button id="btn-step2-back" type="button" onclick="goToStep(1)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
-              <button id="btn-step2" type="submit" class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Verify &amp; Continue</button>
+          <!-- Minimal Progress Dots (File Mode) -->
+          <nav id="stepper" aria-label="Progress" class="flex items-center gap-2 text-[11px] font-semibold notranslate" translate="no">
+            <div id="step-ind-1" aria-current="step" class="flex items-center gap-1.5 text-black">
+              <span class="w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]">1</span>
+              <span>المركبة</span>
             </div>
-          </form>
-        </div>
+            <div class="h-px flex-1 bg-neutral-200"></div>
+            <div id="step-ind-2" class="flex items-center gap-1.5 text-neutral-600">
+              <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center text-[10px]">2</span>
+              <span>رمز التحقق</span>
+            </div>
+            <div class="h-px flex-1 bg-neutral-200"></div>
+            <div id="step-ind-3" class="flex items-center gap-1.5 text-neutral-600">
+              <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center text-[10px]">3</span>
+              <span>اختيار الزيارة</span>
+            </div>
+            <div class="h-px flex-1 bg-neutral-200"></div>
+            <div id="step-ind-4" class="flex items-center gap-1.5 text-neutral-600">
+              <span class="w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center text-[10px]">4</span>
+              <span>تفاصيل البلاغ</span>
+            </div>
+          </nav>
 
-        <!-- ================= STEP 3: ISSUE TYPE DROPDOWN + WASHES / ORDERS ================= -->
-        <div id="step-3" class="hidden space-y-5">
-          <div class="flex items-center justify-between gap-2">
+          <!-- ================= STEP 1: WELCOME TO RUSH (Plate + +966 Phone) ================= -->
+          <div id="step-1" class="space-y-5 notranslate" translate="no">
             <div>
-              <h2 id="s3-title" class="text-xl font-extrabold tracking-tight text-black">What can we help with?</h2>
-              <p class="text-xs text-neutral-500 mt-0.5"><span id="s3-veh-prefix">Verified vehicle: </span><span id="matched-vehicle" class="font-semibold text-black"></span></p>
+              <h2 id="s1-title" class="text-2xl font-extrabold tracking-tight text-black notranslate">مرحباً بك في رش واش</h2>
+              <p id="s1-sub" class="text-sm text-neutral-600 mt-1 notranslate">أدخل رقم اللوحة ورقم الجوال للبدء.</p>
             </div>
-            <span id="otp-verified-badge" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">OTP Verified</span>
-          </div>
 
-          <div>
-            <label id="issue-type-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Complaint / Issue type *</label>
-            <select id="sel-issue-type" onchange="handleTypeChange(this.value)" class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm font-semibold bg-white focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none">
-              <option value="Unsatisfied">Unsatisfied (Wash Quality / Rewash)</option>
-              <option value="Billing / Refund">Billing / Refund (Orders &amp; Charges)</option>
-              <option value="Damage">Damage (Vehicle Damage Claim)</option>
-              <option value="Other">Other (General Inquiry / Feedback)</option>
-            </select>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <span id="history-heading" class="text-xs font-bold uppercase tracking-wider text-neutral-500">Last 3 Washes (Past 7 Days)</span>
-              <span id="history-sub" class="text-[11px] text-neutral-400">Select the wash visit</span>
-            </div>
-            <div id="records-list" class="space-y-2.5"></div>
-          </div>
-
-          <div class="flex gap-2.5 pt-1">
-            <button id="btn-step3-back" type="button" onclick="goToStep(1)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
-            <button id="btn-to-step4" type="button" onclick="openDynamicForm()" disabled class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] disabled:bg-neutral-200 disabled:text-neutral-400 hover:bg-[#A61726] text-white text-sm font-bold transition">Continue</button>
-          </div>
-        </div>
-
-        <!-- ================= STEP 4: DYNAMIC FORM ================= -->
-        <div id="step-4" class="hidden space-y-5">
-          <div id="selected-record-banner" class="bg-[#F4F4F5] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 flex items-center justify-between gap-2"></div>
-
-          <form onsubmit="submitComplaint(event)" class="space-y-4">
-            <div id="dynamic-fields" class="space-y-4"></div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <form onsubmit="verifyPlateAndPhone(event)" class="space-y-4">
               <div>
-                <label id="callback-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Preferred callback window</label>
-                <select id="inp-callback" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#C91E2F] focus:outline-none">
-                  <option value="Anytime">Anytime</option>
-                  <option value="Morning (8AM–12PM)">Morning (8AM–12PM)</option>
-                  <option value="Afternoon (12PM–5PM)">Afternoon (12PM–5PM)</option>
-                  <option value="Evening (5PM–9PM)">Evening (5PM–9PM)</option>
-                </select>
+                <label id="step1-plate-label" for="inp-plate" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم اللوحة *</label>
+                <input id="inp-plate" type="text" required placeholder="أ ب ج 1234" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-4 py-3 text-sm uppercase font-mono font-semibold tracking-wider focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none transition notranslate" translate="no" />
               </div>
+
               <div>
-                <label id="photos-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Photos / Video</label>
-                <label class="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-neutral-400 hover:border-[#C91E2F] bg-[#F9F9F9] hover:bg-[#FDF2F3] px-3 py-2.5 text-xs font-bold text-neutral-700 hover:text-[#C91E2F] cursor-pointer transition">
-                  <i data-lucide="camera" class="w-4 h-4"></i>
-                  <span id="upload-btn-text">Upload Photos / Video</span>
-                  <input id="inp-files" type="file" accept="image/*,video/*" multiple class="hidden" onchange="handleFiles(this.files)" />
-                </label>
-              </div>
-            </div>
-
-            <div id="media-previews" class="hidden flex flex-wrap gap-2"></div>
-
-            <div>
-              <label id="desc-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Additional details *</label>
-              <textarea id="inp-desc" required rows="3" placeholder="Tell us what happened..." class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none"></textarea>
-            </div>
-
-            <div id="step4-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
-
-            <div class="flex gap-2.5 pt-1">
-              <button id="btn-step4-back" type="button" onclick="goToStep(3)" class="px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
-              <button id="btn-submit" type="submit" class="flex-1 py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Submit Complaint</button>
-            </div>
-          </form>
-        </div>
-
-        <!-- ================= STEP 5: CONFIRMATION ================= -->
-        <div id="step-5" class="hidden text-center py-8 space-y-4">
-          <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-            <i data-lucide="check-circle-2" class="w-7 h-7"></i>
-          </div>
-          <div>
-            <h2 id="s5-title" class="text-xl font-extrabold text-black">Complaint Logged · <span id="created-ticket-id" class="font-mono text-[#C91E2F]"></span></h2>
-            <p id="s5-sub" class="text-sm text-neutral-500 mt-1 max-w-md mx-auto">We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr"></span>.</p>
-          </div>
-          <div class="flex flex-wrap justify-center gap-2.5 pt-2">
-            <button id="btn-track-created" type="button" onclick="trackCreatedTicket()" class="px-5 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-sm transition">Track This Complaint</button>
-            <button id="btn-submit-another" type="button" onclick="resetFileFlow()" class="px-5 py-3 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition">Submit Another</button>
-          </div>
-        </div>
-
-        <!-- ================= TRACK COMPLAINT FLOW ================= -->
-        <div id="track-panel" class="hidden space-y-5">
-          <div>
-            <h2 id="track-title" class="text-2xl font-extrabold tracking-tight text-black">Track your complaint</h2>
-            <p id="track-subtitle" class="text-sm text-neutral-500 mt-1">Enter your Ticket ID or License Plate with your mobile number.</p>
-          </div>
-
-          <form id="track-form" onsubmit="lookupTicket(event)" class="space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label id="track-query-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Ticket ID or License plate *</label>
-                <input id="track-query" type="text" required placeholder="C-1042 or KSA 8821" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm uppercase font-mono font-semibold focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
-              </div>
-              <div>
-                <label id="track-phone-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Mobile number *</label>
-                <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] overflow-hidden" dir="ltr">
-                  <span class="inline-flex items-center px-3 bg-[#F4F4F5] border-r border-neutral-200 text-xs font-semibold text-neutral-700">+966</span>
-                  <input id="track-phone" type="tel" required placeholder="55 391 4420" class="w-full px-3 py-2.5 text-sm focus:outline-none" />
+                <label id="step1-phone-label" for="inp-phone" class="block text-xs font-semibold text-neutral-700 mb-1.5">رقم الجوال *</label>
+                <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] focus-within:border-[#C91E2F] overflow-hidden transition" dir="ltr">
+                  <span class="inline-flex items-center gap-1.5 px-3.5 bg-[#F2F2F2] border-r border-neutral-200 text-sm font-semibold text-neutral-700 shrink-0 notranslate" translate="no">
+                    <span>🇸🇦</span>
+                    <span>+966</span>
+                  </span>
+                  <input id="inp-phone" type="tel" required placeholder="50 000 0000" class="w-full min-h-[44px] px-3.5 py-3 text-sm font-medium focus:outline-none notranslate" translate="no" />
                 </div>
               </div>
+
+              <div id="step1-error" role="alert" aria-live="polite" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+
+              <button id="btn-step1" type="submit" class="w-full min-h-[44px] py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition notranslate" translate="no">إرسال رمز التحقق</button>
+            </form>
+          </div>
+
+          <!-- ================= STEP 2: OTP VERIFICATION ================= -->
+          <div id="step-2" class="hidden space-y-5">
+            <div>
+              <h2 id="s2-title" class="text-2xl font-extrabold tracking-tight text-black">Verify your number</h2>
+              <p id="s2-sub" class="text-sm text-neutral-600 mt-1">We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr"></span>.</p>
             </div>
-            <button id="track-submit-btn" type="submit" class="w-full py-3 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold transition">Track Status</button>
-          </form>
 
-          <div id="track-error" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
-          <div id="track-multi" class="hidden space-y-2"></div>
-          <div id="track-result" class="hidden space-y-4 pt-3 border-t border-neutral-200"></div>
+            <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl px-4 py-2.5 text-xs text-neutral-700 flex items-center justify-between gap-2">
+              <span id="otp-demo-label"><code id="otp-demo-code" dir="ltr" class="ms-1 bg-white px-2.5 py-0.5 rounded-md border border-neutral-300 font-mono font-extrabold text-sm text-black"></code></span>
+              <button id="btn-resend-otp" type="button" onclick="resendOtp()" class="min-h-[44px] px-2 text-[#C91E2F] font-bold hover:underline disabled:text-neutral-500 disabled:no-underline disabled:cursor-not-allowed">Resend</button>
+            </div>
+
+            <form onsubmit="verifyOtp(event)" class="space-y-4">
+              <div>
+                <label id="otp-input-label" for="inp-otp" class="sr-only">Verification Code</label>
+                <input id="inp-otp" type="text" dir="ltr" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" required placeholder="• • • • • •" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-4 py-3.5 text-center text-2xl tracking-[0.6em] font-mono font-bold focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none" />
+              </div>
+              <div id="step2-error" role="alert" aria-live="polite" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+              <div class="flex gap-2.5">
+                <button id="btn-step2-back" type="button" onclick="goToStep(1)" class="min-h-[44px] px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+                <button id="btn-step2" type="submit" class="flex-1 min-h-[44px] py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Verify &amp; Continue</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ================= STEP 3: ISSUE TYPE DROPDOWN + WASHES / ORDERS ================= -->
+          <div id="step-3" class="hidden space-y-5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h2 id="s3-title" class="text-xl font-extrabold tracking-tight text-black">What can we help with?</h2>
+                <p class="text-xs text-neutral-600 mt-0.5"><span id="s3-veh-prefix">Verified vehicle: </span><span id="matched-vehicle" class="font-semibold text-black"></span></p>
+              </div>
+              <span id="otp-verified-badge" class="text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full shrink-0">OTP Verified</span>
+            </div>
+
+            <div>
+              <label id="issue-type-label" for="sel-issue-type" class="block text-xs font-semibold text-neutral-700 mb-1.5">Complaint / Issue type *</label>
+              <select id="sel-issue-type" onchange="handleTypeChange(this.value)" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-4 py-3 text-sm font-semibold bg-white focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none">
+                <option value="Unsatisfied">Unsatisfied (Wash Quality / Rewash)</option>
+                <option value="Billing / Refund">Billing / Refund (Orders &amp; Charges)</option>
+                <option value="Damage">Damage (Vehicle Damage Claim)</option>
+                <option value="Other">Other (General Inquiry / Feedback)</option>
+              </select>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span id="history-heading" class="text-xs font-bold uppercase tracking-wider text-neutral-600">Last 3 Washes (Past 7 Days)</span>
+                <span id="history-sub" class="text-[11px] text-neutral-600">Select the wash visit</span>
+              </div>
+              <div id="records-list" class="space-y-2.5"></div>
+            </div>
+
+            <div class="flex gap-2.5 pt-1">
+              <button id="btn-step3-back" type="button" onclick="goToStep(1)" class="min-h-[44px] px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+              <button id="btn-to-step4" type="button" onclick="openDynamicForm()" disabled class="flex-1 min-h-[44px] py-3.5 rounded-xl bg-[#C91E2F] disabled:bg-neutral-200 disabled:text-neutral-600 hover:bg-[#A61726] text-white text-sm font-bold transition">Continue</button>
+            </div>
+          </div>
+
+          <!-- ================= STEP 4: DYNAMIC FORM ================= -->
+          <div id="step-4" class="hidden space-y-5">
+            <div id="selected-record-banner" class="bg-[#F2F2F2] border border-neutral-200 rounded-xl px-4 py-3 text-xs text-neutral-800 flex items-center justify-between gap-2"></div>
+
+            <form onsubmit="submitComplaint(event)" class="space-y-4">
+              <div id="dynamic-fields" class="space-y-4"></div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label id="callback-label" for="inp-callback" class="block text-xs font-semibold text-neutral-700 mb-1.5">Preferred callback window</label>
+                  <select id="inp-callback" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#C91E2F] focus:outline-none">
+                    <option value="Anytime">Anytime</option>
+                    <option value="Morning (8AM–12PM)">Morning (8AM–12PM)</option>
+                    <option value="Afternoon (12PM–5PM)">Afternoon (12PM–5PM)</option>
+                    <option value="Evening (5PM–9PM)">Evening (5PM–9PM)</option>
+                  </select>
+                </div>
+                <div>
+                  <span id="photos-label" class="block text-xs font-semibold text-neutral-700 mb-1.5">Photos / Video</span>
+                  <label for="inp-files" class="w-full min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-neutral-400 hover:border-[#C91E2F] bg-[#F2F2F2] hover:bg-[#FDF2F3] px-3 py-2.5 text-xs font-bold text-neutral-700 hover:text-[#C91E2F] cursor-pointer transition">
+                    <i data-lucide="camera" class="w-4 h-4"></i>
+                    <span id="upload-btn-text">Upload Photos / Video</span>
+                    <input id="inp-files" type="file" accept="image/*,video/*" multiple class="hidden" onchange="handleFiles(this.files)" />
+                  </label>
+                </div>
+              </div>
+
+              <div id="media-previews" class="hidden flex flex-wrap gap-2"></div>
+
+              <div>
+                <label id="desc-label" for="inp-desc" class="block text-xs font-semibold text-neutral-700 mb-1.5">Additional details *</label>
+                <textarea id="inp-desc" required rows="3" placeholder="Tell us what happened..." class="w-full rounded-xl border border-neutral-300 px-4 py-3 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:border-[#C91E2F] focus:outline-none"></textarea>
+              </div>
+
+              <div id="step4-error" role="alert" aria-live="polite" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+
+              <div class="flex gap-2.5 pt-1">
+                <button id="btn-step4-back" type="button" onclick="goToStep(3)" class="min-h-[44px] px-5 py-3.5 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50">Back</button>
+                <button id="btn-submit" type="submit" class="flex-1 min-h-[44px] py-3.5 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-sm font-bold shadow-sm transition">Submit Complaint</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- ================= STEP 5: CONFIRMATION ================= -->
+          <div id="step-5" class="hidden text-center py-8 space-y-4">
+            <div class="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+              <i data-lucide="check-circle-2" class="w-7 h-7"></i>
+            </div>
+            <div>
+              <h2 id="s5-title" class="text-xl font-extrabold text-black">Complaint Logged · <span id="created-ticket-id" dir="ltr" class="font-mono text-[#C91E2F]"></span></h2>
+              <p id="s5-sub" class="text-sm text-neutral-600 mt-1 max-w-md mx-auto">We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr"></span>.</p>
+            </div>
+            <div class="flex flex-wrap justify-center gap-2.5 pt-2">
+              <button id="btn-track-created" type="button" onclick="trackCreatedTicket()" class="min-h-[44px] px-5 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-sm transition">Track This Complaint</button>
+              <button id="btn-submit-another" type="button" onclick="resetFileFlow()" class="min-h-[44px] px-5 py-3 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition">Submit Another</button>
+            </div>
+          </div>
+
+          <!-- ================= TRACK COMPLAINT FLOW ================= -->
+          <div id="track-panel" class="hidden space-y-5">
+            <div>
+              <h2 id="track-title" class="text-2xl font-extrabold tracking-tight text-black">Track your complaint</h2>
+              <p id="track-subtitle" class="text-sm text-neutral-600 mt-1">Enter your Ticket ID or License Plate with your mobile number.</p>
+            </div>
+
+            <form id="track-form" onsubmit="lookupTicket(event)" class="space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label id="track-query-label" for="track-query" class="block text-xs font-semibold text-neutral-700 mb-1.5">Ticket ID or License plate *</label>
+                  <input id="track-query" type="text" dir="auto" required placeholder="C-1042 or KSA 8821" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm uppercase font-mono font-semibold focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
+                </div>
+                <div>
+                  <label id="track-phone-label" for="track-phone" class="block text-xs font-semibold text-neutral-700 mb-1.5">Mobile number *</label>
+                  <div class="flex rounded-xl border border-neutral-300 focus-within:ring-2 focus-within:ring-[#C91E2F] overflow-hidden" dir="ltr">
+                    <span class="inline-flex items-center px-3 bg-[#F2F2F2] border-r border-neutral-200 text-xs font-semibold text-neutral-700">+966</span>
+                    <input id="track-phone" type="tel" required placeholder="55 391 4420" class="w-full min-h-[44px] px-3 py-2.5 text-sm focus:outline-none" />
+                  </div>
+                </div>
+              </div>
+              <button id="track-submit-btn" type="submit" class="w-full min-h-[44px] py-3 rounded-xl bg-black hover:bg-neutral-800 text-white text-sm font-bold transition">Track Status</button>
+            </form>
+
+            <div id="track-error" role="alert" aria-live="polite" class="hidden rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-xs text-rose-700 font-semibold"></div>
+            <div id="track-multi" class="hidden space-y-2"></div>
+            <div id="track-result" class="hidden space-y-4 pt-3 border-t border-neutral-200"></div>
+          </div>
         </div>
-      </div>
 
-      <!-- Mobile Footer -->
-      <div class="max-w-xl w-full mx-auto pt-8 mt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-400">
-        <span>© 2026 RUSH Car Wash</span>
-        <span dir="ltr">+966 55 312 3848 · contactus@rush.com.sa</span>
+        <!-- Mobile Footer -->
+        <footer class="max-w-xl w-full mx-auto pt-8 mt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-600">
+          <span>© 2026 RUSH Car Wash</span>
+          <span dir="ltr">+966 55 312 3848 · contactus@rush.com.sa</span>
+        </footer>
       </div>
     </main>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-5 right-5 z-50 bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-neutral-700 flex items-center gap-2">
+  <div id="toast" role="status" aria-live="polite" class="hidden fixed bottom-5 end-5 z-50 bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-neutral-700 flex items-center gap-2">
     <i data-lucide="check-circle" class="w-4 h-4 text-[#C91E2F] shrink-0"></i>
     <span id="toast-msg">Saved</span>
   </div>
 
   <script>
     let tickets = [];
+    let sigHasStrokes = false;
+    let resendCountdownTimer = null;
+    let resendSecondsLeft = 0;
+
     function esc(v) {
       return String(v ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function safeUrl(u) {
+      if (!u) return "";
+      const s = String(u).trim();
+      if (s.startsWith("//") || s.startsWith("/\\")) return "";
+      if (s.startsWith("/") || /^https?:\/\//i.test(s)) return esc(s);
+      return "";
+    }
+    function escDeep(v) {
+      if (typeof v === "string") return esc(v);
+      if (Array.isArray(v)) return v.map(escDeep);
+      if (v && typeof v === "object") { const o = {}; for (const k in v) o[k] = escDeep(v[k]); return o; }
+      return v;
     }
     function authHeaders(extra) {
       const tok = appState.token || appState.trackToken;
@@ -309,6 +337,7 @@
       step: 1,
       customer: null,
       token: null,
+      trackToken: null,
       pendingPlate: "",
       pendingPhone: "",
       otp: "",
@@ -318,11 +347,73 @@
       zones: [],
       mediaFiles: [],
       bankSmsFile: "",
+      bankSmsName: "",
       createdTicketId: null,
-      trackedId: null
+      trackedId: null,
+      multiTicketIds: []
     };
 
     const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "" : "http://localhost:4000";
+
+    const QUALITY_TAGS = [
+      { id: "Missed Spots / Dirt", en: "Missed Spots / Dirt", ar: "بقع أو أوساخ متبقية" },
+      { id: "Soap Residue", en: "Soap Residue", ar: "بقايا صابون" },
+      { id: "Water Spots", en: "Water Spots", ar: "آثار وبقع ماء" },
+      { id: "Dryer / Towel Issue", en: "Dryer / Towel Issue", ar: "مشكلة في التجفيف / المناشف" },
+      { id: "Interior / Vacuum", en: "Interior / Vacuum", ar: "التنظيف الداخلي / المكنسة" }
+    ];
+
+    const VEHICLE_ZONES = [
+      { id: "Front Bumper", en: "Front Bumper", ar: "الصدام الأمامي" },
+      { id: "Hood", en: "Hood", ar: "الكبوت" },
+      { id: "Windshield", en: "Windshield", ar: "الزجاج الأمامي" },
+      { id: "Roof", en: "Roof", ar: "السقف" },
+      { id: "Driver Side & Mirror", en: "Driver Side & Mirror", ar: "جهة السائق والمرآة" },
+      { id: "Passenger Side & Mirror", en: "Passenger Side & Mirror", ar: "جهة الراكب والمرآة" },
+      { id: "Rear Trunk / Quarter", en: "Rear Trunk / Quarter", ar: "الشنطة / الرفرف الخلفي" },
+      { id: "Rear Bumper", en: "Rear Bumper", ar: "الصدام الخلفي" }
+    ];
+
+    function getZoneLabel(zoneId, isAr) {
+      const found = VEHICLE_ZONES.find(z => z.id === zoneId);
+      return found ? (isAr ? found.ar : found.en) : zoneId;
+    }
+
+    function formatShortDate(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return d.toLocaleDateString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric" });
+    }
+
+    function formatDateTime(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return d.toLocaleString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" });
+    }
+
+    function formatTime(iso) {
+      if (!iso) return "";
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      return d.toLocaleTimeString(appState.lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function isValidSaIban(raw) {
+      const iban = String(raw || "").replace(/\s+/g, "").toUpperCase();
+      if (!/^SA\d{22}$/.test(iban)) return false;
+      const rearranged = iban.slice(4) + iban.slice(0, 4);
+      let rem = 0;
+      for (let i = 0; i < rearranged.length; i++) {
+        const code = rearranged.charCodeAt(i);
+        const chunk = (code >= 65 && code <= 90) ? String(code - 55) : rearranged[i];
+        for (let j = 0; j < chunk.length; j++) {
+          rem = (rem * 10 + Number(chunk[j])) % 97;
+        }
+      }
+      return rem === 1;
+    }
 
     function showToast(msg) {
       const t = document.getElementById("toast");
@@ -343,11 +434,11 @@
         btn.classList.add("opacity-75", "cursor-not-allowed");
         btn.innerHTML = `
           <span class="inline-flex items-center justify-center gap-2">
-            <svg class="animate-spin h-4 w-4 text-current shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-4 w-4 text-current shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
-            <span>${loadingText || "Please wait..."}</span>
+            <span>${loadingText || (appState.lang === "ar" ? "يرجى الانتظار..." : "Please wait...")}</span>
           </span>
         `;
       } else {
@@ -361,6 +452,35 @@
       }
     }
 
+    function updateResendButtonText() {
+      const btn = document.getElementById("btn-resend-otp");
+      if (!btn) return;
+      const isAr = appState.lang === "ar";
+      if (resendSecondsLeft > 0) {
+        btn.disabled = true;
+        btn.textContent = isAr ? `إعادة إرسال (${resendSecondsLeft}ث)` : `Resend (${resendSecondsLeft}s)`;
+      } else {
+        btn.disabled = false;
+        btn.textContent = isAr ? "إعادة إرسال" : "Resend";
+        btn.dataset.originalHtml = btn.innerHTML;
+      }
+    }
+
+    function startResendCountdown(seconds) {
+      clearInterval(resendCountdownTimer);
+      resendSecondsLeft = seconds || 60;
+      updateResendButtonText();
+      resendCountdownTimer = setInterval(() => {
+        resendSecondsLeft -= 1;
+        if (resendSecondsLeft <= 0) {
+          resendSecondsLeft = 0;
+          clearInterval(resendCountdownTimer);
+          resendCountdownTimer = null;
+        }
+        updateResendButtonText();
+      }, 1000);
+    }
+
     function renderRecordsSkeleton(isBilling) {
       const list = document.getElementById("records-list");
       if (!list) return;
@@ -370,28 +490,28 @@
         : (isAr ? "جاري جلب سجل زيارات الغسيل في الخرج..." : "Looking up recent washes in Al Kharj...");
       list.innerHTML = `
         <div class="space-y-2.5 animate-pulse">
-          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-500 py-1 px-1">
-            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-600 py-1 px-1">
+            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
             <span>${label}</span>
           </div>
-          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-[#F2F2F2]/70 space-y-2">
             <div class="flex justify-between items-center">
               <div class="h-4 bg-neutral-200 rounded w-28"></div>
               <div class="h-4 bg-neutral-200 rounded w-20"></div>
             </div>
             <div class="h-3 bg-neutral-200 rounded w-44"></div>
           </div>
-          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-[#F2F2F2]/70 space-y-2">
             <div class="flex justify-between items-center">
               <div class="h-4 bg-neutral-200 rounded w-32"></div>
               <div class="h-4 bg-neutral-200 rounded w-16"></div>
             </div>
             <div class="h-3 bg-neutral-200 rounded w-36"></div>
           </div>
-          <div class="p-3.5 rounded-xl border border-neutral-200 bg-neutral-50/70 space-y-2">
+          <div class="p-3.5 rounded-xl border border-neutral-200 bg-[#F2F2F2]/70 space-y-2">
             <div class="flex justify-between items-center">
               <div class="h-4 bg-neutral-200 rounded w-24"></div>
               <div class="h-4 bg-neutral-200 rounded w-20"></div>
@@ -409,14 +529,14 @@
       result.classList.remove("hidden");
       result.innerHTML = `
         <div class="space-y-3 animate-pulse">
-          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-500 py-1">
-            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <div class="flex items-center gap-2 text-xs font-semibold text-neutral-600 py-1">
+            <svg class="animate-spin h-3.5 w-3.5 text-[#C91E2F] shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
             </svg>
             <span>${isAr ? "جاري البحث عن البلاغ في النظام..." : "Searching ticket records..."}</span>
           </div>
-          <div class="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-4 space-y-3">
+          <div class="rounded-2xl border border-neutral-200 bg-[#F2F2F2]/70 p-4 space-y-3">
             <div class="flex justify-between items-center">
               <div class="h-5 bg-neutral-200 rounded w-32"></div>
               <div class="h-5 bg-neutral-200 rounded w-20"></div>
@@ -428,7 +548,7 @@
       `;
     }
 
-    function normPlate(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+    function normPlate(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9\u0621-\u064A]/g, "").slice(0, 12); }
     function normPhone(p) { return String(p || "").replace(/\D/g, "").slice(-9); }
 
     function applyLang(lang) {
@@ -445,8 +565,6 @@
         : `<span class="text-[#C91E2F] font-bold">AR</span><span>العربية</span>`;
       const langBtn = document.getElementById("lang-btn");
       if (langBtn) langBtn.innerHTML = btnHtml;
-      const langBtnMobile = document.getElementById("lang-btn-mobile");
-      if (langBtnMobile) langBtnMobile.innerHTML = btnHtml;
 
       // Header Brand Subtitle
       const brandSub = document.getElementById("brand-sub");
@@ -459,8 +577,8 @@
       if (tabTrack) tabTrack.textContent = isAr ? "تتبع بلاغ سابق" : "Track Complaint";
 
       // Stepper
-      const labels = isAr 
-        ? ["المركبة", "رمز التحقق", "اختيار الزيارة", "تفاصيل البلاغ"] 
+      const labels = isAr
+        ? ["المركبة", "رمز التحقق", "اختيار الزيارة", "تفاصيل البلاغ"]
         : ["Vehicle", "OTP Code", "Select Visit", "Complaint Details"];
       [1, 2, 3, 4].forEach((s, idx) => {
         const el = document.getElementById(`step-ind-${s}`)?.querySelector("span:last-child");
@@ -479,9 +597,9 @@
       const s1PhoneLbl = document.getElementById("step1-phone-label");
       if (s1PhoneLbl) s1PhoneLbl.textContent = isAr ? "رقم الجوال *" : "Mobile number *";
       const bStep1 = document.getElementById("btn-step1");
-      if (bStep1) { 
-        bStep1.textContent = isAr ? "إرسال رمز التحقق" : "Send Verification Code"; 
-        bStep1.dataset.originalHtml = bStep1.innerHTML; 
+      if (bStep1) {
+        bStep1.textContent = isAr ? "إرسال رمز التحقق" : "Send Verification Code";
+        bStep1.dataset.originalHtml = bStep1.innerHTML;
       }
 
       // Step 2
@@ -491,15 +609,16 @@
       if (s2Sub) {
         const phone = document.getElementById("otp-phone-display")?.textContent || "";
         s2Sub.innerHTML = isAr
-          ? `تم إرسال رمز التحقق المكون من 6 أرقام عبر رسالة نصية إلى <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`
-          : `We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${phone}</span>.`;
+          ? `تم إرسال رمز التحقق المكون من 6 أرقام عبر رسالة نصية إلى <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${esc(phone)}</span>.`
+          : `We sent a 6-digit SMS code to <span id="otp-phone-display" class="font-semibold text-black" dir="ltr">${esc(phone)}</span>.`;
       }
+      const otpInputLbl = document.getElementById("otp-input-label");
+      if (otpInputLbl) otpInputLbl.textContent = isAr ? "رمز التحقق المكون من 6 أرقام" : "6-digit Verification Code";
       const bStep2 = document.getElementById("btn-step2");
       if (bStep2) { bStep2.textContent = isAr ? "تحقق ومتابعة" : "Verify & Continue"; bStep2.dataset.originalHtml = bStep2.innerHTML; }
       const bStep2Back = document.getElementById("btn-step2-back");
       if (bStep2Back) bStep2Back.textContent = isAr ? "رجوع" : "Back";
-      const bResend = document.getElementById("btn-resend-otp");
-      if (bResend) { bResend.textContent = isAr ? "إعادة إرسال" : "Resend"; bResend.dataset.originalHtml = bResend.innerHTML; }
+      updateResendButtonText();
 
       // Step 3
       const s3Title = document.getElementById("s3-title");
@@ -517,14 +636,19 @@
         issueSel.options[2].text = isAr ? "أضرار وتلفيات (مطالبة بأضرار المركبة)" : "Damage (Vehicle Damage Claim)";
         issueSel.options[3].text = isAr ? "أخرى (استفسار عام أو ملاحظات)" : "Other (General Inquiry / Feedback)";
       }
-      const hHead = document.getElementById("history-heading");
-      if (hHead) hHead.textContent = isAr ? "آخر 3 غسلات (خلال 7 أيام)" : "Last 3 Washes (Past 7 Days)";
-      const hSub = document.getElementById("history-sub");
-      if (hSub) hSub.textContent = isAr ? "حدد زيارة الغسيل المعنية" : "Select the wash visit";
       const bStep3Back = document.getElementById("btn-step3-back");
       if (bStep3Back) bStep3Back.textContent = isAr ? "رجوع" : "Back";
       const bTo4 = document.getElementById("btn-to-step4");
       if (bTo4) bTo4.textContent = isAr ? "متابعة" : "Continue";
+
+      if (appState.customer && appState.step === 3) {
+        renderRecordsList();
+      } else {
+        const hHead = document.getElementById("history-heading");
+        if (hHead) hHead.textContent = isAr ? "آخر 3 غسلات (خلال 7 أيام)" : "Last 3 Washes (Past 7 Days)";
+        const hSub = document.getElementById("history-sub");
+        if (hSub) hSub.textContent = isAr ? "حدد زيارة الغسيل المعنية" : "Select the wash visit";
+      }
 
       // Step 4
       const cbLbl = document.getElementById("callback-label");
@@ -549,16 +673,33 @@
       const bSubmit = document.getElementById("btn-submit");
       if (bSubmit) { bSubmit.textContent = isAr ? "إرسال البلاغ" : "Submit Complaint"; bSubmit.dataset.originalHtml = bSubmit.innerHTML; }
 
+      if (appState.step === 4 && appState.customer) {
+        const saved = {
+          billingReason: document.getElementById("inp-billing-reason")?.value,
+          refundAmt: document.getElementById("inp-refund-amt")?.value,
+          cardLast4: document.getElementById("inp-card-last4")?.value,
+          bankSmsText: document.getElementById("inp-bank-sms-text")?.value,
+          otherTopic: document.getElementById("inp-other-topic")?.value
+        };
+        renderStep4Dynamic(true);
+        if (saved.billingReason && document.getElementById("inp-billing-reason")) document.getElementById("inp-billing-reason").value = saved.billingReason;
+        if (saved.refundAmt !== undefined && document.getElementById("inp-refund-amt")) document.getElementById("inp-refund-amt").value = saved.refundAmt;
+        if (saved.cardLast4 !== undefined && document.getElementById("inp-card-last4")) document.getElementById("inp-card-last4").value = saved.cardLast4;
+        if (saved.bankSmsText !== undefined && document.getElementById("inp-bank-sms-text")) document.getElementById("inp-bank-sms-text").value = saved.bankSmsText;
+        if (saved.otherTopic && document.getElementById("inp-other-topic")) document.getElementById("inp-other-topic").value = saved.otherTopic;
+        renderPreviews();
+      }
+
       // Step 5
       const s5Title = document.getElementById("s5-title");
       if (s5Title) {
         const tid = document.getElementById("created-ticket-id")?.textContent || "";
-        s5Title.innerHTML = isAr ? `تم تسجيل البلاغ بنجاح · <span id="created-ticket-id" class="font-mono text-[#C91E2F]">${tid}</span>` : `Complaint Logged · <span id="created-ticket-id" class="font-mono text-[#C91E2F]">${tid}</span>`;
+        s5Title.innerHTML = isAr ? `تم تسجيل البلاغ بنجاح · <span id="created-ticket-id" dir="ltr" class="font-mono text-[#C91E2F]">${esc(tid)}</span>` : `Complaint Logged · <span id="created-ticket-id" dir="ltr" class="font-mono text-[#C91E2F]">${esc(tid)}</span>`;
       }
       const s5Sub = document.getElementById("s5-sub");
       if (s5Sub) {
         const ph = document.getElementById("confirm-phone")?.textContent || "";
-        s5Sub.innerHTML = isAr ? `تلقينا طلبك وسنرسل لك التحديثات عبر رسائل الواتساب/SMS على <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${ph}</span>.` : `We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${ph}</span>.`;
+        s5Sub.innerHTML = isAr ? `تلقينا طلبك وسنرسل لك التحديثات عبر رسائل الواتساب/SMS على <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${esc(ph)}</span>.` : `We received your request and will send updates to <span id="confirm-phone" class="font-semibold text-black" dir="ltr">${esc(ph)}</span>.`;
       }
       const bTrackCreated = document.getElementById("btn-track-created");
       if (bTrackCreated) bTrackCreated.textContent = isAr ? "تتبع حالة هذا البلاغ" : "Track This Complaint";
@@ -577,9 +718,11 @@
       const trPhoneLbl = document.getElementById("track-phone-label");
       if (trPhoneLbl) trPhoneLbl.textContent = isAr ? "رقم الجوال *" : "Mobile number *";
       const trSubmitBtn = document.getElementById("track-submit-btn");
-      if (trSubmitBtn) trSubmitBtn.textContent = isAr ? "تتبع الحالة" : "Track Status";
+      if (trSubmitBtn) { trSubmitBtn.textContent = isAr ? "تتبع الحالة" : "Track Status"; trSubmitBtn.dataset.originalHtml = trSubmitBtn.innerHTML; }
 
-      // Re-render active ticket if present
+      if (appState.multiTicketIds.length > 1) {
+        renderMultiTrackList();
+      }
       if (appState.trackedId) {
         renderTrackedTicket();
       }
@@ -594,14 +737,18 @@
     function switchMode(mode) {
       appState.mode = mode;
       const isTrack = mode === "track";
-      const baseBtnClass = "flex-1 py-2 text-center rounded-full text-xs font-bold transition";
-      document.getElementById("tab-file").className = isTrack
+      const baseBtnClass = "flex-1 min-h-[44px] py-2 text-center rounded-full text-xs font-bold transition";
+      const tabFile = document.getElementById("tab-file");
+      const tabTrack = document.getElementById("tab-track");
+      tabFile.className = isTrack
         ? `${baseBtnClass} text-neutral-600 hover:text-black`
-        : `${baseBtnClass} bg-black text-white shadow-xs`;
-      document.getElementById("tab-track").className = isTrack
-        ? `${baseBtnClass} bg-black text-white shadow-xs`
+        : `${baseBtnClass} bg-black text-white shadow-sm`;
+      tabTrack.className = isTrack
+        ? `${baseBtnClass} bg-black text-white shadow-sm`
         : `${baseBtnClass} text-neutral-600 hover:text-black`;
-      document.getElementById("stepper").classList.toggle("hidden", isTrack);
+      tabFile.setAttribute("aria-selected", isTrack ? "false" : "true");
+      tabTrack.setAttribute("aria-selected", isTrack ? "true" : "false");
+      document.getElementById("stepper").classList.toggle("hidden", isTrack || appState.step === 5);
       [1, 2, 3, 4, 5].forEach(s => document.getElementById(`step-${s}`).classList.toggle("hidden", isTrack || s !== appState.step));
       document.getElementById("track-panel").classList.toggle("hidden", !isTrack);
       lucide.createIcons();
@@ -609,20 +756,25 @@
 
     function goToStep(step) {
       appState.step = step;
+      document.getElementById("stepper").classList.toggle("hidden", appState.mode === "track" || step === 5);
       [1, 2, 3, 4, 5].forEach(s => {
         document.getElementById(`step-${s}`).classList.toggle("hidden", s !== step);
         if (s <= 4) {
           const ind = document.getElementById(`step-ind-${s}`);
           const badge = ind.querySelector("span:first-child");
-          if (s < step) {
-            ind.className = "flex items-center gap-1.5 text-emerald-600";
-            badge.className = "w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]";
-          } else if (s === step) {
+          if (s === step) {
+            ind.setAttribute("aria-current", "step");
             ind.className = "flex items-center gap-1.5 text-black";
             badge.className = "w-5 h-5 rounded-full bg-[#C91E2F] text-white flex items-center justify-center text-[10px]";
           } else {
-            ind.className = "flex items-center gap-1.5 text-neutral-400";
-            badge.className = "w-5 h-5 rounded-full bg-neutral-200 text-neutral-600 flex items-center justify-center text-[10px]";
+            ind.removeAttribute("aria-current");
+            if (s < step) {
+              ind.className = "flex items-center gap-1.5 text-emerald-700";
+              badge.className = "w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]";
+            } else {
+              ind.className = "flex items-center gap-1.5 text-neutral-600";
+              badge.className = "w-5 h-5 rounded-full bg-neutral-200 text-neutral-700 flex items-center justify-center text-[10px]";
+            }
           }
         }
       });
@@ -658,6 +810,7 @@
         document.getElementById("inp-otp").value = data.devOtp || "";
         document.getElementById("step2-error").classList.add("hidden");
         goToStep(2);
+        startResendCountdown(60);
         showToast(data.message || (isAr ? "تم إرسال رمز التحقق عبر الرسائل القصيرة" : "OTP sent via SMS"));
         return;
       } catch (ex) {
@@ -669,6 +822,7 @@
     }
 
     async function resendOtp() {
+      if (resendSecondsLeft > 0) return;
       const isAr = appState.lang === "ar";
       setBtnLoading("btn-resend-otp", true, isAr ? "جاري الإرسال..." : "Sending...");
       try {
@@ -683,6 +837,7 @@
             appState.otp = data.devOtp || "";
             document.getElementById("otp-demo-code").textContent = data.devOtp ? `(Dev OTP: ${data.devOtp})` : (isAr ? "تحقق من الرسائل القصيرة" : "Check SMS");
             showToast(isAr ? "تم إرسال رمز جديد" : "New OTP code sent");
+            startResendCountdown(60);
             return;
           }
           showToast(data.error || (isAr ? "تعذر إعادة الإرسال" : "Could not resend the code"));
@@ -691,6 +846,7 @@
         showToast(isAr ? "تعذر إعادة الإرسال" : "Could not resend the code");
       } finally {
         setBtnLoading("btn-resend-otp", false, null, isAr ? "إعادة إرسال" : "Resend");
+        updateResendButtonText();
       }
     }
 
@@ -755,6 +911,7 @@
 
     async function loadCustomerHistory() {
       const isBilling = appState.issueType === "Billing / Refund";
+      const isAr = appState.lang === "ar";
       const btnTo4 = document.getElementById("btn-to-step4");
       if (btnTo4) btnTo4.disabled = true;
 
@@ -768,32 +925,43 @@
         const res = await fetch(`${API_BASE}/api/customer/history?type=${apiType}`, {
           headers: { "Authorization": `Bearer ${appState.token}` }
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (isBilling) {
-            appState.customer.orders = data.records.map(r => ({
-              id: r.id,
-              item: r.itemName,
-              amount: r.amountSar,
-              date: new Date(r.orderedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              method: r.paymentMethod,
-              site: r.site,
-              alreadyReportedTicketId: r.alreadyReportedTicketId
-            }));
-          } else {
-            appState.customer.washes = data.records.map(r => ({
-              id: r.id,
-              package: r.packageName,
-              date: new Date(r.washedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-              lane: r.lane,
-              site: r.site,
-              daysAgo: Math.round((Date.now() - new Date(r.washedAt).getTime()) / (24 * 3600 * 1000)),
-              alreadyReportedTicketId: r.alreadyReportedTicketId
-            }));
-          }
+        if (!res.ok) {
+          throw new Error("History request failed");
+        }
+        const data = await res.json();
+        if (isBilling) {
+          appState.customer.orders = data.records.map(r => ({
+            id: r.id,
+            item: r.itemName,
+            amount: r.amountSar,
+            dateRaw: r.orderedAt,
+            method: r.paymentMethod,
+            site: r.site,
+            alreadyReportedTicketId: r.alreadyReportedTicketId
+          }));
+        } else {
+          appState.customer.washes = data.records.map(r => ({
+            id: r.id,
+            package: r.packageName,
+            dateRaw: r.washedAt,
+            lane: r.lane,
+            site: r.site,
+            daysAgo: Math.round((Date.now() - new Date(r.washedAt).getTime()) / (24 * 3600 * 1000)),
+            alreadyReportedTicketId: r.alreadyReportedTicketId
+          }));
         }
       } catch (ex) {
         console.error("Failed to load history from API", ex);
+        const list = document.getElementById("records-list");
+        if (list) {
+          list.innerHTML = `
+            <div role="alert" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 flex flex-wrap items-center justify-between gap-3">
+              <span class="font-semibold">${isAr ? "تعذر تحميل سجل الزيارات والفواتير. يرجى المحاولة مرة أخرى." : "Could not load your visit/order history. Please try again."}</span>
+              <button type="button" onclick="loadCustomerHistory()" class="min-h-[44px] px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white font-bold transition">${isAr ? "إعادة المحاولة" : "Retry"}</button>
+            </div>
+          `;
+        }
+        return;
       }
       renderRecordsList();
     }
@@ -801,60 +969,83 @@
     function renderRecordsList() {
       const cust = appState.customer;
       if (!cust) return;
+      const isAr = appState.lang === "ar";
       document.getElementById("matched-vehicle").textContent = `${cust.vehicle} (${cust.plate})`;
       const isBilling = appState.issueType === "Billing / Refund";
-      document.getElementById("history-heading").textContent = isBilling ? "Recent Orders & Charges" : "Last 3 Washes (Past 7 Days)";
-      document.getElementById("history-sub").textContent = isBilling ? "Select order or Order Not Listed" : "Select the wash visit";
+      document.getElementById("history-heading").textContent = isBilling
+        ? (isAr ? "العمليات والفواتير الأخيرة" : "Recent Orders & Charges")
+        : (isAr ? "آخر 3 غسلات (خلال 7 أيام)" : "Last 3 Washes (Past 7 Days)");
+      document.getElementById("history-sub").textContent = isBilling
+        ? (isAr ? "اختر العملية أو طلب غير مدرج" : "Select order or Order Not Listed")
+        : (isAr ? "حدد زيارة الغسيل المعنية" : "Select the wash visit");
 
       const records = isBilling ? cust.orders : cust.washes.filter(w => w.daysAgo <= 7).slice(0, 3);
-      const findDup = (recId) => tickets.find(t => t.receipt.startsWith(recId));
-      const firstOpen = records.find(r => !findDup(r.id));
+      const findDupId = (rec) => rec.alreadyReportedTicketId || tickets.find(t => t.receipt && t.receipt.startsWith(rec.id))?.id || null;
+      const firstOpen = records.find(r => !findDupId(r));
       const isSpecial = appState.selectedRecordId === "ORD-UNLISTED" || appState.selectedRecordId === "VISIT-UNLISTED" || appState.selectedRecordId === "VISIT-GENERAL";
-      if (!isSpecial && (!appState.selectedRecordId || !records.some(r => r.id === appState.selectedRecordId) || findDup(appState.selectedRecordId))) {
-        appState.selectedRecordId = firstOpen ? firstOpen.id : (isBilling ? "ORD-UNLISTED" : (appState.issueType === "Other" ? "VISIT-GENERAL" : "VISIT-UNLISTED"));
+      if (!isSpecial) {
+        const selectedObj = records.find(r => r.id === appState.selectedRecordId);
+        if (!selectedObj || findDupId(selectedObj)) {
+          appState.selectedRecordId = firstOpen ? firstOpen.id : (isBilling ? "ORD-UNLISTED" : (appState.issueType === "Other" ? "VISIT-GENERAL" : "VISIT-UNLISTED"));
+        }
       }
       document.getElementById("btn-to-step4").disabled = !appState.selectedRecordId;
 
       const list = document.getElementById("records-list");
       list.innerHTML = records.map(r => {
-        const dup = findDup(r.id);
-        const sel = !dup && r.id === appState.selectedRecordId;
-        const dupBadge = dup ? `<span onclick="event.stopPropagation(); jumpToTrack('${dup.id}')" class="text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full hover:bg-amber-200 cursor-pointer">Already Reported (${dup.id}) · Track ↗</span>` : "";
+        const dupId = findDupId(r);
+        const sel = !dupId && r.id === appState.selectedRecordId;
+        const dateStr = formatShortDate(r.dateRaw);
+        const dupBtn = dupId ? `
+          <div class="mt-2 pt-2 border-t border-neutral-200/80 flex items-center justify-between gap-2">
+            <span class="text-[11px] font-semibold text-amber-900">${isAr ? `تم الإبلاغ عن هذه الزيارة مسبقاً (${esc(dupId)})` : `Already reported under ${esc(dupId)}`}</span>
+            <button type="button" onclick="jumpToTrack('${esc(dupId)}')" class="min-h-[44px] px-3 py-1.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200 transition shrink-0">
+              ${isAr ? `تتبع البلاغ (${esc(dupId)}) ↗` : `Track (${esc(dupId)}) ↗`}
+            </button>
+          </div>
+        ` : "";
+
         if (isBilling) {
           return `
-            <button type="button" ${dup ? "disabled" : `onclick="selectRecord('${r.id}')"`} class="w-full text-left p-3.5 rounded-xl border transition ${dup ? "border-neutral-200 bg-neutral-50 opacity-80 cursor-not-allowed" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"}">
-              <div class="flex items-center justify-between gap-2 flex-wrap">
-                <span class="text-sm font-bold text-black">${esc(r.item)} · SAR ${r.amount}</span>
-                <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
-              </div>
-              <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                <span>${esc(r.date)}</span><span>·</span><span>${esc(r.method)}</span><span>·</span><span>${esc(r.site)}</span>
-              </div>
-            </button>
+            <div class="rounded-xl border transition ${dupId ? "border-neutral-200 bg-[#F2F2F2]" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"} p-3.5">
+              <button type="button" ${dupId ? "disabled" : `onclick="selectRecord('${esc(r.id)}')"`} class="w-full text-start ${dupId ? "opacity-75 cursor-not-allowed" : ""}">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <span class="text-sm font-bold text-black">${esc(r.item)} · ${isAr ? `${r.amount} ريال` : `SAR ${r.amount}`}</span>
+                  <span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded" dir="ltr">${esc(r.id)}</span>
+                </div>
+                <div class="text-xs text-neutral-600 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                  <span>${esc(dateStr)}</span><span>·</span><span>${esc(r.method)}</span><span>·</span><span>${esc(r.site)}</span>
+                </div>
+              </button>
+              ${dupBtn}
+            </div>
           `;
         }
         return `
-          <button type="button" ${dup ? "disabled" : `onclick="selectRecord('${r.id}')"`} class="w-full text-left p-3.5 rounded-xl border transition ${dup ? "border-neutral-200 bg-neutral-50 opacity-80 cursor-not-allowed" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"}">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-              <span class="text-sm font-bold text-black">${r.date}</span>
-              <div class="flex items-center gap-1.5">${dupBadge}<span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${r.id}</span></div>
-            </div>
-            <div class="text-xs text-neutral-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              <span>${esc(r.site)} (${esc(r.lane)})</span><span>·</span><span>${esc(r.package)}</span>
-            </div>
-          </button>
+          <div class="rounded-xl border transition ${dupId ? "border-neutral-200 bg-[#F2F2F2]" : sel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-200 hover:bg-neutral-50"} p-3.5">
+            <button type="button" ${dupId ? "disabled" : `onclick="selectRecord('${esc(r.id)}')"`} class="w-full text-start ${dupId ? "opacity-75 cursor-not-allowed" : ""}">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-sm font-bold text-black">${esc(dateStr)}</span>
+                <span class="font-mono text-xs font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded" dir="ltr">${esc(r.id)}</span>
+              </div>
+              <div class="text-xs text-neutral-600 mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                <span>${esc(r.site)} (${esc(r.lane)})</span><span>·</span><span>${esc(r.package)}</span>
+              </div>
+            </button>
+            ${dupBtn}
+          </div>
         `;
       }).join("");
 
       if (isBilling) {
         const uSel = appState.selectedRecordId === "ORD-UNLISTED";
         list.innerHTML += `
-          <button type="button" onclick="selectRecord('ORD-UNLISTED')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+          <button type="button" onclick="selectRecord('ORD-UNLISTED')" class="w-full min-h-[44px] text-start p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-bold text-black">Order Not Listed</span>
-              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">Card Last 4 + Bank SMS</span>
+              <span class="text-sm font-bold text-black">${isAr ? "طلب غير مدرج في القائمة" : "Order Not Listed"}</span>
+              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">${isAr ? "آخر 4 أرقام + رسالة البنك" : "Card Last 4 + Bank SMS"}</span>
             </div>
-            <div class="text-xs text-neutral-500 mt-1">Charged on your card but don't see it above? Provide card last 4 digits &amp; Bank SMS.</div>
+            <div class="text-xs text-neutral-600 mt-1">${isAr ? "تم الخصم من بطاقتك ولا يظهر الطلب أعلاه؟ أدخل آخر 4 أرقام من البطاقة ورسالة البنك." : "Charged on your card but don't see it above? Provide card last 4 digits &amp; Bank SMS."}</div>
           </button>
         `;
       } else if (appState.issueType === "Other") {
@@ -862,12 +1053,12 @@
         if (!appState.selectedRecordId) appState.selectedRecordId = "VISIT-GENERAL";
         document.getElementById("btn-to-step4").disabled = false;
         list.innerHTML += `
-          <button type="button" onclick="selectRecord('VISIT-GENERAL')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${isGeneral ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+          <button type="button" onclick="selectRecord('VISIT-GENERAL')" class="w-full min-h-[44px] text-start p-3.5 rounded-xl border border-dashed transition ${isGeneral ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-bold text-black">${appState.lang === "ar" ? "ملاحظة عامة / بدون تحديد غسلة معينة" : "General Inquiry / No Specific Wash"}</span>
-              <span class="text-[11px] font-bold text-neutral-600 bg-white border border-neutral-200 px-2 py-0.5 rounded">${appState.lang === "ar" ? "عام" : "General"}</span>
+              <span class="text-sm font-bold text-black">${isAr ? "ملاحظة عامة / بدون تحديد غسلة معينة" : "General Inquiry / No Specific Wash"}</span>
+              <span class="text-[11px] font-bold text-neutral-700 bg-white border border-neutral-200 px-2 py-0.5 rounded">${isAr ? "عام" : "General"}</span>
             </div>
-            <div class="text-xs text-neutral-500 mt-1">${appState.lang === "ar" ? "تقديم استفسار أو مقترح عام غير مرتبط بزيارة محددة." : "Submit general feedback or inquiries not tied to a specific wash visit."}</div>
+            <div class="text-xs text-neutral-600 mt-1">${isAr ? "تقديم استفسار أو مقترح عام غير مرتبط بزيارة محددة." : "Submit general feedback or inquiries not tied to a specific wash visit."}</div>
           </button>
         `;
       } else if (records.length === 0 || !firstOpen) {
@@ -877,12 +1068,12 @@
           document.getElementById("btn-to-step4").disabled = false;
         }
         list.innerHTML += `
-          <button type="button" onclick="selectRecord('VISIT-UNLISTED')" class="w-full text-left p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
+          <button type="button" onclick="selectRecord('VISIT-UNLISTED')" class="w-full min-h-[44px] text-start p-3.5 rounded-xl border border-dashed transition ${uSel ? "border-[#C91E2F] bg-[#FDF2F3] ring-1 ring-[#C91E2F]" : "border-neutral-300 hover:bg-neutral-50"}">
             <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-bold text-black">${appState.lang === "ar" ? "زيارة غير مدرجة في القائمة" : "Visit Not Listed"}</span>
-              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">${appState.lang === "ar" ? "زيارة سابقة" : "Earlier Visit"}</span>
+              <span class="text-sm font-bold text-black">${isAr ? "زيارة غير مدرجة في القائمة" : "Visit Not Listed"}</span>
+              <span class="text-[11px] font-bold text-[#C91E2F] bg-white border border-[#F7C5CA] px-2 py-0.5 rounded">${isAr ? "زيارة سابقة" : "Earlier Visit"}</span>
             </div>
-            <div class="text-xs text-neutral-500 mt-1">${appState.lang === "ar" ? "هل قمت بالغسيل قبل أكثر من 7 أيام أو تم الإبلاغ عن الزيارة بالفعل؟ اختر هذا الخيار للمتابعة." : "Washed more than 7 days ago or already reported? Select this option to proceed."}</div>
+            <div class="text-xs text-neutral-600 mt-1">${isAr ? "هل قمت بالغسيل قبل أكثر من 7 أيام أو تم الإبلاغ عن الزيارة بالفعل؟ اختر هذا الخيار للمتابعة." : "Washed more than 7 days ago or already reported? Select this option to proceed."}</div>
           </button>
         `;
       }
@@ -895,37 +1086,57 @@
     }
 
     function openDynamicForm() {
+      renderStep4Dynamic(false);
+      goToStep(4);
+    }
+
+    function renderStep4Dynamic(preserveState) {
       const cust = appState.customer;
+      if (!cust) return;
+      const isAr = appState.lang === "ar";
       const isBilling = appState.issueType === "Billing / Refund";
       const isUnlisted = (isBilling && appState.selectedRecordId === "ORD-UNLISTED") || appState.selectedRecordId === "VISIT-UNLISTED" || appState.selectedRecordId === "VISIT-GENERAL";
       const rec = isUnlisted
-        ? { id: appState.selectedRecordId || "VISIT-UNLISTED", item: "General / Unlisted Visit", amount: "", date: "General / Unlisted", package: "General / Unlisted", site: "RUSH Al Kharj" }
-        : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-GENERAL", item: "General", package: "General", date: "General", site: "RUSH Al Kharj" };
+        ? { id: appState.selectedRecordId || "VISIT-UNLISTED", item: isAr ? "زيارة عامة / غير مدرجة" : "General / Unlisted Visit", amount: "", dateRaw: "", package: isAr ? "زيارة عامة / غير مدرجة" : "General / Unlisted", site: "RUSH Al Kharj" }
+        : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-GENERAL", item: "General", package: "General", dateRaw: "", site: "RUSH Al Kharj" };
       if (!rec) return;
+
+      const issueLabelMap = {
+        "Unsatisfied": isAr ? "جودة الغسيل" : "Unsatisfied",
+        "Billing / Refund": isAr ? "الفواتير والمبالغ" : "Billing / Refund",
+        "Damage": isAr ? "أضرار وتلفيات" : "Damage",
+        "Other": isAr ? "أخرى" : "Other"
+      };
+      const issueLabel = issueLabelMap[appState.issueType] || appState.issueType;
+      const recDate = rec.dateRaw ? formatShortDate(rec.dateRaw) : (isAr ? "عام" : "General");
 
       document.getElementById("selected-record-banner").innerHTML = isUnlisted
         ? (isBilling
-            ? `<div><strong>Billing / Refund:</strong> Order Not Listed</div><span class="font-mono font-bold text-[#C91E2F]">UNLISTED</span>`
+            ? `<div><strong>${esc(issueLabel)}:</strong> ${isAr ? "طلب غير مدرج" : "Order Not Listed"}</div><span class="font-mono font-bold text-[#C91E2F]" dir="ltr">${isAr ? "غير مدرج" : "UNLISTED"}</span>`
             : (appState.selectedRecordId === "VISIT-GENERAL"
-                ? `<div><strong>${appState.issueType}:</strong> General Feedback / Inquiry</div><span class="font-mono font-bold text-neutral-600 bg-neutral-200 px-2 py-0.5 rounded text-[11px]">GENERAL</span>`
-                : `<div><strong>${appState.issueType}:</strong> Earlier / Unlisted Wash</div><span class="font-mono font-bold text-[#C91E2F]">UNLISTED</span>`))
+                ? `<div><strong>${esc(issueLabel)}:</strong> ${isAr ? "ملاحظات / استفسار عام" : "General Feedback / Inquiry"}</div><span class="font-mono font-bold text-neutral-700 bg-neutral-200 px-2 py-0.5 rounded text-[11px]">${isAr ? "عام" : "GENERAL"}</span>`
+                : `<div><strong>${esc(issueLabel)}:</strong> ${isAr ? "غسلة سابقة / غير مدرجة" : "Earlier / Unlisted Wash"}</div><span class="font-mono font-bold text-[#C91E2F]" dir="ltr">${isAr ? "غير مدرج" : "UNLISTED"}</span>`))
         : isBilling
-        ? `<div><strong>Billing / Refund:</strong> ${esc(rec.item)} (SAR ${rec.amount})</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`
-        : `<div><strong>${appState.issueType}:</strong> ${esc(rec.date)} · ${esc(rec.package)}</div><span class="font-mono font-bold text-[#C91E2F]">${rec.id}</span>`;
+        ? `<div><strong>${esc(issueLabel)}:</strong> ${esc(rec.item)} (${isAr ? `${rec.amount} ريال` : `SAR ${rec.amount}`})</div><span class="font-mono font-bold text-[#C91E2F]" dir="ltr">${esc(rec.id)}</span>`
+        : `<div><strong>${esc(issueLabel)}:</strong> ${esc(recDate)} · ${esc(rec.package)}</div><span class="font-mono font-bold text-[#C91E2F]" dir="ltr">${esc(rec.id)}</span>`;
 
       const dyn = document.getElementById("dynamic-fields");
-      appState.qualityTags = [];
-      appState.zones = [];
-      appState.bankSmsFile = "";
+      if (!preserveState) {
+        appState.qualityTags = [];
+        appState.zones = [];
+        appState.bankSmsFile = "";
+        appState.bankSmsName = "";
+      }
 
       if (appState.issueType === "Unsatisfied") {
         dyn.innerHTML = `
           <div>
-            <label class="block text-xs font-semibold text-neutral-700 mb-2">What wasn't clean? (Select all that apply)</label>
+            <span class="block text-xs font-semibold text-neutral-700 mb-2">${isAr ? "ما الذي لم يكن نظيفاً؟ (اختر كل ما ينطبق)" : "What wasn't clean? (Select all that apply)"}</span>
             <div class="flex flex-wrap gap-2 text-xs">
-              ${["Missed Spots / Dirt", "Soap Residue", "Water Spots", "Dryer / Towel Issue", "Interior / Vacuum"].map(tag => `
-                <button type="button" onclick="toggleQualityTag('${tag}', this)" class="px-3 py-1.5 rounded-full border border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50 transition">${tag}</button>
-              `).join("")}
+              ${QUALITY_TAGS.map(tag => {
+                const active = appState.qualityTags.includes(tag.id);
+                return `<button type="button" aria-pressed="${active ? "true" : "false"}" onclick="toggleQualityTag('${tag.id}', this)" class="min-h-[44px] px-3.5 py-2 rounded-full border transition ${active ? "border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold" : "border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50"}">${isAr ? tag.ar : tag.en}</button>`;
+              }).join("")}
             </div>
           </div>
         `;
@@ -933,144 +1144,251 @@
         dyn.innerHTML = `
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Billing issue reason *</label>
-              <select id="inp-billing-reason" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white">
-                <option value="Double Charge">Charged Twice for Same Wash</option>
-                <option value="Wrong Package Billed">Billed Wrong Wash Package</option>
-                <option value="Membership Renewal">Membership Renewal After Cancel</option>
-                <option value="Promo Not Applied">Promo / Discount Not Applied</option>
+              <label for="inp-billing-reason" class="block text-xs font-semibold text-neutral-700 mb-1.5">${isAr ? "سبب مشكلة الفاتورة *" : "Billing issue reason *"}</label>
+              <select id="inp-billing-reason" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#C91E2F] focus:outline-none">
+                <option value="Double Charge">${isAr ? "تم الخصم مرتين لنفس الغسلة" : "Charged Twice for Same Wash"}</option>
+                <option value="Wrong Package Billed">${isAr ? "تم احتساب باقة غسيل خاطئة" : "Billed Wrong Wash Package"}</option>
+                <option value="Membership Renewal">${isAr ? "تجديد الاشتراك بعد الإلغاء" : "Membership Renewal After Cancel"}</option>
+                <option value="Promo Not Applied">${isAr ? "لم يتم تطبيق كود الخصم" : "Promo / Discount Not Applied"}</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Requested refund (SAR) *</label>
-              <input id="inp-refund-amt" type="number" step="0.01" min="0" required placeholder="e.g. 65.00" value="${rec.amount || ""}" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm" />
+              <label for="inp-refund-amt" class="block text-xs font-semibold text-neutral-700 mb-1.5">${isAr ? "المبلغ المطلوب استرداده (ريال) *" : "Requested refund (SAR) *"}</label>
+              <input id="inp-refund-amt" type="number" dir="ltr" step="0.01" min="0" required placeholder="65.00" value="${rec.amount || ""}" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
             </div>
           </div>
           ${isUnlisted ? `
             <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 space-y-3">
-              <div class="text-xs font-bold text-[#881320]">Unlisted Order Verification (Required)</div>
+              <div class="text-xs font-bold text-[#881320]">${isAr ? "التحقق من الطلب غير المدرج (مطلوب)" : "Unlisted Order Verification (Required)"}</div>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label class="block text-xs font-semibold text-neutral-700 mb-1">Card last 4 digits *</label>
-                  <input id="inp-card-last4" type="text" maxlength="4" pattern="[0-9]{4}" required placeholder="4419" class="w-full rounded-xl border border-[#F7C5CA] bg-white px-3.5 py-2 text-sm font-mono tracking-widest" />
+                  <label for="inp-card-last4" class="block text-xs font-semibold text-neutral-700 mb-1">${isAr ? "آخر 4 أرقام من البطاقة *" : "Card last 4 digits *"}</label>
+                  <input id="inp-card-last4" type="text" dir="ltr" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required placeholder="4419" class="w-full min-h-[44px] rounded-xl border border-[#F7C5CA] bg-white px-3.5 py-2 text-sm font-mono tracking-widest focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
                 </div>
                 <div>
-                  <label class="block text-xs font-semibold text-neutral-700 mb-1">Bank SMS screenshot *</label>
-                  <label class="w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#C91E2F] bg-white hover:bg-[#FCE4E6] px-3 py-2 text-xs font-bold text-[#C91E2F] cursor-pointer">
-                    <span id="bank-sms-lbl">+ Upload Bank SMS</span>
-                    <input type="file" accept="image/*,.pdf" class="hidden" onchange="handleBankSms(this.files)" />
+                  <span class="block text-xs font-semibold text-neutral-700 mb-1">${isAr ? "لقطة شاشة لرسالة البنك *" : "Bank SMS screenshot *"}</span>
+                  <label for="inp-bank-sms-file" class="w-full min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#C91E2F] bg-white hover:bg-[#FCE4E6] px-3 py-2 text-xs font-bold text-[#C91E2F] cursor-pointer transition">
+                    <span id="bank-sms-lbl">${appState.bankSmsName ? ("✓ " + esc(appState.bankSmsName)) : (isAr ? "+ رفع رسالة البنك" : "+ Upload Bank SMS")}</span>
+                    <input id="inp-bank-sms-file" type="file" accept="image/*,.pdf" class="hidden" onchange="handleBankSms(this.files)" />
                   </label>
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-semibold text-neutral-700 mb-1">Or paste Bank SMS text</label>
-                <textarea id="inp-bank-sms-text" rows="2" placeholder="Paste the bank SMS alert showing transaction time & amount..." class="w-full rounded-xl border border-[#F7C5CA] bg-white px-3 py-2 text-xs"></textarea>
+                <label for="inp-bank-sms-text" class="block text-xs font-semibold text-neutral-700 mb-1">${isAr ? "أو الصق نص رسالة البنك" : "Or paste Bank SMS text"}</label>
+                <textarea id="inp-bank-sms-text" rows="2" placeholder="${isAr ? "الصق نص رسالة البنك التي توضح وقت ومبلغ العملية..." : "Paste the bank SMS alert showing transaction time &amp; amount..."}" class="w-full rounded-xl border border-[#F7C5CA] bg-white px-3 py-2 text-xs focus:ring-2 focus:ring-[#C91E2F] focus:outline-none"></textarea>
               </div>
             </div>
           ` : ""}
         `;
       } else if (appState.issueType === "Damage") {
+        const zonesSummary = appState.zones.length
+          ? appState.zones.map(z => getZoneLabel(z, isAr)).join(isAr ? "، " : ", ")
+          : (isAr ? "لم يتم التحديد" : "None selected");
         dyn.innerHTML = `
-          <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-4">
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-bold text-neutral-800">Tap affected vehicle zones</span>
-              <span id="zones-label" class="text-xs font-bold text-[#C91E2F]">None selected</span>
+          <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold text-neutral-800">${isAr ? "حدد مناطق الضرر على المركبة *" : "Tap affected vehicle zones *"}</span>
+              <span id="zones-label" class="text-xs font-bold text-[#C91E2F] text-end">${esc(zonesSummary)}</span>
             </div>
             <div class="flex justify-center">
-              <svg viewBox="0 0 360 150" class="w-full max-w-[300px] h-auto select-none">
+              <svg viewBox="0 0 360 150" class="w-full max-w-[300px] h-auto select-none" role="group" aria-label="${isAr ? "مخطط مناطق المركبة" : "Vehicle zones diagram"}">
                 <rect x="45" y="25" width="270" height="100" rx="28" fill="#E5E5E5" stroke="#A3A3A3" stroke-width="2" />
-                <path d="M25,40 Q15,75 25,110 L45,115 L45,35 Z" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Front Bumper', this)" />
-                <rect x="48" y="34" width="68" height="82" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone" onclick="toggleZone('Hood', this)" />
-                <polygon points="118,36 146,42 146,108 118,114" fill="#E5E5E5" stroke="#525252" class="car-zone" onclick="toggleZone('Windshield', this)" />
-                <rect x="148" y="42" width="88" height="66" rx="4" fill="#FFFFFF" stroke="#737373" class="car-zone" onclick="toggleZone('Roof', this)" />
-                <rect x="122" y="14" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Driver Side &amp; Mirror', this)" />
-                <rect x="122" y="120" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Passenger Side &amp; Mirror', this)" />
-                <rect x="240" y="36" width="66" height="78" rx="6" fill="#F5F5F5" stroke="#737373" class="car-zone" onclick="toggleZone('Rear Trunk / Quarter', this)" />
-                <path d="M315,35 L335,40 Q345,75 335,110 L315,115 Z" fill="#D4D4D4" stroke="#737373" class="car-zone" onclick="toggleZone('Rear Bumper', this)" />
-                <text x="180" y="79" text-anchor="middle" font-size="10" fill="#404040" font-weight="700" pointer-events="none">ROOF</text>
-                <text x="82" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">HOOD</text>
-                <text x="273" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">REAR</text>
+                <path d="M25,40 Q15,75 25,110 L45,115 L45,35 Z" fill="#D4D4D4" stroke="#737373" tabindex="0" role="button" data-zone="Front Bumper" aria-label="${esc(getZoneLabel('Front Bumper', isAr))}" aria-pressed="${appState.zones.includes('Front Bumper') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Front Bumper') ? 'selected' : ''}" onclick="toggleZone('Front Bumper')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Front Bumper');}" />
+                <rect x="48" y="34" width="68" height="82" rx="6" fill="#F5F5F5" stroke="#737373" tabindex="0" role="button" data-zone="Hood" aria-label="${esc(getZoneLabel('Hood', isAr))}" aria-pressed="${appState.zones.includes('Hood') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Hood') ? 'selected' : ''}" onclick="toggleZone('Hood')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Hood');}" />
+                <polygon points="118,36 146,42 146,108 118,114" fill="#E5E5E5" stroke="#525252" tabindex="0" role="button" data-zone="Windshield" aria-label="${esc(getZoneLabel('Windshield', isAr))}" aria-pressed="${appState.zones.includes('Windshield') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Windshield') ? 'selected' : ''}" onclick="toggleZone('Windshield')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Windshield');}" />
+                <rect x="148" y="42" width="88" height="66" rx="4" fill="#FFFFFF" stroke="#737373" tabindex="0" role="button" data-zone="Roof" aria-label="${esc(getZoneLabel('Roof', isAr))}" aria-pressed="${appState.zones.includes('Roof') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Roof') ? 'selected' : ''}" onclick="toggleZone('Roof')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Roof');}" />
+                <rect x="122" y="14" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" tabindex="0" role="button" data-zone="Driver Side & Mirror" aria-label="${esc(getZoneLabel('Driver Side & Mirror', isAr))}" aria-pressed="${appState.zones.includes('Driver Side & Mirror') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Driver Side & Mirror') ? 'selected' : ''}" onclick="toggleZone('Driver Side & Mirror')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Driver Side & Mirror');}" />
+                <rect x="122" y="120" width="110" height="16" rx="4" fill="#D4D4D4" stroke="#737373" tabindex="0" role="button" data-zone="Passenger Side & Mirror" aria-label="${esc(getZoneLabel('Passenger Side & Mirror', isAr))}" aria-pressed="${appState.zones.includes('Passenger Side & Mirror') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Passenger Side & Mirror') ? 'true' : ''}" onclick="toggleZone('Passenger Side & Mirror')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Passenger Side & Mirror');}" />
+                <rect x="240" y="36" width="66" height="78" rx="6" fill="#F5F5F5" stroke="#737373" tabindex="0" role="button" data-zone="Rear Trunk / Quarter" aria-label="${esc(getZoneLabel('Rear Trunk / Quarter', isAr))}" aria-pressed="${appState.zones.includes('Rear Trunk / Quarter') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Rear Trunk / Quarter') ? 'selected' : ''}" onclick="toggleZone('Rear Trunk / Quarter')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Rear Trunk / Quarter');}" />
+                <path d="M315,35 L335,40 Q345,75 335,110 L315,115 Z" fill="#D4D4D4" stroke="#737373" tabindex="0" role="button" data-zone="Rear Bumper" aria-label="${esc(getZoneLabel('Rear Bumper', isAr))}" aria-pressed="${appState.zones.includes('Rear Bumper') ? 'true' : 'false'}" class="car-zone ${appState.zones.includes('Rear Bumper') ? 'selected' : ''}" onclick="toggleZone('Rear Bumper')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleZone('Rear Bumper');}" />
+                <text x="192" y="79" text-anchor="middle" font-size="10" fill="#404040" font-weight="700" pointer-events="none">${isAr ? "السقف" : "ROOF"}</text>
+                <text x="82" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">${isAr ? "الكبوت" : "HOOD"}</text>
+                <text x="273" y="79" text-anchor="middle" font-size="9" fill="#404040" font-weight="700" pointer-events="none">${isAr ? "الخلف" : "REAR"}</text>
               </svg>
+            </div>
+            <div class="flex flex-wrap gap-1.5 pt-1">
+              ${VEHICLE_ZONES.map(z => {
+                const active = appState.zones.includes(z.id);
+                return `<button type="button" data-zone-pill="${esc(z.id)}" aria-pressed="${active ? "true" : "false"}" onclick="toggleZone('${z.id}')" class="min-h-[44px] px-3 py-1.5 rounded-full border text-xs transition ${active ? "border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold" : "border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50"}">${isAr ? z.ar : z.en}</button>`;
+              }).join("")}
             </div>
           </div>
         `;
       } else {
-        // Issue Type: Other
         dyn.innerHTML = `
           <div>
-            <label class="block text-xs font-semibold text-neutral-700 mb-1.5">Topic / Category</label>
-            <select id="inp-other-topic" class="w-full rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white">
-              <option value="General Feedback">General Feedback</option>
-              <option value="Staff & Customer Service">Staff &amp; Customer Service</option>
-              <option value="Facilities & Lane Operation">Facilities &amp; Lane Operation</option>
-              <option value="Subscription / App Suggestion">Subscription / App Suggestion</option>
-              <option value="Other Inquiry">Other Inquiry</option>
+            <label for="inp-other-topic" class="block text-xs font-semibold text-neutral-700 mb-1.5">${isAr ? "الموضوع / التصنيف" : "Topic / Category"}</label>
+            <select id="inp-other-topic" class="w-full min-h-[44px] rounded-xl border border-neutral-300 px-3.5 py-2.5 text-sm bg-white focus:ring-2 focus:ring-[#C91E2F] focus:outline-none">
+              <option value="General Feedback">${isAr ? "ملاحظات عامة" : "General Feedback"}</option>
+              <option value="Staff & Customer Service">${isAr ? "الموظفون وخدمة العملاء" : "Staff &amp; Customer Service"}</option>
+              <option value="Facilities & Lane Operation">${isAr ? "المرافق ومسار الغسيل" : "Facilities &amp; Lane Operation"}</option>
+              <option value="Subscription / App Suggestion">${isAr ? "الاشتراكات / اقتراح للتطبيق" : "Subscription / App Suggestion"}</option>
+              <option value="Other Inquiry">${isAr ? "استفسار آخر" : "Other Inquiry"}</option>
             </select>
           </div>
         `;
       }
-      goToStep(4);
     }
 
     function toggleQualityTag(tag, btn) {
       const idx = appState.qualityTags.indexOf(tag);
       if (idx >= 0) {
         appState.qualityTags.splice(idx, 1);
-        btn.className = "px-3 py-1.5 rounded-full border border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50 transition";
+        btn.setAttribute("aria-pressed", "false");
+        btn.className = "min-h-[44px] px-3.5 py-2 rounded-full border border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50 transition";
       } else {
         appState.qualityTags.push(tag);
-        btn.className = "px-3 py-1.5 rounded-full border border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold transition";
+        btn.setAttribute("aria-pressed", "true");
+        btn.className = "min-h-[44px] px-3.5 py-2 rounded-full border border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold transition";
       }
     }
 
-    function toggleZone(zone, el) {
+    function toggleZone(zone) {
       const idx = appState.zones.indexOf(zone);
-      if (idx >= 0) { appState.zones.splice(idx, 1); el.classList.remove("selected"); }
-      else { appState.zones.push(zone); el.classList.add("selected"); }
+      const isSelected = idx < 0;
+      if (isSelected) appState.zones.push(zone);
+      else appState.zones.splice(idx, 1);
+
+      document.querySelectorAll(`[data-zone="${zone}"]`).forEach(el => {
+        el.classList.toggle("selected", isSelected);
+        el.setAttribute("aria-pressed", isSelected ? "true" : "false");
+      });
+      document.querySelectorAll(`[data-zone-pill="${zone}"]`).forEach(btn => {
+        btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
+        btn.className = isSelected
+          ? "min-h-[44px] px-3 py-1.5 rounded-full border text-xs transition border-[#C91E2F] bg-[#FDF2F3] text-[#C91E2F] font-bold"
+          : "min-h-[44px] px-3 py-1.5 rounded-full border text-xs transition border-neutral-300 bg-white text-neutral-700 font-semibold hover:bg-neutral-50";
+      });
+
+      const isAr = appState.lang === "ar";
       const lbl = document.getElementById("zones-label");
-      if (lbl) lbl.textContent = appState.zones.length ? appState.zones.join(", ") : "None selected";
+      if (lbl) {
+        lbl.textContent = appState.zones.length
+          ? appState.zones.map(z => getZoneLabel(z, isAr)).join(isAr ? "، " : ", ")
+          : (isAr ? "لم يتم التحديد" : "None selected");
+      }
     }
 
-    function handleFiles(files) {
+    async function uploadStep4File(file, category) {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", category || "media");
+      const res = await fetch(`${API_BASE}/api/upload`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: formData
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Upload failed");
+      }
+      return data.url;
+    }
+
+    async function handleFiles(files) {
       const isAr = appState.lang === "ar";
       const fileList = Array.from(files || []).slice(0, 4 - appState.mediaFiles.length);
       if (!fileList.length) return;
-      showToast(isAr ? `جاري إضافة ${fileList.length} ملف...` : `Adding ${fileList.length} file(s)...`);
+      showToast(isAr ? `جاري رفع ${fileList.length} ملف...` : `Uploading ${fileList.length} file(s)...`);
 
-      fileList.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          appState.mediaFiles.push({ name: file.name, type: file.type, url: ev.target.result });
+      for (const file of fileList) {
+        try {
+          const uploadedUrl = await uploadStep4File(file, "media");
+          const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : uploadedUrl;
+          appState.mediaFiles.push({ name: file.name, type: file.type, url: uploadedUrl, previewUrl });
           renderPreviews();
-        };
-        reader.readAsDataURL(file);
-      });
+        } catch (ex) {
+          showToast(isAr ? `تعذر رفع ${file.name}: ${ex.message}` : `Failed to upload ${file.name}: ${ex.message}`);
+        }
+      }
     }
 
-    function handleBankSms(files) {
+    async function handleBankSms(files) {
       if (!files || !files.length) return;
-      appState.bankSmsFile = files[0].name;
+      const file = files[0];
+      const isAr = appState.lang === "ar";
       const lbl = document.getElementById("bank-sms-lbl");
-      if (lbl) lbl.textContent = "✓ " + files[0].name;
-      handleFiles(files);
-      showToast("Bank SMS screenshot attached");
+      if (lbl) lbl.textContent = isAr ? "جاري الرفع..." : "Uploading...";
+      try {
+        const uploadedUrl = await uploadStep4File(file, "complaints");
+        appState.bankSmsFile = uploadedUrl;
+        appState.bankSmsName = file.name;
+        if (lbl) lbl.textContent = "✓ " + file.name;
+        if (appState.mediaFiles.length < 4) {
+          const previewUrl = file.type.startsWith("image/") ? URL.createObjectURL(file) : uploadedUrl;
+          appState.mediaFiles.push({ name: file.name, type: file.type, url: uploadedUrl, previewUrl });
+          renderPreviews();
+        }
+        showToast(isAr ? "تم إرفاق رسالة البنك بنجاح" : "Bank SMS screenshot attached");
+      } catch (ex) {
+        appState.bankSmsFile = "";
+        appState.bankSmsName = "";
+        if (lbl) lbl.textContent = isAr ? "+ رفع رسالة البنك" : "+ Upload Bank SMS";
+        showToast(isAr ? "تعذر رفع صورة رسالة البنك" : "Failed to upload Bank SMS screenshot");
+      }
     }
 
     function removeFile(idx) {
+      const removed = appState.mediaFiles[idx];
+      if (removed?.previewUrl && removed.previewUrl.startsWith("blob:")) {
+        try { URL.revokeObjectURL(removed.previewUrl); } catch (e) {}
+      }
       appState.mediaFiles.splice(idx, 1);
       renderPreviews();
     }
 
     function renderPreviews() {
       const box = document.getElementById("media-previews");
+      const isAr = appState.lang === "ar";
       if (!appState.mediaFiles.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
       box.classList.remove("hidden");
       box.innerHTML = appState.mediaFiles.map((m, i) => `
-        <div class="relative w-16 h-16 rounded-xl border border-neutral-200 overflow-hidden bg-neutral-100">
-          ${m.type.startsWith("video") ? `<div class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-600">VIDEO</div>` : `<img src="${m.url}" alt="${m.name}" class="w-full h-full object-cover" />`}
-          <button type="button" onclick="removeFile(${i})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white text-[10px] flex items-center justify-center">×</button>
+        <div class="relative w-16 h-16 rounded-xl border border-neutral-200 overflow-hidden bg-[#F2F2F2]">
+          ${m.type.startsWith("video") ? `<div class="w-full h-full flex items-center justify-center text-[10px] font-bold text-neutral-700">${isAr ? "فيديو" : "VIDEO"}</div>` : `<img src="${m.previewUrl && m.previewUrl.startsWith("blob:") ? esc(m.previewUrl) : safeUrl(m.previewUrl || m.url)}" alt="${esc(m.name)}" class="w-full h-full object-cover" />`}
+          <button type="button" aria-label="${isAr ? "حذف الملف" : "Remove file"}" onclick="removeFile(${i})" class="absolute top-0.5 end-0.5 w-6 h-6 rounded-full bg-black/80 text-white text-xs flex items-center justify-center">×</button>
         </div>
       `).join("");
+    }
+
+    function mapServerTicket(st, fallbackPhone) {
+      return {
+        id: st.id,
+        type: st.type === "BILLING_REFUND" ? "Billing / Refund" : (st.type === "DAMAGE" ? "Damage" : (st.type === "OTHER" ? "Other" : "Unsatisfied")),
+        status: st.status === "SUBMITTED" ? "Submitted" : (st.status === "INVESTIGATING" ? "Investigating" : (st.status === "PENDING_PAYOUT" ? "Pending Payout" : "Resolved")),
+        resolutionStatus: st.resolutionStatus === "APPROVED" ? "Approved" : (st.resolutionStatus === "REFUSED" ? "Refused" : "Pending"),
+        resolutionNote: st.resolutionNote || "",
+        site: st.site,
+        createdAtRaw: st.createdAt,
+        customerName: st.customer?.name || "",
+        phone: st.customer?.phone || fallbackPhone || "",
+        vehicle: st.customer?.vehicleModel || "",
+        plate: st.customer?.licensePlate || "",
+        receipt: st.posRecordLabel || st.posRecordId,
+        zones: st.vehicleZones || [],
+        summary: st.summary,
+        rewashCode: st.rewashCode || "",
+        rrn: st.rrn || "",
+        transferRef: st.transferRef || "",
+        payoutStatus: st.payoutStatus || "",
+        refundAmount: Number(st.approvedAmount || st.requestedAmount || 0),
+        damageFlow: {
+          quotationFile: st.quotationUrl || "",
+          waiverSigned: st.waiverSigned || false,
+          quotationApproved: st.quotationApproved || false,
+          invoiceFile: st.invoiceUrl || "",
+          iban: st.iban || "",
+          bankName: st.bankName || "",
+          accountHolder: st.accountHolder || ""
+        },
+        mediaFiles: (st.mediaUrls || []).map(u => ({ name: u.split("/").pop(), url: u, type: "image/jpeg" })),
+        csatRating: st.csatRating || 0,
+        messages: (st.messages || []).map(m => ({
+          sender: m.sender,
+          channel: m.channel === "WHATSAPP" ? "WhatsApp" : "Web Portal",
+          timeRaw: m.createdAt,
+          text: m.body
+        }))
+      };
     }
 
     async function submitComplaint(e) {
@@ -1078,92 +1396,116 @@
       const isAr = appState.lang === "ar";
       const s4Err = document.getElementById("step4-error");
       if (s4Err) s4Err.classList.add("hidden");
+
+      const cust = appState.customer;
+      const isBilling = appState.issueType === "Billing / Refund";
+      const isUnlisted = isBilling && appState.selectedRecordId === "ORD-UNLISTED";
+      const rec = isUnlisted
+        ? { id: "ORD-UNLISTED", item: "Unlisted Card Charge", site: "RUSH Al Kharj", package: "Unlisted" }
+        : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-UNKNOWN", site: "RUSH Al Kharj", package: "Standard Wash" };
+
+      const desc = document.getElementById("inp-desc").value.trim();
+      if (desc.length < 3) {
+        const msg = isAr ? "يرجى كتابة تفاصيل إضافية (3 أحرف على الأقل)." : "Please enter at least 3 characters in additional details.";
+        if (s4Err) { s4Err.textContent = msg; s4Err.classList.remove("hidden"); }
+        showToast(msg);
+        return;
+      }
+
+      if (appState.issueType === "Damage" && appState.zones.length === 0) {
+        const msg = isAr ? "يرجى تحديد منطقة واحدة على الأقل من المركبة المتضررة." : "Please select at least one affected vehicle zone.";
+        if (s4Err) { s4Err.textContent = msg; s4Err.classList.remove("hidden"); }
+        showToast(msg);
+        return;
+      }
+
+      let prefix = "";
+      let refundAmt = 0;
+      let reason = "";
+      let cardLast4 = undefined;
+      let bankSmsText = undefined;
+      if (appState.issueType === "Unsatisfied") {
+        prefix = `[Tags: ${appState.qualityTags.join(", ") || "General"}] `;
+      } else if (appState.issueType === "Other") {
+        const topic = document.getElementById("inp-other-topic")?.value || "General";
+        prefix = `[Topic: ${topic}] `;
+      } else if (isBilling) {
+        reason = document.getElementById("inp-billing-reason")?.value || "";
+        refundAmt = Number(document.getElementById("inp-refund-amt")?.value || 0);
+        if (isUnlisted) {
+          cardLast4 = (document.getElementById("inp-card-last4")?.value || "").trim();
+          bankSmsText = document.getElementById("inp-bank-sms-text")?.value.trim() || undefined;
+          if (!/^\d{4}$/.test(cardLast4) || (!appState.bankSmsFile && !bankSmsText)) {
+            const msg = isAr ? "يرجى إدخال آخر 4 أرقام من البطاقة وإرفاق صورة رسالة البنك أو لصق نصها." : "Card last 4 digits and Bank SMS proof (screenshot or text) are required for unlisted orders.";
+            if (s4Err) { s4Err.textContent = msg; s4Err.classList.remove("hidden"); }
+            showToast(msg);
+            return;
+          }
+          prefix = `[Unlisted Order · Card •••• ${cardLast4} · Bank SMS: ${appState.bankSmsName || (bankSmsText ? "Pasted" : "Pending")} · ${reason} · SAR ${refundAmt}] `;
+        } else {
+          prefix = `[${reason} · SAR ${refundAmt}] `;
+        }
+      }
+
+      const callbackWindow = document.getElementById("inp-callback")?.value || "Anytime";
       setBtnLoading("btn-submit", true, isAr ? "جاري تقديم البلاغ..." : "Submitting Complaint...");
 
       try {
-        const cust = appState.customer;
-        const isBilling = appState.issueType === "Billing / Refund";
-        const isUnlisted = isBilling && appState.selectedRecordId === "ORD-UNLISTED";
-        const rec = isUnlisted
-          ? { id: "ORD-UNLISTED", item: "Unlisted Card Charge", site: "RUSH Al Kharj", package: "Unlisted" }
-          : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-UNKNOWN", site: "RUSH Al Kharj", package: "Standard Wash" };
-
-        const desc = document.getElementById("inp-desc").value.trim();
-        let prefix = "";
-        let refundAmt = 0;
-        let reason = "";
-        let cardLast4 = undefined;
-        let bankSmsText = undefined;
-        if (appState.issueType === "Unsatisfied") {
-          prefix = `[Tags: ${appState.qualityTags.join(", ") || "General"}] `;
-        } else if (appState.issueType === "Other") {
-          const topic = document.getElementById("inp-other-topic")?.value || "General";
-          prefix = `[Topic: ${topic}] `;
-        } else if (isBilling) {
-          reason = document.getElementById("inp-billing-reason")?.value || "";
-          refundAmt = Number(document.getElementById("inp-refund-amt")?.value || 0);
-          if (isUnlisted) {
-            cardLast4 = document.getElementById("inp-card-last4")?.value || "XXXX";
-            bankSmsText = document.getElementById("inp-bank-sms-text")?.value.trim() || undefined;
-            prefix = `[Unlisted Order · Card •••• ${cardLast4} · Bank SMS: ${appState.bankSmsFile || (bankSmsText ? "Pasted" : "Pending")} · ${reason} · SAR ${refundAmt}] `;
-          } else {
-            prefix = `[${reason} · SAR ${refundAmt}] `;
-          }
-        }
-
         if (appState.token) {
-          try {
-            const apiType = isBilling ? "BILLING_REFUND" : (appState.issueType === "Damage" ? "DAMAGE" : (appState.issueType === "Other" ? "OTHER" : "UNSATISFIED"));
-            const payload = {
-              type: apiType,
-              posRecordId: rec.id,
-              posRecordLabel: isBilling ? `${rec.id} (${rec.item || "Order"})` : `${rec.id} (${rec.package || "Wash"})`,
-              site: rec.site || "RUSH Al Kharj",
-              summary: prefix + desc,
-              callbackWindow: "Anytime",
-              qualityTags: appState.qualityTags,
-              vehicleZones: appState.zones,
-              billingReason: reason || undefined,
-              requestedAmount: refundAmt || undefined,
-              cardLast4: cardLast4,
-              bankSmsText: bankSmsText,
-              bankSmsUrl: appState.bankSmsFile || undefined,
-              mediaUrls: appState.mediaFiles.map(m => m.url).filter(Boolean)
-            };
+          const apiType = isBilling ? "BILLING_REFUND" : (appState.issueType === "Damage" ? "DAMAGE" : (appState.issueType === "Other" ? "OTHER" : "UNSATISFIED"));
+          const payload = {
+            type: apiType,
+            posRecordId: rec.id,
+            posRecordLabel: isBilling ? `${rec.id} (${rec.item || "Order"})` : `${rec.id} (${rec.package || "Wash"})`,
+            site: rec.site || "RUSH Al Kharj",
+            summary: prefix + desc,
+            callbackWindow,
+            qualityTags: appState.qualityTags,
+            vehicleZones: appState.zones,
+            billingReason: reason || undefined,
+            requestedAmount: refundAmt || undefined,
+            cardLast4: cardLast4,
+            bankSmsText: bankSmsText,
+            bankSmsUrl: appState.bankSmsFile || undefined,
+            mediaUrls: appState.mediaFiles.map(m => m.url).filter(Boolean)
+          };
 
-            const res = await fetch(`${API_BASE}/api/complaints`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${appState.token}`
-              },
-              body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              const errMsg = data.error?.message || data.error || (data.ticketId ? (isAr ? `تم تقديم بلاغ مسبق لهذه الزيارة (${data.ticketId})` : `Complaint already submitted (${data.ticketId})`) : (isAr ? "حدث خطأ أثناء الإرسال" : "Submission error"));
-              if (s4Err) {
-                s4Err.textContent = errMsg;
-                s4Err.classList.remove("hidden");
-              }
-              showToast(errMsg);
-              return;
-            }
-
-            if (data.trackToken) appState.trackToken = data.trackToken;
-            appState.createdTicketId = data.id;
-            document.getElementById("created-ticket-id").textContent = data.id;
-            document.getElementById("confirm-phone").textContent = "+966 " + (cust.phone || document.getElementById("inp-phone").value);
-            goToStep(5);
-            showToast(isAr ? `تم تقديم البلاغ ${data.id}` : `Ticket ${data.id} submitted`);
-            return;
-          } catch (ex) {
+          const res = await fetch(`${API_BASE}/api/complaints`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${appState.token}`
+            },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            const errMsg = (typeof data.error === "string" ? data.error : data.error?.message) || (data.ticketId ? (isAr ? `تم تقديم بلاغ مسبق لهذه الزيارة (${data.ticketId})` : `Complaint already submitted (${data.ticketId})`) : (isAr ? "حدث خطأ أثناء الإرسال" : "Submission error"));
             if (s4Err) {
-              s4Err.textContent = isAr ? "تعذر إرسال البلاغ. يرجى المحاولة مرة أخرى." : "Could not submit your complaint. Please try again.";
+              s4Err.textContent = errMsg;
               s4Err.classList.remove("hidden");
             }
+            showToast(errMsg);
             return;
           }
+
+          if (data.trackToken) appState.trackToken = data.trackToken;
+          appState.createdTicketId = data.id;
+          const mapped = mapServerTicket(data, cust.phone);
+          const idx = tickets.findIndex(t => t.id === mapped.id);
+          if (idx >= 0) tickets[idx] = mapped;
+          else tickets.unshift(mapped);
+
+          document.getElementById("created-ticket-id").textContent = data.id;
+          document.getElementById("confirm-phone").textContent = "+966 " + (cust.phone || document.getElementById("inp-phone").value);
+          goToStep(5);
+          showToast(isAr ? `تم تقديم البلاغ ${data.id}` : `Ticket ${data.id} submitted`);
+          return;
+        }
+      } catch (ex) {
+        if (s4Err) {
+          s4Err.textContent = isAr ? "تعذر إرسال البلاغ. يرجى المحاولة مرة أخرى." : "Could not submit your complaint. Please try again.";
+          s4Err.classList.remove("hidden");
         }
       } finally {
         setBtnLoading("btn-submit", false);
@@ -1174,7 +1516,10 @@
 
     function resetFileFlow() {
       const lang = appState.lang;
-      appState = { mode: "file", lang, step: 1, customer: null, token: null, pendingPlate: "", pendingPhone: "", otp: "", issueType: "Unsatisfied", selectedRecordId: null, qualityTags: [], zones: [], mediaFiles: [], bankSmsFile: "", createdTicketId: null, trackedId: null };
+      clearInterval(resendCountdownTimer);
+      resendCountdownTimer = null;
+      resendSecondsLeft = 0;
+      appState = { mode: "file", lang, step: 1, customer: null, token: null, trackToken: null, pendingPlate: "", pendingPhone: "", otp: "", issueType: "Unsatisfied", selectedRecordId: null, qualityTags: [], zones: [], mediaFiles: [], bankSmsFile: "", bankSmsName: "", createdTicketId: null, trackedId: null, multiTicketIds: [] };
       document.getElementById("inp-plate").value = "";
       document.getElementById("inp-phone").value = "";
       document.getElementById("inp-desc").value = "";
@@ -1185,12 +1530,16 @@
 
     function jumpToTrack(ticketId) {
       const t = tickets.find(x => x.id === ticketId);
+      const fallbackPhone = t?.phone || appState.customer?.phone || appState.pendingPhone || normPhone(document.getElementById("inp-phone")?.value || "");
       switchMode("track");
+      document.getElementById("track-query").value = ticketId;
+      if (fallbackPhone) document.getElementById("track-phone").value = fallbackPhone;
       if (t) {
-        document.getElementById("track-query").value = t.id;
-        document.getElementById("track-phone").value = t.phone;
         appState.trackedId = t.id;
         renderTrackedTicket();
+      } else if (fallbackPhone) {
+        const form = document.getElementById("track-form");
+        if (form) form.dispatchEvent(new Event("submit"));
       }
     }
 
@@ -1198,6 +1547,26 @@
       document.getElementById("track-query").value = q;
       document.getElementById("track-phone").value = ph;
       document.getElementById("track-error").classList.add("hidden");
+    }
+
+    function renderMultiTrackList() {
+      const multi = document.getElementById("track-multi");
+      if (!multi) return;
+      const isAr = appState.lang === "ar";
+      const list = appState.multiTicketIds.map(id => tickets.find(t => t.id === id)).filter(Boolean);
+      if (list.length <= 1) {
+        multi.classList.add("hidden");
+        return;
+      }
+      const typeDict = { "Unsatisfied": "جودة الغسيل", "Billing / Refund": "الفواتير والمبالغ", "Damage": "أضرار وتلفيات", "Other": "أخرى" };
+      const statusDict = { "Submitted": "تم التقديم", "Investigating": "قيد المراجعة", "Pending Payout": "بانتظار الصرف", "Resolved": "تم الحل", "Closed": "مغلق" };
+      multi.classList.remove("hidden");
+      multi.innerHTML = `<div class="text-xs font-bold text-neutral-600">${isAr ? `تم العثور على ${list.length} بلاغات:` : `Found ${list.length} tickets:`}</div>` + list.map(m => `
+        <button type="button" onclick="selectTracked('${esc(m.id)}')" class="w-full min-h-[44px] text-start p-2.5 rounded-xl border border-neutral-200 hover:bg-[#FDF2F3] flex items-center justify-between text-xs">
+          <span><strong class="font-mono text-[#C91E2F]" dir="ltr">${esc(m.id)}</strong> · ${esc(isAr ? (typeDict[m.type] || m.type) : m.type)}</span>
+          <span class="font-bold text-neutral-700">${esc(isAr ? (statusDict[m.status] || m.status) : m.status)}</span>
+        </button>
+      `).join("");
     }
 
     async function lookupTicket(e) {
@@ -1221,44 +1590,7 @@
           const data = await res.json();
           if (data.trackToken) appState.trackToken = data.trackToken;
           if (data.tickets && data.tickets.length > 0) {
-            const serverTickets = data.tickets.map(st => ({
-              id: st.id,
-              type: st.type === "BILLING_REFUND" ? "Billing / Refund" : (st.type === "DAMAGE" ? "Damage" : (st.type === "OTHER" ? "Other" : "Unsatisfied")),
-              status: st.status === "SUBMITTED" ? "Submitted" : (st.status === "INVESTIGATING" ? "Investigating" : (st.status === "PENDING_PAYOUT" ? "Pending Payout" : "Resolved")),
-              resolutionStatus: st.resolutionStatus === "APPROVED" ? "Approved" : (st.resolutionStatus === "REFUSED" ? "Refused" : "Pending"),
-              resolutionNote: st.resolutionNote || "",
-              site: st.site,
-              createdAt: new Date(st.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" }),
-              customerName: st.customer?.name || "",
-              phone: st.customer?.phone || ph,
-              vehicle: st.customer?.vehicleModel || "",
-              plate: st.customer?.licensePlate || "",
-              receipt: st.posRecordLabel || st.posRecordId,
-              zones: st.vehicleZones || [],
-              summary: st.summary,
-              rewashCode: st.rewashCode || "",
-              rrn: st.rrn || "",
-              transferRef: st.transferRef || "",
-              payoutStatus: st.payoutStatus || "",
-              refundAmount: Number(st.approvedAmount || st.requestedAmount || 0),
-              damageFlow: {
-                quotationFile: st.quotationUrl || "",
-                waiverSigned: st.waiverSigned || false,
-                quotationApproved: st.quotationApproved || false,
-                invoiceFile: st.invoiceUrl || "",
-                iban: st.iban || "",
-                bankName: st.bankName || "",
-                accountHolder: st.accountHolder || ""
-              },
-              mediaFiles: (st.mediaUrls || []).map(u => ({ name: u.split("/").pop(), url: u, type: "image/jpeg" })),
-              csatRating: st.csatRating || 0,
-              messages: (st.messages || []).map(m => ({
-                sender: m.sender,
-                channel: m.channel === "WHATSAPP" ? "WhatsApp" : "Web Portal",
-                time: new Date(m.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                text: m.body
-              }))
-            })).map(escDeep);
+            const serverTickets = data.tickets.map(st => mapServerTicket(st, ph));
 
             serverTickets.forEach(st => {
               const idx = tickets.findIndex(t => t.id === st.id);
@@ -1267,27 +1599,12 @@
             });
 
             err.classList.add("hidden");
-            if (serverTickets.length > 1) {
-              const typeDict = { "Unsatisfied": "جودة الغسيل", "Billing / Refund": "الفواتير والمبالغ", "Damage": "أضرار وتلفيات", "Other": "أخرى" };
-              const statusDict = { "Submitted": "تم التقديم", "Investigating": "قيد المراجعة", "Pending Payout": "بانتظار الصرف", "Resolved": "تم الحل", "Closed": "مغلق" };
-              multi.classList.remove("hidden");
-              multi.innerHTML = `<div class="text-xs font-bold text-neutral-500">${isAr ? `تم العثور على ${serverTickets.length} بلاغات:` : `Found ${serverTickets.length} tickets:`}</div>` + serverTickets.map(m => `
-                <button type="button" onclick="selectTracked('${m.id}')" class="w-full text-left p-2.5 rounded-xl border border-neutral-200 hover:bg-[#FDF2F3] flex items-center justify-between text-xs">
-                  <span><strong class="font-mono text-[#C91E2F]">${m.id}</strong> · ${isAr ? (typeDict[m.type] || m.type) : m.type}</span>
-                  <span class="font-bold text-neutral-700">${isAr ? (statusDict[m.status] || m.status) : m.status}</span>
-                </button>
-              `).join("");
-            } else {
-              multi.classList.add("hidden");
-            }
+            appState.multiTicketIds = serverTickets.map(m => m.id);
+            renderMultiTrackList();
             appState.trackedId = serverTickets[0].id;
             try {
               sessionStorage.setItem("rush_track_query", q);
-              sessionStorage.setItem("rush_track_phone", ph);
-              const url = new URL(window.location);
-              url.searchParams.set("ticket", q);
-              window.history.replaceState(null, "", url.toString());
-            } catch (e) {}
+            } catch (errUrl) {}
             renderTrackedTicket();
             return;
           }
@@ -1302,42 +1619,21 @@
       if (!matches.length) {
         err.textContent = isAr ? "لم يتم العثور على بلاغ مطابق لرقم البلاغ / اللوحة ورقم الجوال." : "No matching complaint found for that Ticket ID / License Plate and mobile number.";
         err.classList.remove("hidden");
+        appState.multiTicketIds = [];
         multi.classList.add("hidden");
         document.getElementById("track-result").classList.add("hidden");
         return;
       }
       err.classList.add("hidden");
-      if (matches.length > 1) {
-        const typeDict = { "Unsatisfied": "جودة الغسيل", "Billing / Refund": "الفواتير والمبالغ", "Damage": "أضرار وتلفيات", "Other": "أخرى" };
-        const statusDict = { "Submitted": "تم التقديم", "Investigating": "قيد المراجعة", "Pending Payout": "بانتظار الصرف", "Resolved": "تم الحل", "Closed": "مغلق" };
-        multi.classList.remove("hidden");
-        multi.innerHTML = `<div class="text-xs font-bold text-neutral-500">${isAr ? `تم العثور على ${matches.length} بلاغات:` : `Found ${matches.length} tickets:`}</div>` + matches.map(m => `
-          <button type="button" onclick="selectTracked('${m.id}')" class="w-full text-left p-2.5 rounded-xl border border-neutral-200 hover:bg-[#FDF2F3] flex items-center justify-between text-xs">
-            <span><strong class="font-mono text-[#C91E2F]">${m.id}</strong> · ${isAr ? (typeDict[m.type] || m.type) : m.type}</span>
-            <span class="font-bold text-neutral-700">${isAr ? (statusDict[m.status] || m.status) : m.status}</span>
-          </button>
-        `).join("");
-      } else {
-        multi.classList.add("hidden");
-      }
+      appState.multiTicketIds = matches.map(m => m.id);
+      renderMultiTrackList();
       appState.trackedId = matches[0].id;
       try {
         sessionStorage.setItem("rush_track_query", q);
-        sessionStorage.setItem("rush_track_phone", ph);
-        const url = new URL(window.location);
-        url.searchParams.set("ticket", q);
-        url.searchParams.set("phone", ph);
-        window.history.replaceState(null, "", url.toString());
-      } catch (e) {}
+      } catch (errUrl) {}
       renderTrackedTicket();
     }
 
-    function escDeep(v) {
-      if (typeof v === "string") return esc(v);
-      if (Array.isArray(v)) return v.map(escDeep);
-      if (v && typeof v === "object") { const o = {}; for (const k in v) o[k] = escDeep(v[k]); return o; }
-      return v;
-    }
     function selectTracked(id) { appState.trackedId = id; renderTrackedTicket(); }
 
     function clearTrackSession() {
@@ -1356,12 +1652,16 @@
       document.getElementById("track-result")?.classList.add("hidden");
       document.getElementById("track-multi")?.classList.add("hidden");
       appState.trackedId = null;
+      appState.multiTicketIds = [];
     }
 
     function renderFlowPanel(t) {
       const isAr = appState.lang === "ar";
       const rs = t.resolutionStatus || "Pending";
       const df = t.damageFlow || {};
+      const safeTid = esc(t.id);
+      const quoteHref = safeUrl(df.quotationFile);
+      const invHref = safeUrl(df.invoiceFile);
 
       if (t.type === "Unsatisfied") {
         if (rs === "Approved") {
@@ -1370,10 +1670,10 @@
             <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-xl p-4 flex items-center justify-between gap-4">
               <div class="space-y-1">
                 <span class="text-[11px] font-bold uppercase tracking-wider text-[#C91E2F]">${isAr ? "تمت الموافقة على إعادة الغسيل · جاهز للاستخدام" : "Rewash Approved · Ready to Redeem"}</span>
-                <div class="text-xl font-mono font-extrabold text-black">${code}</div>
-                <p class="text-xs text-neutral-700">${t.resolutionNote || (isAr ? "تمت الموافقة على إعادة الغسيل لمركبتكم. يرجى إبراز هذا الرمز عند زيارة الفرع." : "Your rewash request has been approved. Please show this code at the branch.")}</p>
+                <div class="text-xl font-mono font-extrabold text-black" dir="ltr">${esc(code)}</div>
+                <p class="text-xs text-neutral-700">${t.resolutionNote ? esc(t.resolutionNote) : (isAr ? "تمت الموافقة على إعادة الغسيل لمركبتكم. يرجى إبراز هذا الرمز عند زيارة الفرع." : "Your rewash request has been approved. Please show this code at the branch.")}</p>
               </div>
-              <div class="w-20 h-20 bg-white p-2 rounded-xl border border-[#F7C5CA] shrink-0">
+              <div class="w-20 h-20 bg-white p-2 rounded-xl border border-[#F7C5CA] shrink-0" aria-hidden="true">
                 <svg viewBox="0 0 100 100" class="w-full h-full text-black">
                   <rect x="6" y="6" width="26" height="26" fill="none" stroke="currentColor" stroke-width="6"/>
                   <rect x="14" y="14" width="10" height="10" fill="currentColor"/>
@@ -1389,9 +1689,9 @@
           `;
         }
         if (rs === "Refused") {
-          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "طلب إعادة الغسيل غير معتمد" : "Rewash Request Declined"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "طلب إعادة الغسيل غير معتمد" : "Rewash Request Declined"}</div><p class="text-xs sm:text-sm text-rose-900">${esc(t.resolutionNote || "")}</p></div>`;
         }
-        return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم فريقنا حالياً بمراجعة ملاحظاتكم حول جودة الغسيل." : "Our team is reviewing your wash quality feedback."}</div>`;
+        return `<div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-700">${isAr ? "يقوم فريقنا حالياً بمراجعة ملاحظاتكم حول جودة الغسيل." : "Our team is reviewing your wash quality feedback."}</div>`;
       }
 
       if (t.type === "Billing / Refund") {
@@ -1400,24 +1700,24 @@
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-bold uppercase tracking-wider text-emerald-700">${isAr ? "تمت الموافقة على استرداد المبلغ ومعالجته" : "Refund Approved &amp; Processed"}</span>
-                <span class="text-sm font-extrabold text-emerald-800">${t.refundAmount} ${isAr ? "ريال" : "SAR"}</span>
+                <span class="text-sm font-extrabold text-emerald-800">${esc(t.refundAmount)} ${isAr ? "ريال" : "SAR"}</span>
               </div>
               <div class="bg-white border border-emerald-200 rounded-lg px-3 py-2 flex items-center justify-between">
-                <span class="text-xs text-neutral-600">${isAr ? "رقم مرجع العملية البنكية (RRN):" : "Retrieval Reference Number (RRN):"}</span>
-                <span class="font-mono text-sm font-bold text-black">${t.rrn || "—"}</span>
+                <span class="text-xs text-neutral-700">${isAr ? "رقم مرجع العملية البنكية (RRN):" : "Retrieval Reference Number (RRN):"}</span>
+                <span class="font-mono text-sm font-bold text-black" dir="ltr">${esc(t.rrn || "—")}</span>
               </div>
-              <p class="text-xs text-emerald-900">${t.resolutionNote || ""}</p>
+              <p class="text-xs text-emerald-900">${esc(t.resolutionNote || "")}</p>
             </div>
           `;
         }
         if (rs === "Refused") {
-          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "لم تتم الموافقة على طلب الاسترداد" : "Refund Not Approved"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+          return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "لم تتم الموافقة على طلب الاسترداد" : "Refund Not Approved"}</div><p class="text-xs sm:text-sm text-rose-900">${esc(t.resolutionNote || "")}</p></div>`;
         }
-        return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم الفريق المالي بالتحقق من العملية البنكية. سيظهر رقم المرجع البنكي هنا فور اعتماده." : "Our billing team is verifying your transaction. Once approved, your refund RRN will appear here."}</div>`;
+        return `<div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-700">${isAr ? "يقوم الفريق المالي بالتحقق من العملية البنكية. سيظهر رقم المرجع البنكي هنا فور اعتماده." : "Our billing team is verifying your transaction. Once approved, your refund RRN will appear here."}</div>`;
       }
 
       if (rs === "Refused") {
-        return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "نعتذر، تم رفض مطالبة التعويض" : "Damage Claim Refused"}</div><p class="text-xs sm:text-sm text-rose-900">${t.resolutionNote || ""}</p></div>`;
+        return `<div class="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-1"><div class="text-xs font-bold uppercase text-rose-700">${isAr ? "نعتذر، تم رفض مطالبة التعويض" : "Damage Claim Refused"}</div><p class="text-xs sm:text-sm text-rose-900">${esc(t.resolutionNote || "")}</p></div>`;
       }
 
       if (rs === "Approved" || t.payoutStatus === "Awaiting Quote Approval" || (t.type === "Damage" && t.status === "Investigating" && df.quotationFile)) {
@@ -1430,7 +1730,7 @@
           <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4 space-y-4">
             <div class="space-y-1.5">
               <span class="text-[11px] font-bold uppercase tracking-wider text-amber-900">${isAr ? "مطالبة التعويض · تسوية الأضرار (خطوتان)" : "Damage Claim · 2-Step Settlement"}</span>
-              <p class="text-xs text-neutral-700">${t.resolutionNote || ""}</p>
+              <p class="text-xs text-neutral-700">${esc(t.resolutionNote || "")}</p>
               <div class="bg-amber-100 border border-amber-300 rounded-lg px-3 py-2 text-[11px] text-amber-950 font-medium">
                 ${isAr
                   ? `<strong>تنبيه هام:</strong> رفع تسعيرة الإصلاح <strong>لا يعني</strong> الموافقة التلقائية على الصرف. تخضع جميع التسعيرات لمراجعة الإدارة، ويتم تحديد التعويض النهائي بناءً على الفاتورة الضريبية المعتمدة ووفق التقدير الإداري.`
@@ -1446,13 +1746,13 @@
                   ? `<span class="text-[11px] font-bold text-emerald-700">${isAr ? "✓ تمت الموافقة على التسعيرة" : "✓ Quotation Approved"}</span>`
                   : step1Done
                     ? `<span class="text-[11px] font-bold text-[#C91E2F]">${isAr ? "قيد مراجعة الإدارة" : "Under Management Review"}</span>`
-                    : `<span class="text-[11px] font-bold text-amber-700">${isAr ? "مطلوبة أولاً" : "Required First"}</span>`}
+                    : `<span class="text-[11px] font-bold text-amber-800">${isAr ? "مطلوبة أولاً" : "Required First"}</span>`}
               </div>
-              <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
-                <span>${isAr ? "تسعيرة الإصلاح:" : "Quotation:"} <strong class="font-mono text-[#C91E2F]">${df.quotationFile ? `<a href="${df.quotationFile}" target="_blank" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
-                <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F2F2F2] border border-neutral-200 rounded-lg px-3 py-2">
+                <span>${isAr ? "تسعيرة الإصلاح:" : "Quotation:"} <strong class="font-mono text-[#C91E2F]">${quoteHref ? `<a href="${quoteHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                <label for="dmg-quote-file-${safeTid}" class="min-h-[44px] inline-flex items-center text-[#C91E2F] font-bold cursor-pointer hover:underline">
                   ${df.quotationFile ? (isAr ? "تغيير التسعيرة" : "Replace Quotation") : (isAr ? "+ رفع تسعيرة الإصلاح" : "+ Upload Quotation")}
-                  <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'quotationFile', this.files)" />
+                  <input id="dmg-quote-file-${safeTid}" type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${safeTid}', 'quotationFile', this.files)" />
                 </label>
               </div>
               ${df.waiverSigned ? `
@@ -1463,116 +1763,116 @@
                 <div class="space-y-1.5">
                   <div class="flex items-center justify-between text-xs">
                     <span class="font-semibold text-neutral-700">${isAr ? "توقيع إقرار التنازل عن المطالبة" : "Sign Customer Liability Waiver"}</span>
-                    <button type="button" onclick="clearSig()" class="text-neutral-500 hover:underline">${isAr ? "مسح" : "Clear"}</button>
+                    <button type="button" onclick="clearSig()" class="min-h-[44px] px-2 text-neutral-600 font-semibold hover:underline">${isAr ? "مسح" : "Clear"}</button>
                   </div>
-                  <canvas id="cust-sig" width="420" height="80" class="w-full h-20 bg-[#F9F9F9] border border-neutral-300 rounded-lg cursor-crosshair touch-none"></canvas>
-                  <button type="button" onclick="signWaiver('${t.id}')" class="px-3.5 py-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold">${isAr ? "تأكيد وتوقيع الإقرار" : "Confirm &amp; Sign Waiver"}</button>
+                  <canvas id="cust-sig" width="420" height="80" aria-label="${isAr ? "مربع التوقيع الإلكتروني" : "Signature pad"}" class="w-full h-20 bg-[#F2F2F2] border border-neutral-300 rounded-lg cursor-crosshair touch-none"></canvas>
+                  <button type="button" onclick="signWaiver('${safeTid}', this)" class="min-h-[44px] px-4 py-2 rounded-lg bg-black hover:bg-neutral-800 text-white text-xs font-bold">${isAr ? "تأكيد وتوقيع الإقرار" : "Confirm &amp; Sign Waiver"}</button>
                 </div>
               `}
             </div>
 
             <!-- Step 2: Tax Invoice & Bank Transfer Details -->
-            <div class="bg-white border ${isPaid ? "border-emerald-300 bg-emerald-50/20" : step2Done ? "border-emerald-200" : "border-neutral-200"} rounded-xl p-3.5 space-y-3 ${quoteApproved ? "" : "opacity-60 pointer-events-none"}">
+            <div ${quoteApproved ? "" : "inert"} class="bg-white border ${isPaid ? "border-emerald-300 bg-emerald-50/20" : step2Done ? "border-emerald-200" : "border-neutral-200"} rounded-xl p-3.5 space-y-3 ${quoteApproved ? "" : "opacity-60"}">
               <div class="flex items-center justify-between gap-2">
                 <h4 class="text-xs font-bold text-black">${isAr ? "الخطوة 2: الفاتورة الضريبية وبيانات التحويل البنكي" : "Step 2: Tax Invoice &amp; Bank Transfer Details"}</h4>
                 ${isPaid
                   ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-800 bg-emerald-100">${isAr ? "✓ تم تحويل مبلغ التعويض وإغلاق البلاغ" : "✓ Payout Transferred &amp; Settled"}</span>`
                   : step2Done
                     ? `<span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200">${isAr ? "✓ تم تقديم البيانات (قيد المراجعة المالية)" : "✓ Submitted (Under Finance Review)"}</span>`
-                    : `<span class="text-[11px] text-neutral-500">${quoteApproved ? (isAr ? "متاح للإدخال" : "Unlocked") : (isAr ? "بانتظار موافقة الإدارة على الخطوة 1" : "Awaiting Management Approval")}</span>`}
+                    : `<span class="text-[11px] text-neutral-600">${quoteApproved ? (isAr ? "متاح للإدخال" : "Unlocked") : (isAr ? "بانتظار موافقة الإدارة على الخطوة 1" : "Awaiting Management Approval")}</span>`}
               </div>
 
               <!-- Rush Company Tax Details Card -->
               <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-lg p-3 text-xs space-y-1">
                 <div class="font-bold text-[#881320]">${isAr ? "إصدار الفاتورة الضريبية باسم (بيانات شركة رش واش):" : "Issue Repair Tax Invoice To (Rush Tax Details):"}</div>
                 <div><strong>${isAr ? "اسم الشركة:" : "Company Name:"}</strong> ${isAr ? "شركة عمليات رش واش" : "Rush Car Wash Operations Co."}</div>
-                <div><strong>${isAr ? "الرقم الضريبي:" : "VAT / Tax Number:"}</strong> <span class="font-mono font-bold">310482917400003</span></div>
-                <div><strong>${isAr ? "رقم السجل التجاري:" : "CR Number:"}</strong> <span class="font-mono">1010684920</span> · <strong>${isAr ? "العنوان:" : "Address:"}</strong> ${isAr ? "طريق الأمير محمد بن سلمان، الخرج" : "Prince Muhammad Bin Salman Rd, Al Kharj"}</div>
+                <div><strong>${isAr ? "الرقم الضريبي:" : "VAT / Tax Number:"}</strong> <span class="font-mono font-bold" dir="ltr">310482917400003</span></div>
+                <div><strong>${isAr ? "رقم السجل التجاري:" : "CR Number:"}</strong> <span class="font-mono" dir="ltr">1010684920</span> · <strong>${isAr ? "العنوان:" : "Address:"}</strong> ${isAr ? "طريق الأمير محمد بن سلمان، الخرج" : "Prince Muhammad Bin Salman Rd, Al Kharj"}</div>
               </div>
 
               ${step2Done ? `
                 <!-- Confirmed Summary Card -->
-                <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-3 space-y-2 text-xs">
+                <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-3 space-y-2 text-xs">
                   <div class="flex items-center justify-between">
                     <span class="font-bold text-neutral-800">${isAr ? "بيانات الحساب البنكي والتحويل المؤكدة:" : "Confirmed Bank &amp; Payout Details:"}</span>
-                    ${!isPaid ? `<button type="button" onclick="document.getElementById('edit-bank-form-${t.id}').classList.toggle('hidden')" class="text-[11px] text-[#C91E2F] font-bold underline hover:text-black">${isAr ? "تعديل البيانات" : "Edit Details"}</button>` : ""}
+                    ${!isPaid ? `<button type="button" ${quoteApproved ? "" : "disabled"} onclick="document.getElementById('edit-bank-form-${safeTid}').classList.toggle('hidden')" class="min-h-[44px] px-2 text-[11px] text-[#C91E2F] font-bold underline hover:text-black">${isAr ? "تعديل البيانات" : "Edit Details"}</button>` : ""}
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-neutral-700">
-                    <div>${isAr ? "البنك:" : "Bank:"} <strong>${df.bankName || "—"}</strong></div>
-                    <div>${isAr ? "صاحب الحساب:" : "Account Holder:"} <strong>${df.accountHolder || "—"}</strong></div>
-                    <div class="sm:col-span-2">${isAr ? "الآيبان:" : "IBAN:"} <strong class="font-mono">${df.iban || "—"}</strong></div>
-                    <div class="sm:col-span-2">${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black font-bold">${isAr ? "عرض الفاتورة الضريبية ↗" : "View Tax Invoice ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></div>
+                    <div>${isAr ? "البنك:" : "Bank:"} <strong>${esc(df.bankName || "—")}</strong></div>
+                    <div>${isAr ? "صاحب الحساب:" : "Account Holder:"} <strong>${esc(df.accountHolder || "—")}</strong></div>
+                    <div class="sm:col-span-2">${isAr ? "الآيبان:" : "IBAN:"} <strong class="font-mono" dir="ltr">${esc(df.iban || "—")}</strong></div>
+                    <div class="sm:col-span-2">${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${invHref ? `<a href="${invHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-black font-bold">${isAr ? "عرض الفاتورة الضريبية ↗" : "View Tax Invoice ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></div>
                   </div>
                   ${isPaid ? `
                     <div class="mt-2 bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-lg p-2.5 font-bold text-xs flex items-center justify-between">
                       <span>${isAr ? "✓ تم تحويل المبلغ إلى الآيبان الخاص بك" : "✓ Payout transferred to your IBAN"}</span>
-                      ${t.transferRef ? `<span class="font-mono text-[11px]">${isAr ? "رقم المرجع: " : "Ref: "}${t.transferRef}</span>` : ""}
+                      ${t.transferRef ? `<span class="font-mono text-[11px]" dir="ltr">${isAr ? "رقم المرجع: " : "Ref: "}${esc(t.transferRef)}</span>` : ""}
                     </div>
                   ` : `
-                    <div class="mt-1 text-[11px] text-neutral-500">${isAr ? "يقوم الفريق المالي بالتحقق من الفاتورة الضريبية وسيتم تحويل مبلغ التعويض مباشرة إلى حسابك البنكي." : "Our finance team is reviewing your tax invoice and will initiate payment directly to your account."}</div>
+                    <div class="mt-1 text-[11px] text-neutral-600">${isAr ? "يقوم الفريق المالي بالتحقق من الفاتورة الضريبية وسيتم تحويل مبلغ التعويض مباشرة إلى حسابك البنكي." : "Our finance team is reviewing your tax invoice and will initiate payment directly to your account."}</div>
                   `}
                 </div>
 
                 <!-- Hidden Collapsible Edit Form -->
-                <div id="edit-bank-form-${t.id}" class="hidden pt-2 border-t border-neutral-200 space-y-2.5">
+                <div id="edit-bank-form-${safeTid}" class="hidden pt-2 border-t border-neutral-200 space-y-2.5">
                   <div class="text-xs font-bold text-neutral-700">${isAr ? "تحديث البيانات البنكية:" : "Update Bank Details:"}</div>
-                  <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
-                    <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black font-bold">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
-                    <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+                  <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F2F2F2] border border-neutral-200 rounded-lg px-3 py-2">
+                    <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${invHref ? `<a href="${invHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-black font-bold">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                    <label for="dmg-inv-edit-${safeTid}" class="min-h-[44px] inline-flex items-center text-[#C91E2F] font-bold cursor-pointer hover:underline">
                       ${isAr ? "تغيير الفاتورة" : "Replace Invoice"}
-                      <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'invoiceFile', this.files)" />
+                      <input id="dmg-inv-edit-${safeTid}" type="file" ${quoteApproved ? "" : "disabled"} accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${safeTid}', 'invoiceFile', this.files)" />
                     </label>
                   </div>
-                  <form onsubmit="saveBankDetails(event, '${t.id}')" class="space-y-2.5">
+                  <form onsubmit="saveBankDetails(event, '${safeTid}')" class="space-y-2.5">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <div>
-                        <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
-                        <input id="dmg-bank" type="text" required value="${df.bankName || ""}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                        <label for="dmg-bank" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
+                        <input id="dmg-bank" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.bankName || "")}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
                       </div>
                       <div>
-                        <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
-                        <input id="dmg-holder" type="text" required value="${df.accountHolder || t.customerName}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                        <label for="dmg-holder" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
+                        <input id="dmg-holder" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.accountHolder || t.customerName || "")}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
                       </div>
                     </div>
                     <div>
-                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
-                      <input id="dmg-iban" type="text" required value="${df.iban || ""}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
+                      <label for="dmg-iban" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
+                      <input id="dmg-iban" type="text" dir="ltr" required ${quoteApproved ? "" : "disabled"} value="${esc(df.iban || "")}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
                     </div>
-                    <button type="submit" class="w-full py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "حفظ البيانات المعدلة" : "Save Updated Details"}</button>
+                    <button type="submit" ${quoteApproved ? "" : "disabled"} class="w-full min-h-[44px] py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "حفظ البيانات المعدلة" : "Save Updated Details"}</button>
                   </form>
                 </div>
               ` : `
                 <!-- Unsubmitted Initial Form -->
-                <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F9F9F9] border border-neutral-200 rounded-lg px-3 py-2">
-                  <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${df.invoiceFile ? `<a href="${df.invoiceFile}" target="_blank" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
-                  <label class="text-[#C91E2F] font-bold cursor-pointer hover:underline">
+                <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F2F2F2] border border-neutral-200 rounded-lg px-3 py-2">
+                  <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${invHref ? `<a href="${invHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-black">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
+                  <label for="dmg-inv-new-${safeTid}" class="min-h-[44px] inline-flex items-center text-[#C91E2F] font-bold cursor-pointer hover:underline">
                     ${df.invoiceFile ? (isAr ? "تغيير الفاتورة" : "Replace Invoice") : (isAr ? "+ رفع الفاتورة الضريبية" : "+ Upload Tax Invoice")}
-                    <input type="file" accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${t.id}', 'invoiceFile', this.files)" />
+                    <input id="dmg-inv-new-${safeTid}" type="file" ${quoteApproved ? "" : "disabled"} accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${safeTid}', 'invoiceFile', this.files)" />
                   </label>
                 </div>
-                <form onsubmit="saveBankDetails(event, '${t.id}')" class="space-y-2.5">
+                <form onsubmit="saveBankDetails(event, '${safeTid}')" class="space-y-2.5">
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
-                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
-                      <input id="dmg-bank" type="text" required value="${df.bankName || ""}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                      <label for="dmg-bank" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
+                      <input id="dmg-bank" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.bankName || "")}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
                     </div>
                     <div>
-                      <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
-                      <input id="dmg-holder" type="text" required value="${df.accountHolder || t.customerName}" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                      <label for="dmg-holder" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
+                      <input id="dmg-holder" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.accountHolder || t.customerName || "")}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
                     </div>
                   </div>
                   <div>
-                    <label class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
-                    <input id="dmg-iban" type="text" required value="${df.iban || ""}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
+                    <label for="dmg-iban" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
+                    <input id="dmg-iban" type="text" dir="ltr" required ${quoteApproved ? "" : "disabled"} value="${esc(df.iban || "")}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
                   </div>
-                  <button type="submit" class="w-full py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "إرسال الفاتورة والآيبان" : "Submit Invoice &amp; Bank Details"}</button>
+                  <button type="submit" ${quoteApproved ? "" : "disabled"} class="w-full min-h-[44px] py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "إرسال الفاتورة والآيبان" : "Submit Invoice &amp; Bank Details"}</button>
                 </form>
               `}
             </div>
           </div>
         `;
       }
-      return `<div class="bg-[#F4F4F5] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-600">${isAr ? "يقوم فريقنا حالياً بمراجعة تقرير فحص الأضرار والتلفيات. ستظهر خطوات المتابعة هنا فور التحديث." : "Our team is reviewing your damage claim. Next steps will appear here once reviewed."}</div>`;
+      return `<div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-3.5 text-xs text-neutral-700">${isAr ? "يقوم فريقنا حالياً بمراجعة تقرير فحص الأضرار والتلفيات. ستظهر خطوات المتابعة هنا فور التحديث." : "Our team is reviewing your damage claim. Next steps will appear here once reviewed."}</div>`;
     }
 
     function renderTrackedTicket() {
@@ -1584,8 +1884,8 @@
 
       const stageMap = { "Submitted": 1, "Investigating": 2, "Pending Payout": 3, "Resolved": 4, "Closed": 4 };
       const stage = stageMap[t.status] || 1;
-      const steps = isAr 
-        ? ["تم التقديم", "قيد المراجعة", "القرار", "تم الحل"] 
+      const steps = isAr
+        ? ["تم التقديم", "قيد المراجعة", "القرار", "تم الحل"]
         : ["Submitted", "Investigating", "Decision", "Resolved"];
 
       const statusLabels = isAr ? {
@@ -1614,40 +1914,65 @@
         "Other": "Other"
       };
 
-      const siteDisplay = isAr 
+      const siteDisplay = isAr
         ? (t.site && (t.site.includes("Kharj") || t.site.includes("الخرج")) ? "رش واش - فرع الخرج" : t.site)
         : t.site;
 
+      const createdAtDisplay = formatDateTime(t.createdAtRaw);
+
+      const chatHtml = t.messages.length === 0
+        ? `<div class="rounded-xl border border-dashed border-neutral-300 bg-[#F2F2F2] p-4 text-center text-xs text-neutral-600">${isAr ? "لا توجد رسائل بعد. أرسل رسالة أدناه للتواصل مع فريق خدمة العملاء." : "No messages yet. Send a message below to reach our Customer Care team."}</div>`
+        : t.messages.map(m => {
+            const senderLabel = isAr
+              ? (m.sender === "Customer" ? "العميل" : (m.sender === "Agent" || m.sender === "Admin" ? "خدمة عملاء رش واش" : m.sender))
+              : m.sender;
+            const channelLabel = isAr
+              ? (m.channel === "WhatsApp" ? "واتساب" : "البوابة")
+              : m.channel;
+            return `
+              <div class="rounded-xl border p-3 ${m.channel === "WhatsApp" ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-[#F2F2F2]"}">
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <span class="font-bold text-black flex items-center gap-1.5">
+                    ${esc(senderLabel)}
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${m.channel === "WhatsApp" ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"}">${esc(channelLabel)}</span>
+                  </span>
+                  <span class="text-neutral-600">${esc(formatTime(m.timeRaw))}</span>
+                </div>
+                <p class="text-xs sm:text-sm text-neutral-800">${esc(m.text)}</p>
+              </div>
+            `;
+          }).join("");
+
       box.innerHTML = `
-        <div class="bg-[#F9F9F9] border border-neutral-200 rounded-xl p-4 space-y-3">
+        <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-4 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded">${t.id}</span>
-                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F3] text-[#C91E2F] border border-[#F7C5CA]">${statusLabels[t.status] || t.status}</span>
-                <span class="text-xs font-semibold text-neutral-500">${typeLabels[t.type] || t.type}</span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="font-mono text-xs font-bold bg-black text-white px-2 py-0.5 rounded" dir="ltr">${esc(t.id)}</span>
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#FDF2F3] text-[#C91E2F] border border-[#F7C5CA]">${esc(statusLabels[t.status] || t.status)}</span>
+                <span class="text-xs font-semibold text-neutral-600">${esc(typeLabels[t.type] || t.type)}</span>
               </div>
-              <p class="text-sm font-bold text-black mt-1.5">${t.summary}</p>
+              <p class="text-sm font-bold text-black mt-1.5">${esc(t.summary)}</p>
             </div>
-            <div class="${isAr ? "text-left sm:text-left" : "text-right"} text-xs text-neutral-500 space-y-0.5">
-              <div class="font-semibold text-black">${siteDisplay}</div>
-              <div>${t.vehicle} (${t.plate})</div>
-              <div><button type="button" onclick="clearTrackSession()" class="text-[11px] text-[#C91E2F] hover:underline font-bold">${isAr ? "تتبع بلاغ آخر ↗" : "Track another ticket ↗"}</button></div>
+            <div class="text-end text-xs text-neutral-600 space-y-0.5">
+              <div class="font-semibold text-black">${esc(siteDisplay)}</div>
+              <div>${esc(t.vehicle)} (${esc(t.plate)})</div>
+              <div><button type="button" onclick="clearTrackSession()" class="min-h-[44px] inline-flex items-center text-[11px] text-[#C91E2F] hover:underline font-bold">${isAr ? "تتبع بلاغ آخر ↗" : "Track another ticket ↗"}</button></div>
             </div>
           </div>
 
           <div class="grid grid-cols-4 gap-2 pt-1">
             ${steps.map((lbl, i) => `
               <div class="space-y-1">
-                <div class="h-1.5 rounded-full ${i + 1 <= stage ? "bg-[#C91E2F]" : "bg-neutral-200"}"></div>
-                <div class="text-[11px] font-bold ${i + 1 <= stage ? "text-[#C91E2F]" : "text-neutral-400"}">${lbl}</div>
+                <div class="h-1.5 rounded-full ${i + 1 <= stage ? "bg-[#C91E2F]" : "bg-neutral-300"}"></div>
+                <div class="text-[11px] font-bold ${i + 1 <= stage ? "text-[#C91E2F]" : "text-neutral-600"}">${lbl}</div>
               </div>
             `).join("")}
           </div>
 
-          <div class="text-xs text-neutral-600 bg-white border border-neutral-200 rounded-lg px-3 py-2 flex flex-wrap justify-between gap-2">
-            <span><strong>${isAr ? "رقم الإيصال:" : "Receipt:"}</strong> ${t.receipt || "—"}</span>
-            <span><strong>${isAr ? "تاريخ التسجيل:" : "Logged:"}</strong> ${t.createdAt}</span>
+          <div class="text-xs text-neutral-700 bg-white border border-neutral-200 rounded-lg px-3 py-2 flex flex-wrap justify-between gap-2">
+            <span><strong>${isAr ? "رقم الإيصال:" : "Receipt:"}</strong> ${esc(t.receipt || "—")}</span>
+            <span><strong>${isAr ? "تاريخ التسجيل:" : "Logged:"}</strong> ${esc(createdAtDisplay)}</span>
           </div>
         </div>
 
@@ -1658,7 +1983,7 @@
             <h4 class="text-xs font-bold text-black">${isAr ? "ما مدى رضاك عن حل هذا البلاغ؟" : "How satisfied are you with this resolution?"}</h4>
             ${t.csatRating ? `<div class="text-xs font-bold text-emerald-700">${isAr ? `شكراً لك! تم تسجيل تقييمك ${t.csatRating} من 5 نجوم.` : `Thank you! You rated this ${t.csatRating}/5 stars.`}</div>` : `
               <div class="flex items-center gap-1.5 flex-wrap">
-                ${[1, 2, 3, 4, 5].map(s => `<button type="button" onclick="rateTicket('${t.id}', ${s})" class="px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-[#C91E2F] hover:bg-[#FDF2F3] text-xs font-bold transition">⭐ ${s}</button>`).join("")}
+                ${[1, 2, 3, 4, 5].map(s => `<button type="button" onclick="rateTicket('${esc(t.id)}', ${s})" class="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-lg border border-neutral-200 hover:border-[#C91E2F] hover:bg-[#FDF2F3] text-xs font-bold transition">⭐ ${s}</button>`).join("")}
               </div>
             `}
           </div>
@@ -1666,41 +1991,25 @@
 
         <div class="space-y-2.5">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-500">${isAr ? `سجل المحادثة (${t.messages.length})` : `Message History (${t.messages.length})`}</h4>
+            <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-600">${isAr ? `سجل المحادثة (${t.messages.length})` : `Message History (${t.messages.length})`}</h4>
             <span class="text-[11px] font-bold text-emerald-700">${isAr ? "متزامن مع واتساب" : "WhatsApp Synced"}</span>
           </div>
-          <div class="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pr-1">
-            ${t.messages.map(m => {
-              const senderLabel = isAr 
-                ? (m.sender === "Customer" ? "العميل" : (m.sender === "Agent" || m.sender === "Admin" ? "خدمة عملاء رش واش" : m.sender))
-                : m.sender;
-              return `
-                <div class="rounded-xl border p-3 ${m.channel === "WhatsApp" ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-[#F9F9F9]"}">
-                  <div class="flex items-center justify-between text-xs mb-1">
-                    <span class="font-bold text-black flex items-center gap-1.5">
-                      ${senderLabel}
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${m.channel === "WhatsApp" ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"}">${m.channel}</span>
-                    </span>
-                    <span class="text-neutral-400">${m.time}</span>
-                  </div>
-                  <p class="text-xs sm:text-sm text-neutral-700">${m.text}</p>
-                </div>
-              `;
-            }).join("")}
+          <div class="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pe-1">
+            ${chatHtml}
           </div>
         </div>
 
-        <form onsubmit="sendWhatsApp(event, '${t.id}')" class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2">
-          <div class="flex items-center justify-between">
-            <label class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+        <form onsubmit="sendWhatsApp(event, '${esc(t.id)}')" class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <label for="wa-input-${t.id}" class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
               <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600"></i>
               <span>${isAr ? "💬 الرد عبر محادثة واتساب الرسمية" : "💬 Reply via Official WhatsApp Channel"}</span>
             </label>
-            <a href="https://wa.me/966553123848?text=${encodeURIComponent("RUSH Ticket " + t.id + ": ")}" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-emerald-700 hover:underline">${isAr ? "فتح تطبيق واتساب ↗" : "Open WhatsApp App ↗"}</a>
+            <a href="https://wa.me/966553123848?text=${encodeURIComponent("RUSH Ticket " + t.id + ": ")}" target="_blank" rel="noopener noreferrer" class="min-h-[44px] inline-flex items-center text-[11px] font-bold text-emerald-800 hover:underline">${isAr ? "فتح تطبيق واتساب ↗" : "Open WhatsApp App ↗"}</a>
           </div>
           <div class="flex gap-2">
-            <input id="wa-input-${t.id}" type="text" required placeholder="${isAr ? "اكتب رسالتك لخدمة العملاء هنا..." : "Type a WhatsApp message for ticket " + t.id + "..."}" class="flex-1 rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-            <button type="submit" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 transition">${isAr ? "إرسال" : "Send"}</button>
+            <input id="wa-input-${t.id}" type="text" required placeholder="${isAr ? "اكتب رسالتك لخدمة العملاء هنا..." : "Type a WhatsApp message for ticket " + t.id + "..."}" class="flex-1 min-h-[44px] rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+            <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shrink-0 transition">${isAr ? "إرسال" : "Send"}</button>
           </div>
         </form>
       `;
@@ -1711,21 +2020,48 @@
     function initSig() {
       const canvas = document.getElementById("cust-sig");
       if (!canvas) return;
+      sigHasStrokes = false;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const cssW = rect.width || 420;
+      const cssH = rect.height || 80;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
       const ctx = canvas.getContext("2d");
-      ctx.strokeStyle = "#000000"; ctx.lineWidth = 2; ctx.lineCap = "round";
+      ctx.scale(dpr, dpr);
+      ctx.strokeStyle = "#000000";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+
       let drawing = false;
       const pos = (e) => {
         const r = canvas.getBoundingClientRect();
         const cx = e.touches ? e.touches[0].clientX : e.clientX;
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (cx - r.left) * (canvas.width / r.width), y: (cy - r.top) * (canvas.height / r.height) };
+        return { x: cx - r.left, y: cy - r.top };
       };
-      canvas.onmousedown = canvas.ontouchstart = (e) => { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); };
-      canvas.onmousemove = canvas.ontouchmove = (e) => { if (!drawing) return; e.preventDefault(); const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); };
+      canvas.onmousedown = canvas.ontouchstart = (e) => {
+        drawing = true;
+        sigHasStrokes = true;
+        const p = pos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      canvas.onmousemove = canvas.ontouchmove = (e) => {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = pos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
       canvas.onmouseup = canvas.ontouchend = canvas.onmouseleave = () => { drawing = false; };
     }
 
-    function clearSig() { const c = document.getElementById("cust-sig"); if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height); }
+    function clearSig() {
+      sigHasStrokes = false;
+      const c = document.getElementById("cust-sig");
+      if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height);
+    }
 
     async function uploadDmgDoc(id, field, files) {
       const t = tickets.find(x => x.id === id);
@@ -1737,41 +2073,57 @@
       try {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("purpose", field);
+        formData.append("category", field === "quotationFile" ? "quotations" : "invoices");
         const res = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           headers: authHeaders(),
           body: formData
         });
-        if (res.ok) {
-          const data = await res.json();
-          const docUrl = data.url || file.name;
-          t.damageFlow[field] = docUrl;
-
-          if (id.startsWith("C-")) {
-            const dbField = field === "quotationFile" ? "quotationUrl" : "invoiceUrl";
-            await fetch(`${API_BASE}/api/complaints/${id}/damage/upload-doc`, {
-              method: "POST",
-              headers: authHeaders({ "Content-Type": "application/json" }),
-              body: JSON.stringify({ field: dbField, url: docUrl })
-            });
-          }
-        } else {
-          t.damageFlow[field] = file.name;
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.url) {
+          showToast(data.error || (isAr ? `تعذر رفع ${file.name}` : `Failed to upload ${file.name}`));
+          return;
         }
+        const docUrl = data.url;
+
+        if (id.startsWith("C-")) {
+          const dbField = field === "quotationFile" ? "quotationUrl" : "invoiceUrl";
+          const saveRes = await fetch(`${API_BASE}/api/complaints/${id}/damage/upload-doc`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ field: dbField, url: docUrl })
+          });
+          const saveData = await saveRes.json().catch(() => ({}));
+          if (!saveRes.ok) {
+            showToast(saveData.error || (isAr ? "تعذر حفظ المستند على البلاغ" : "Failed to attach document to ticket"));
+            return;
+          }
+        }
+
+        t.damageFlow[field] = docUrl;
+        renderTrackedTicket();
+        showToast(isAr ? `تم رفع ${file.name}` : `Uploaded ${file.name}`);
       } catch (ex) {
         console.warn("Upload doc error:", ex);
-        t.damageFlow[field] = file.name;
+        showToast(isAr ? "تعذر رفع الملف. يرجى المحاولة مرة أخرى." : "Could not upload file. Please try again.");
       }
-      renderTrackedTicket();
-      showToast(isAr ? `تم رفع ${file.name}` : `Uploaded ${file.name}`);
     }
 
-    async function signWaiver(id) {
+    async function signWaiver(id, btnEl) {
       const t = tickets.find(x => x.id === id);
       if (!t) return;
-      const btn = event?.currentTarget || event?.target;
       const isAr = appState.lang === "ar";
+
+      if (!t.damageFlow.quotationFile) {
+        showToast(isAr ? "يرجى رفع تسعيرة الإصلاح أولاً قبل توقيع الإقرار." : "Please upload the repair quotation first.");
+        return;
+      }
+      if (!sigHasStrokes) {
+        showToast(isAr ? "يرجى التوقيع في المربع أعلاه أولاً." : "Please draw your signature first.");
+        return;
+      }
+
+      const btn = btnEl || null;
       setBtnLoading(btn, true, isAr ? "جاري توثيق التنازل..." : "Signing Waiver...");
 
       try {
@@ -1786,7 +2138,7 @@
         }
 
         if (id.startsWith("C-")) {
-          await fetch(`${API_BASE}/api/complaints/${id}/damage/step1`, {
+          const res = await fetch(`${API_BASE}/api/complaints/${id}/damage/step1`, {
             method: "POST",
             headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({
@@ -1794,14 +2146,19 @@
               waiverSignature: sig
             })
           });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            showToast(data.error || (isAr ? "تعذر توثيق التنازل" : "Could not sign waiver"));
+            return;
+          }
         }
         t.damageFlow.waiverSigned = true;
         renderTrackedTicket();
         showToast(isAr ? "تم توقيع إقرار التنازل بنجاح" : "Customer waiver signed successfully");
       } catch (ex) {
-        t.damageFlow.waiverSigned = true;
-        renderTrackedTicket();
-        showToast("Customer waiver signed");
+        showToast(isAr ? "تعذر الاتصال بالخادم لتوقيع الإقرار" : "Could not connect to sign waiver");
+      } finally {
+        setBtnLoading(btn, false);
       }
     }
 
@@ -1809,13 +2166,24 @@
       e.preventDefault();
       const t = tickets.find(x => x.id === id);
       if (!t) return;
-      const btn = e.target.querySelector("button[type='submit']");
       const isAr = appState.lang === "ar";
-      setBtnLoading(btn, true, isAr ? "جاري حفظ الفاتورة والآيبان..." : "Saving Bank Details...");
+      const btn = e.target.querySelector("button[type='submit']");
+
+      if (!t.damageFlow.invoiceFile) {
+        showToast(isAr ? "يرجى رفع الفاتورة الضريبية أولاً." : "Please upload the tax invoice first.");
+        return;
+      }
 
       const bank = document.getElementById("dmg-bank").value.trim();
       const holder = document.getElementById("dmg-holder").value.trim();
-      const iban = document.getElementById("dmg-iban").value.trim().toUpperCase();
+      const iban = document.getElementById("dmg-iban").value.replace(/\s+/g, "").toUpperCase();
+
+      if (!isValidSaIban(iban)) {
+        showToast(isAr ? "يرجى إدخال رقم آيبان سعودي صحيح (SA متبوعاً بـ 22 رقماً)." : "Please enter a valid Saudi IBAN (SA + 22 digits).");
+        return;
+      }
+
+      setBtnLoading(btn, true, isAr ? "جاري حفظ الفاتورة والآيبان..." : "Saving Bank Details...");
 
       try {
         if (id.startsWith("C-")) {
@@ -1829,9 +2197,9 @@
               iban: iban
             })
           });
-          const data = await res.json();
+          const data = await res.json().catch(() => ({}));
           if (!res.ok) {
-            showToast(data.error || "Submission failed");
+            showToast(typeof data.error === "string" ? data.error : (isAr ? "تعذر حفظ البيانات البنكية" : "Submission failed"));
             return;
           }
         }
@@ -1839,11 +2207,11 @@
         t.damageFlow.accountHolder = holder;
         t.damageFlow.iban = iban;
         t.status = "Pending Payout";
-        t.messages.push({ sender: "Customer", channel: "Web Portal", time: "Just now", text: `Submitted Tax Invoice & Bank Details (${bank} · ${iban}).` });
+        t.messages.push({ sender: "Customer", channel: "Web Portal", timeRaw: new Date().toISOString(), text: `Submitted Tax Invoice & Bank Details (${bank} · ${iban}).` });
         renderTrackedTicket();
         showToast(isAr ? "تم إرسال الفاتورة والآيبان للمراجعة" : "Invoice & IBAN submitted for review");
       } catch (ex) {
-        showToast("Error saving bank details");
+        showToast(isAr ? "حدث خطأ أثناء حفظ البيانات البنكية" : "Error saving bank details");
       } finally {
         setBtnLoading(btn, false);
       }
@@ -1863,11 +2231,16 @@
           body: JSON.stringify({ body: text })
         });
         if (!res.ok) {
-          showToast(res.status === 401 ? (isAr ? "يرجى البحث برقم البلاغ لإرسال رسالة" : "Look up by ticket ID to send a message") : "Message failed");
+          showToast(res.status === 401
+            ? (isAr ? "يرجى البحث برقم البلاغ لإرسال رسالة" : "Look up by ticket ID to send a message")
+            : (isAr ? "تعذر إرسال الرسالة" : "Message failed"));
           return;
         }
-      } catch { showToast("Message failed"); return; }
-      t.messages.push({ sender: "Customer", channel: "WhatsApp", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), text });
+      } catch {
+        showToast(isAr ? "تعذر إرسال الرسالة" : "Message failed");
+        return;
+      }
+      t.messages.push({ sender: "Customer", channel: "WhatsApp", timeRaw: new Date().toISOString(), text });
       inp.value = "";
       renderTrackedTicket();
       showToast(isAr ? "تم إرسال الرسالة وحفظها في السجل" : "Message sent & saved to history");
@@ -1884,7 +2257,7 @@
           body: JSON.stringify({ rating: stars })
         });
         if (!res.ok) { showToast(isAr ? "تعذر حفظ التقييم" : "Could not save rating"); return; }
-      } catch { showToast("Could not save rating"); return; }
+      } catch { showToast(isAr ? "تعذر حفظ التقييم" : "Could not save rating"); return; }
       t.csatRating = stars;
       renderTrackedTicket();
       showToast(isAr ? `شكراً لك! تم تسجيل تقييمك ${stars} من 5 نجوم.` : `Thank you for rating ${stars}/5 stars!`);
@@ -1894,27 +2267,21 @@
       lucide.createIcons();
 
       // Check stored language preference or default to Arabic
-      const savedLang = localStorage.getItem("rush_portal_lang") || "ar";
+      let savedLang = "ar";
+      try { savedLang = localStorage.getItem("rush_portal_lang") || "ar"; } catch (e) {}
       applyLang(savedLang);
 
-      // Auto-restore active tracking session on page reload or direct link
+      // Auto-restore tracking query (without persisting phone)
       try {
         const urlParams = new URLSearchParams(window.location.search);
         const q = urlParams.get("ticket") || sessionStorage.getItem("rush_track_query");
-        const ph = sessionStorage.getItem("rush_track_phone");
+        sessionStorage.removeItem("rush_track_phone");
 
-        if (q && ph) {
+        if (q) {
           const qEl = document.getElementById("track-query");
-          const phEl = document.getElementById("track-phone");
-          if (qEl && phEl) {
+          if (qEl) {
             qEl.value = q;
-            phEl.value = ph;
             switchMode("track");
-            // Automatically execute lookup
-            const form = document.getElementById("track-form");
-            if (form) {
-              form.dispatchEvent(new Event("submit"));
-            }
           }
         }
       } catch (err) {

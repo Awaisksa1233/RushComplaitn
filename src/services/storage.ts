@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -107,4 +107,37 @@ export async function getFileFromR2(key: string) {
   } catch (err) {
     return null;
   }
+}
+
+const VALID_STORAGE_KEY = /^(media|quotations|invoices|complaints|damage)\/\d+-[0-9a-f]{32}\.(jpg|png|webp|pdf|mp4|mov)$/;
+
+export function extractStorageKey(fileUrlOrKey: string | null | undefined): string | null {
+  if (!fileUrlOrKey) return null;
+  const trimmed = fileUrlOrKey.trim();
+  const key = trimmed.startsWith("/api/files/") ? trimmed.slice("/api/files/".length) : trimmed;
+  return VALID_STORAGE_KEY.test(key) ? key : null;
+}
+
+export async function deleteFile(fileUrlOrKey: string | null | undefined): Promise<void> {
+  const key = extractStorageKey(fileUrlOrKey);
+  if (!key) return;
+
+  const client = getR2Client();
+  const { bucketName } = getR2Config();
+  if (client) {
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: bucketName, Key: key }));
+    } catch (err: any) {
+      console.warn("[Storage] R2 delete error:", err?.message || err);
+    }
+  }
+
+  const localPath = resolveLocalPath(key);
+  if (localPath && fs.existsSync(localPath)) {
+    await fs.promises.unlink(localPath).catch(() => {});
+  }
+}
+
+export async function deleteFiles(urls: Array<string | null | undefined>): Promise<void> {
+  await Promise.all(urls.filter(Boolean).map((u) => deleteFile(u)));
 }

@@ -21,7 +21,13 @@ const app = express();
 const prisma = new PrismaClient();
 
 app.disable("x-powered-by");
-if (process.env.TRUST_PROXY) app.set("trust proxy", Number(process.env.TRUST_PROXY) || process.env.TRUST_PROXY);
+if (process.env.TRUST_PROXY !== undefined && process.env.TRUST_PROXY !== "") {
+  const hops = Number(process.env.TRUST_PROXY);
+  if (!Number.isInteger(hops) || hops < 0) {
+    throw new Error("TRUST_PROXY must be a non-negative integer");
+  }
+  app.set("trust proxy", hops);
+}
 
 app.use(
   helmet({
@@ -67,6 +73,9 @@ app.get("/api/files/:key(*)", async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
   res.setHeader("Cache-Control", "private, no-store");
+  if (!/\.(jpg|png|webp)$/i.test(key)) {
+    res.setHeader("Content-Disposition", `attachment; filename="${path.basename(key)}"`);
+  }
   try {
     const s3Res = await getFileFromR2(key);
     if (s3Res && s3Res.Body) {
