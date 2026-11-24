@@ -281,4 +281,52 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
       .set("Authorization", `Bearer ${csmToken}`);
     expect(postRes.status).toBe(401);
   });
+
+  // Test 10: FINANCE (Accountant) Role Permissions
+  it("10. should allow FINANCE role to access finance endpoints and quote approval, but deny staff management", async () => {
+    const finEmail = `test.finance.${Date.now()}@rush.com.sa`;
+    const finPass = "Finance!Pass2026#";
+    const createRes = await request(app)
+      .post("/api/admin/staff")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ name: "Test Accountant", email: finEmail, password: finPass, role: "FINANCE", branch: "All Branches" });
+    expect(createRes.status).toBe(201);
+    createdStaffIds.push(createRes.body.id);
+
+    const loginRes = await request(app)
+      .post("/api/admin/login")
+      .send({ email: finEmail, password: finPass });
+    expect(loginRes.status).toBe(200);
+    const financeToken = loginRes.body.token;
+
+    const finListRes = await request(app)
+      .get("/api/admin/finance")
+      .set("Authorization", `Bearer ${financeToken}`);
+    expect(finListRes.status).toBe(200);
+    expect(Array.isArray(finListRes.body)).toBe(true);
+
+    const finCsvRes = await request(app)
+      .get("/api/admin/finance/export.csv")
+      .set("Authorization", `Bearer ${financeToken}`);
+    expect(finCsvRes.status).toBe(200);
+
+    // Non-existent ticket returns 404 (not 403), proving FINANCE role passes requireRoles on approve-quote & mark-paid
+    const quoteRes = await request(app)
+      .post("/api/admin/claims/C-DOES-NOT-EXIST/damage/approve-quote")
+      .set("Authorization", `Bearer ${financeToken}`)
+      .send({});
+    expect(quoteRes.status).toBe(404);
+
+    const paidRes = await request(app)
+      .post("/api/admin/finance/C-DOES-NOT-EXIST/mark-paid")
+      .set("Authorization", `Bearer ${financeToken}`)
+      .send({ transferRef: "TRF-123456" });
+    expect(paidRes.status).toBe(404);
+
+    // FINANCE cannot manage staff
+    const staffRes = await request(app)
+      .get("/api/admin/staff")
+      .set("Authorization", `Bearer ${financeToken}`);
+    expect(staffRes.status).toBe(403);
+  });
 });

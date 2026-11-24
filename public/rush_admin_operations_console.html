@@ -450,6 +450,7 @@
               <option value="Admin">Admin</option>
               <option value="Ops Manager">Ops Manager</option>
               <option value="CSM">CSM</option>
+              <option value="Accountant">Accountant</option>
               <option value="Business Owner">Business Owner</option>
             </select>
             <label for="new-staff-branch" class="sr-only">Staff branch scope</label>
@@ -501,6 +502,7 @@
               <option value="Admin">Admin</option>
               <option value="Ops Manager">Ops Manager</option>
               <option value="CSM">CSM</option>
+              <option value="Accountant">Accountant</option>
               <option value="Business Owner">Business Owner</option>
             </select>
           </div>
@@ -732,12 +734,12 @@
 
     // ---- Role / Branch helpers ----
     function isOwnerRole() { return uiState.role === "Business Owner"; }
-    function isFinanceRole() { return uiState.role === "Business Owner" || uiState.role === "Admin"; }
+    function isFinanceRole() { return uiState.role === "Business Owner" || uiState.role === "Admin" || uiState.role === "Accountant"; }
     function roleToEnum(role) {
-      return { "Business Owner": "BUSINESS_OWNER", "Admin": "ADMIN", "Ops Manager": "OPS_MANAGER", "CSM": "CSM" }[role] || "CSM";
+      return { "Business Owner": "BUSINESS_OWNER", "Admin": "ADMIN", "Ops Manager": "OPS_MANAGER", "CSM": "CSM", "Accountant": "FINANCE" }[role] || "CSM";
     }
     function enumToRole(en) {
-      return { BUSINESS_OWNER: "Business Owner", ADMIN: "Admin", OPS_MANAGER: "Ops Manager", CSM: "CSM" }[en] || en;
+      return { BUSINESS_OWNER: "Business Owner", ADMIN: "Admin", OPS_MANAGER: "Ops Manager", CSM: "CSM", FINANCE: "Accountant" }[en] || en;
     }
 
     function syncRolePermissionsUI() {
@@ -824,6 +826,7 @@
       if (uiState.role === "Business Owner" || uiState.role === "Admin") return true;
       if (uiState.role === "Ops Manager") return c.type === "Damage" && c.branch === uiState.opsBranch;
       if (uiState.role === "CSM") return c.type === "Damage" || c.type === "Unsatisfied";
+      if (uiState.role === "Accountant") return c.type === "Damage";
       return c.assignedRole === uiState.role;
     }
 
@@ -848,7 +851,7 @@
         return;
       }
       if (v === "payouts" && !isFinanceRole()) {
-        showToast("Finance ledger is restricted to Business Owner and Admin");
+        showToast("Finance ledger is restricted to Business Owner, Admin, and Accountant");
         return;
       }
       uiState.view = v;
@@ -896,7 +899,8 @@
         "Business Owner": `Full oversight · Approves Damage payouts > SAR ${sysConfig.damageApprovalCapSar} & SLA escalations (> ${sysConfig.maxSlaHours}h).`,
         "Admin": "Handles Unsatisfied (Rewash QR) & Billing / Refund (RRN) & Finance disbursements.",
         "Ops Manager": `${uiState.opsBranch} · Handles Damage Stage 1 inspection before handing off to CSM.`,
-        "CSM": `Handles Damage Stage 2 settlement (can approve up to SAR ${sysConfig.damageApprovalCapSar}; > SAR ${sysConfig.damageApprovalCapSar} escalates to Owner).`
+        "CSM": `Handles Damage Stage 2 settlement (can approve up to SAR ${sysConfig.damageApprovalCapSar}; > SAR ${sysConfig.damageApprovalCapSar} escalates to Owner).`,
+        "Accountant": `Finance & Payouts · Approves Damage quotations (up to SAR ${sysConfig.damageApprovalCapSar}) & executes final IBAN payouts.`
       };
       const vis = getVisibleClaims();
       const myCount = uiState.role === "Business Owner" ? vis.length : vis.filter(c => c.assignedRole === uiState.role).length;
@@ -1010,7 +1014,7 @@
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
       });
 
-      const roles = ["Admin", "Ops Manager", "CSM"];
+      const roles = ["Admin", "Ops Manager", "CSM", "Accountant"];
       charts.workload = new Chart(document.getElementById("chart-workload"), {
         type: "bar",
         data: {
@@ -1124,7 +1128,7 @@
     function renderDamageStepper(c) {
       const refused = c.payoutStatus === "Declined" || c.resolutionStatus === "Refused";
       const s1Done = (c.zones && c.zones.length > 0) || c.assignedRole !== "Ops Manager";
-      const s2Done = c.assignedRole === "CSM" || c.assignedRole === "Business Owner" || c.assignedRole === "Admin" || c.status !== "Submitted";
+      const s2Done = c.assignedRole === "CSM" || c.assignedRole === "Accountant" || c.assignedRole === "Business Owner" || c.assignedRole === "Admin" || c.status !== "Submitted";
       const s3Done = c.resolutionStatus === "Approved" || Boolean(c.damageFlow.quotationFile) || c.damageFlow.quotationApproved || c.payoutStatus !== "Pending Review";
       const s4Done = Boolean(c.damageFlow.quotationApproved);
       const s5Done = Boolean(c.damageFlow.invoiceFile && c.damageFlow.iban) || c.payoutStatus === "Pending Bank Transfer" || c.payoutStatus === "Paid";
@@ -1199,6 +1203,12 @@
               <h2 class="text-base sm:text-lg font-extrabold text-black mt-1.5" dir="auto">${esc(c.title)}</h2>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
+              ${c.type === "Damage" ? `
+                <button type="button" onclick="printDamageCompensationForm('${esc(c.id)}')" class="px-3 py-1.5 rounded-lg border border-neutral-300 bg-white hover:bg-neutral-100 text-black text-xs font-bold shadow-xs flex items-center gap-1.5" title="Print Vehicle Damage Compensation Form (available at any stage)">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+                  <span>Print Form</span>
+                </button>
+              ` : ""}
               ${c.type === "Damage" && c.assignedRole === "Ops Manager" && !isClosed && (uiState.role === "Ops Manager" || uiState.role === "Business Owner") ? `
                 <button type="button" onclick="handoffToCsm('${esc(c.id)}')" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-xs">Hand Off to ${esc(getStaffNameByRole("CSM", c.branch))} →</button>
               ` : ""}
@@ -1207,6 +1217,7 @@
                 <option value="Admin" ${c.assignedRole === "Admin" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Admin", c.branch))}</option>
                 <option value="Ops Manager" ${c.assignedRole === "Ops Manager" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Ops Manager", c.branch))}</option>
                 <option value="CSM" ${c.assignedRole === "CSM" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("CSM", c.branch))}</option>
+                <option value="Accountant" ${c.assignedRole === "Accountant" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Accountant", c.branch))}</option>
                 <option value="Business Owner" ${c.assignedRole === "Business Owner" ? "selected" : ""}>Assigned: ${esc(getStaffNameByRole("Business Owner", c.branch))}</option>
               </select>
             </div>
@@ -1307,7 +1318,7 @@
 
       if (uiState.detailTab === "resolution") {
         const lockClass = editable ? "" : "opacity-60 pointer-events-none";
-        const canApproveQuote = uiState.role === "Business Owner" || (!needsOwner && (uiState.role === "CSM" || uiState.role === "Admin"));
+        const canApproveQuote = uiState.role === "Business Owner" || (!needsOwner && (uiState.role === "Accountant" || uiState.role === "CSM" || uiState.role === "Admin"));
         const qUrl = safeUrl(c.damageFlow.quotationFile);
         const invUrl = safeUrl(c.damageFlow.invoiceFile);
 
@@ -2372,7 +2383,7 @@
 
     async function exportCsv() {
       if (!isFinanceRole()) {
-        showToast("CSV export is restricted to Business Owner and Admin");
+        showToast("CSV export is restricted to Business Owner, Admin, and Accountant");
         return;
       }
       if (adminToken) {
@@ -2409,6 +2420,164 @@
       a.click();
       URL.revokeObjectURL(a.href);
       showToast("Exported CSV");
+    }
+
+    function printDamageCompensationForm(id) {
+      const c = claimsData.find(x => x.id === id);
+      if (!c) return showToast("Ticket not found");
+      const zonesLower = (c.zones || []).map(z => String(z).toLowerCase());
+      const hasZone = (...keys) => zonesLower.some(z => keys.some(k => z.includes(k)));
+      const damageLocations = [
+        { ar: "الصدام الأمامي", en: "Front Bumper", checked: hasZone("front bumper", "front") },
+        { ar: "الصدام الخلفي", en: "Rear Bumper", checked: hasZone("rear bumper", "rear") },
+        { ar: "المرايا", en: "Mirrors", checked: hasZone("mirror") },
+        { ar: "الأبواب / الجوانب", en: "Doors / Sides", checked: hasZone("door", "side") },
+        { ar: "السقف", en: "Roof", checked: hasZone("roof") },
+        { ar: "الزجاج / المساحات", en: "Glass / Wipers", checked: hasZone("glass", "windshield", "wiper") },
+        { ar: "الأنوار", en: "Lights", checked: hasZone("light", "headlight", "taillight") },
+        { ar: "الهوائي / الإكسسوارات", en: "Antenna / Accessories", checked: hasZone("antenna", "accessor") },
+        { ar: "الطلاء / خدوش", en: "Paint / Scratches", checked: hasZone("paint", "scratch") },
+        { ar: "أخرى", en: "Other", checked: hasZone("other", "hood", "trunk") || (zonesLower.length > 0 && !hasZone("front", "rear", "mirror", "door", "side", "roof", "glass", "windshield", "wiper", "light", "antenna", "accessor", "paint", "scratch")) },
+      ];
+      const crNo = esc(sysConfig.crNumber || "1011154912");
+      const vatNo = esc(sysConfig.vatNumber || "311949083200003");
+      const claimDate = c.createdAt ? new Date(c.createdAt).toLocaleString("en-GB", { timeZone: "Asia/Riyadh", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) + " AST" : new Date().toLocaleDateString("en-GB", { timeZone: "Asia/Riyadh" });
+      const amtVal = Number(c.approvedSar || c.quotedSar || c.requestedSar || 0);
+      const amtDisplay = amtVal > 0 ? `${amtVal.toFixed(2)} SAR` : ".................................";
+      const vatCalc = amtVal > 0 ? `${(amtVal - amtVal / 1.15).toFixed(2)} SAR` : "";
+      const waiverStatus = c.damageFlow?.waiverSigned ? "موقع إلكترونياً / Signed Electronically" : "";
+      const payMethod = c.damageFlow?.iban ? "تحويل بنكي / Bank Transfer" : "";
+      const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>نموذج تعويض أضرار سيارة عميل - ${esc(c.id)}</title>
+  <style>
+    @page { size: A4; margin: 10mm; }
+    * { box-sizing: border-box; }
+    body { font-family: Tahoma, Arial, sans-serif; color: #111; margin: 0; padding: 12px; font-size: 11px; line-height: 1.35; }
+    .hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 6px; }
+    .hdr-col { font-size: 10px; }
+    .hdr-title { text-align: center; font-size: 14px; font-weight: 700; background: #111; color: #fff; padding: 5px 8px; margin-bottom: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 6px; table-layout: fixed; }
+    th, td { border: 1px solid #333; padding: 4px 6px; vertical-align: middle; word-wrap: break-word; }
+    .sec { background: #e5e5e5; font-weight: 700; text-align: center; font-size: 11px; }
+    .lbl { background: #f7f7f7; font-weight: 700; width: 16%; font-size: 10px; }
+    .val { width: 17%; }
+    .chk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; }
+    .chk-item { font-size: 9.5px; display: flex; align-items: center; gap: 4px; }
+    .box { display: inline-block; width: 11px; height: 11px; border: 1px solid #111; text-align: center; line-height: 10px; font-weight: 700; font-size: 9px; }
+    .sig-row td { height: 48px; vertical-align: top; text-align: center; font-size: 10px; }
+    .no-print { text-align: center; margin-bottom: 10px; }
+    @media print { .no-print { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button onclick="window.print()" style="padding:8px 18px;background:#C91E2F;color:#fff;border:none;border-radius:6px;font-weight:bold;cursor:pointer;">طباعة النموذج / Print Form</button>
+  </div>
+  <div class="hdr">
+    <div class="hdr-col"><strong>شركة رش المتقدمة للتجارة</strong><br/>سجل تجاري: ${crNo} | الرقم الضريبي: ${vatNo}</div>
+    <div class="hdr-col" dir="ltr" style="text-align:left;"><strong>Rush Advanced Trading Co.</strong><br/>CR: ${crNo} | VAT: ${vatNo}</div>
+  </div>
+  <div class="hdr-title">نموذج إثبات أضرار سيارة عميل – Vehicle Damage Report</div>
+  <table>
+    <tr>
+      <td class="lbl">رقم النموذج<br/>Form No.</td><td class="val" dir="ltr"><strong>${esc(c.id)}</strong></td>
+      <td class="lbl">تاريخ البلاغ<br/>Claim Date</td><td class="val" dir="ltr">${esc(claimDate)}</td>
+      <td class="lbl">رقم القيد في وافق<br/>Wafeq Journal No.</td><td class="val"></td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="6" class="sec">بيانات العميل والسيارة | Customer &amp; Vehicle Details</td></tr>
+    <tr>
+      <td class="lbl">اسم العميل<br/>Customer Name</td><td class="val">${esc(c.customer.name)}</td>
+      <td class="lbl">رقم الجوال<br/>Mobile</td><td class="val" dir="ltr">${esc(c.customer.phone)}</td>
+      <td class="lbl">رقم الاشتراك / الطلب<br/>Subscription / Order No.</td><td class="val" dir="ltr">${esc(c.receipt || c.evidence?.workOrder || "")}</td>
+    </tr>
+    <tr>
+      <td class="lbl">نوع السيارة والموديل<br/>Make &amp; Model</td><td class="val">${esc(c.vehicle.model)}</td>
+      <td class="lbl">رقم اللوحة<br/>Plate No.</td><td class="val" dir="ltr"><strong>${esc(c.vehicle.plate)}</strong></td>
+      <td class="lbl">اللون / الفرع<br/>Color / Branch</td><td class="val">${esc(c.branch)}</td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="2" class="sec">البلاغ ووصف الضرر | Claim &amp; Damage Description</td></tr>
+    <tr>
+      <td class="lbl">مكان الضرر في السيارة<br/>Damage Location</td>
+      <td><div class="chk-grid">${damageLocations.map(d => `<div class="chk-item"><span class="box">${d.checked ? "✓" : ""}</span><span>${d.ar} / ${d.en}</span></div>`).join("")}</div></td>
+    </tr>
+    <tr>
+      <td class="lbl">وصف الضرر كما ذكره العميل<br/>Damage as Described</td>
+      <td style="min-height:36px;">${esc(c.summary)}</td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="4" class="sec">الفحص الفني وتحديد المسؤولية (يعبئه فني المغسلة) | Technical Inspection &amp; Liability</td></tr>
+    <tr>
+      <td class="lbl">تقرير الفني (الأسباب والأدلة)<br/>Technician Report</td>
+      <td style="width:50%;">${esc(c.resolutionNote || c.evidence?.note || "")}</td>
+      <td class="lbl">التقدير المبدئي<br/>Initial Assessment</td>
+      <td dir="ltr">${c.quotedSar ? `${Number(c.quotedSar).toFixed(2)} SAR` : ""}</td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="6" class="sec">فاتورة الإصلاح والمبلغ المعتمد (بعد إحضار العميل للفاتورة) | Repair Invoice &amp; Approved Amount</td></tr>
+    <tr>
+      <td class="lbl">اسم الورشة / الوكالة<br/>Workshop / Dealer</td><td class="val"></td>
+      <td class="lbl">رقم الفاتورة<br/>Invoice No.</td><td class="val"></td>
+      <td class="lbl">التاريخ<br/>Date</td><td class="val"></td>
+    </tr>
+    <tr>
+      <td class="lbl">الفاتورة باسم<br/>Invoice Issued To</td><td class="val"></td>
+      <td class="lbl">إجمالي الفاتورة<br/>Invoice Total (incl. VAT)</td><td class="val" dir="ltr">${amtVal > 0 ? amtDisplay : ""}</td>
+      <td class="lbl">الضريبة<br/>VAT</td><td class="val" dir="ltr">${vatCalc}</td>
+    </tr>
+    <tr>
+      <td class="lbl">البنود: قطع غيار / شغل يد<br/>Items: Parts / Labor</td><td colspan="5"></td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="6" class="sec">الصرف | Payment</td></tr>
+    <tr>
+      <td class="lbl">طريقة الصرف<br/>Payment Method</td><td class="val">${esc(payMethod)}</td>
+      <td class="lbl">اسم صاحب الحساب<br/>Account Holder</td><td class="val">${esc(c.damageFlow?.accountHolder || "")}</td>
+      <td class="lbl">البنك<br/>Bank</td><td class="val">${esc(c.damageFlow?.bankName || "")}</td>
+    </tr>
+    <tr>
+      <td class="lbl">الآيبان<br/>IBAN</td><td colspan="3" dir="ltr">${esc(c.damageFlow?.iban || "")}</td>
+      <td class="lbl">رقم المرجع<br/>Transfer Ref</td><td dir="ltr">${esc(c.transferRef || "")}</td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="6" class="sec">إقرار ومخالصة العميل | Customer Acknowledgment &amp; Release</td></tr>
+    <tr><td colspan="6" style="padding:6px;">أقر أنا الموقع أدناه باستلام مبلغ وقدره ( ${esc(amtDisplay)} ) ريال من شركة رش المتقدمة تعويضاً نهائياً وكاملاً عن الأضرار الموضحة في النموذج وأبرئ ذمة الشركة من أي مطالبات لاحقة تخص الواقعة.</td></tr>
+    <tr>
+      <td class="lbl">اسم العميل<br/>Customer Name</td><td class="val">${esc(c.customer.name)}</td>
+      <td class="lbl">التوقيع<br/>Signature</td><td class="val">${esc(waiverStatus)}</td>
+      <td class="lbl">التاريخ<br/>Date</td><td class="val"></td>
+    </tr>
+  </table>
+  <table>
+    <tr><td colspan="3" class="sec">التوقيعات والاعتماد | Signatures &amp; Approval</td></tr>
+    <tr class="sig-row">
+      <td><strong>فني المغسلة – فحص وتحديد المسؤولية</strong><br/>Car Wash Technician – Inspection &amp; Liability<br/><br/>التوقيع / Signature: _________________</td>
+      <td><strong>مدير التشغيل – تأكيد الإثبات</strong><br/>Operations Manager – Confirmation<br/><br/>التوقيع / Signature: _________________</td>
+      <td><strong>الإدارة المالية – مطابقة الفاتورة والاعتماد والصرف</strong><br/>Finance – Invoice Match, Approval &amp; Payment<br/><br/>التوقيع / Signature: _________________</td>
+    </tr>
+  </table>
+</body>
+</html>`;
+      const win = window.open("", "_blank", "width=900,height=1050");
+      if (!win) {
+        showToast("Please allow pop-ups to print the compensation form");
+        return;
+      }
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 250);
     }
 
     function renderAllActive() {

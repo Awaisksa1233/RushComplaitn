@@ -44,6 +44,7 @@ enum StaffRole {
   ADMIN
   OPS_MANAGER
   CSM
+  FINANCE
 }
 
 enum MessageChannel {

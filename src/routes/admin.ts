@@ -825,7 +825,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   }));
 
   // Approve Damage Quotation (cap enforced against the customer-submitted amount stored on the ticket)
-  router.post("/claims/:id/damage/approve-quote", requireStaff, requireRoles(StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
+  router.post("/claims/:id/damage/approve-quote", requireStaff, requireRoles(StaffRole.FINANCE, StaffRole.CSM, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER), asyncHandler(async (req: StaffRequest, res) => {
     const config = await getSystemConfig();
     const complaint = await loadClaim(req, res);
     if (!complaint) return;
@@ -988,10 +988,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
   }));
 
   // ==========================================
-  // 6. Finance & Bank Transfer Disbursement (Owner/Admin only)
+  // 6. Finance & Bank Transfer Disbursement (Owner/Admin/Finance)
   // ==========================================
 
-  const financeRoles = [StaffRole.BUSINESS_OWNER, StaffRole.ADMIN] as StaffRole[];
+  const financeRoles = [StaffRole.BUSINESS_OWNER, StaffRole.ADMIN, StaffRole.FINANCE] as StaffRole[];
 
   router.get("/finance", requireStaff, requireRoles(...financeRoles), asyncHandler(async (req: StaffRequest, res) => {
     const complaints = await prisma.complaint.findMany({
