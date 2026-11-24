@@ -336,4 +336,44 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     expect(unlRes.status).toBe(201);
     expect(unlRes.body.posRecordId).toBe("VISIT-UNLISTED");
   });
+
+  // Test 8: Inbound Chatwoot WhatsApp webhook (with ticket_code and phone fallback)
+  it("8. should ingest inbound Chatwoot customer messages via ticket_code and phone fallback", async () => {
+    const secret = process.env.CHATWOOT_WEBHOOK_SECRET;
+    if (!secret) return;
+
+    const r1 = await request(app)
+      .post(`/api/complaints/webhooks/chatwoot?token=${secret}`)
+      .send({
+        event: "message_created",
+        id: 990001,
+        message_type: "incoming",
+        private: false,
+        content: "Inbound customer photo follow-up",
+        sender: { name: "Awais", phone_number: "+966569809578" },
+        conversation: { custom_attributes: { ticket_code: "C-1041" } },
+      });
+    expect(r1.status).toBe(200);
+    expect(r1.body.ok).toBe(true);
+
+    const r2 = await request(app)
+      .post(`/api/complaints/webhooks/chatwoot?token=${secret}`)
+      .send({
+        event: "message_created",
+        id: 990002,
+        message_type: "incoming",
+        private: false,
+        content: "Inbound message without ticket_code attribute",
+        sender: { name: "Awais", phone_number: "+966569809578" },
+        conversation: { custom_attributes: {} },
+      });
+    expect(r2.status).toBe(200);
+    expect(r2.body.ok).toBe(true);
+
+    const msgs = await prisma.message.findMany({
+      where: { externalId: { in: ["cw_990001", "cw_990002"] } },
+    });
+    expect(msgs.length).toBe(2);
+    expect(msgs.find((m) => m.externalId === "cw_990001")?.complaintId).toBe("C-1041");
+  });
 });

@@ -444,10 +444,12 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     }
     const raw: Buffer | undefined = (req as any).rawBody;
     const sigHeader = String(req.headers["x-chatwoot-signature"] || req.headers["x-hub-signature-256"] || "").replace(/^sha256=/, "");
+    const queryToken = typeof req.query.token === "string" ? req.query.token.trim() : "";
     const tokenHeader = String(
       req.headers["x-chatwoot-webhook-token"] ||
       req.headers["x-webhook-secret"] ||
-      (req.headers.authorization || "").replace(/^Bearer\s+/i, "")
+      (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
+      queryToken
     ).trim();
     const expectedHmac = raw ? crypto.createHmac("sha256", CHATWOOT_WEBHOOK_SECRET).update(raw).digest("hex") : "";
     const sigValid = Boolean(
@@ -467,31 +469,83 @@ export function createComplaintsRouter(prisma: PrismaClient) {
 
     try {
       const event = req.body;
-      if (event?.event === "message_created" && event?.message_type === "outgoing" && !event?.private) {
-        const ticketId = event?.conversation?.custom_attributes?.ticket_code;
-        const bodyText = event?.content;
-        const senderName = event?.sender?.name || "Customer Care";
+      const msgType = event?.message_type;
+      const isIncoming = msgType === "incoming" || msgType === 0;
+      const isOutgoing = msgType === "outgoing" || msgType === 1;
 
-        if (ticketId && bodyText) {
-          const ticket = await prisma.complaint.findUnique({ where: { id: ticketId } });
-          if (ticket) {
-            const externalId = event?.id ? `cw_${event.id}` : undefined;
-            if (externalId) {
-              const seen = await prisma.message.findFirst({ where: { externalId } });
-              if (seen) return res.status(200).json({ ok: true, duplicate: true });
+      if (event?.event === "message_created" && (isIncoming || isOutgoing) && !event?.private) {
+        const bodyText = typeof event?.content === "string" ? event.content.trim() : "";
+        if (!bodyText) return res.status(200).json({ ok: true });
+
+        const rawSenderPhone =
+          event?.sender?.phone_number ||
+          event?.conversation?.meta?.sender?.phone_number ||
+          "";
+        const normSenderPhone = normalizePhone(String(rawSenderPhone));
+        const senderName = event?.sender?.name || (isIncoming ? "Customer" : "Customer Care");
+
+        // 1. Resolve ticket by conversation custom_attributes.ticket_code
+        let ticket = null;
+        const attrTicketId = event?.conversation?.custom_attributes?.ticket_code;
+        if (typeof attrTicketId === "string" && attrTicketId.trim()) {
+          ticket = await prisma.complaint.findUnique({ where: { id: attrTicketId.trim().toUpperCase() } });
+        }
+
+        // 2. Fallback: extract explicit C-\d+ ticket ID from message text (verified against sender phone if available)
+        if (!ticket) {
+          const match = bodyText.match(/\b(C-\d+)\b/i);
+          if (match) {
+            const candidate = await prisma.complaint.findUnique({
+              where: { id: match[1].toUpperCase() },
+              include: { customer: { select: { phone: true } } },
+            });
+            if (candidate && (!isSaudiMobile(normSenderPhone) || candidate.customer?.phone === normSenderPhone)) {
+              ticket = candidate;
             }
-            await prisma.message.create({
-              data: {
+          }
+        }
+
+        // 3. Fallback: match latest open (or most recent) ticket for sender's phone
+        if (!ticket && isSaudiMobile(normSenderPhone)) {
+          ticket =
+            (await prisma.complaint.findFirst({
+              where: { customer: { phone: normSenderPhone }, status: { not: TicketStatus.RESOLVED } },
+              orderBy: { createdAt: "desc" },
+            })) ||
+            (await prisma.complaint.findFirst({
+              where: { customer: { phone: normSenderPhone } },
+              orderBy: { createdAt: "desc" },
+            }));
+        }
+
+        if (ticket) {
+          const externalId = event?.id ? `cw_${event.id}` : undefined;
+          if (externalId) {
+            const seen = await prisma.message.findFirst({ where: { externalId } });
+            if (seen) return res.status(200).json({ ok: true, duplicate: true });
+          }
+          if (isOutgoing) {
+            const recentSame = await prisma.message.findFirst({
+              where: {
                 complaintId: ticket.id,
-                sender: senderName,
-                channel: MessageChannel.WHATSAPP,
                 body: bodyText,
-                externalId,
+                createdAt: { gt: new Date(Date.now() - 30 * 1000) },
               },
             });
-            invalidateClaimsCache();
-            console.log(`[Chatwoot Webhook] Synced agent reply to ticket #${ticketId}`);
+            if (recentSame) return res.status(200).json({ ok: true, duplicate: true });
           }
+
+          await prisma.message.create({
+            data: {
+              complaintId: ticket.id,
+              sender: senderName,
+              channel: MessageChannel.WHATSAPP,
+              body: bodyText,
+              externalId,
+            },
+          });
+          invalidateClaimsCache();
+          console.log(`[Chatwoot Webhook] Synced ${isIncoming ? "inbound customer" : "agent"} message to ticket #${ticket.id}`);
         }
       }
       return res.status(200).json({ ok: true });
