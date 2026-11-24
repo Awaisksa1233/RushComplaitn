@@ -4,7 +4,8 @@ import crypto from "crypto";
 import { app } from "../src/server";
 import { isValidSaIban } from "../src/routes/complaints";
 import { isSafeFileUrl, normalizePhone, isSaudiMobile } from "../src/utils/normalize";
-import { encryptField, decryptField, maskIban } from "../src/utils/crypto";
+import { encryptField, decryptField, maskIban, signFileUrl } from "../src/utils/crypto";
+import { customerMatchesPhone } from "../src/services/mongo";
 
 // These tests need no database: they exercise gates that must reject BEFORE any DB access.
 describe("Security regression tests (no DB)", () => {
@@ -64,11 +65,22 @@ describe("Security regression tests (no DB)", () => {
     expect([401, 503]).toContain(r.status);
   });
 
-  it("file proxy only serves server-generated keys", async () => {
+  it("file proxy only serves server-generated keys and requires auth/signature", async () => {
     for (const k of ["../.env", "complaints/..%2f..%2f.env", "media/evil.html", "media/1-abc.jpg"]) {
       const r = await request(app).get(`/api/files/${k}`);
       expect(r.status, k).toBe(404);
     }
+    const validPath = `/api/files/media/1-${"a".repeat(32)}.jpg`;
+    const unauthed = await request(app).get(validPath);
+    expect(unauthed.status).toBe(401);
+
+    const signedUrl = signFileUrl(validPath, 60)!;
+    const signedRes = await request(app).get(signedUrl);
+    expect([200, 404]).toContain(signedRes.status);
+
+    const expiredUrl = `${validPath}?exp=1000000000&sig=${"0".repeat(64)}`;
+    const expiredRes = await request(app).get(expiredUrl);
+    expect(expiredRes.status).toBe(401);
   });
 
   it("admin endpoints reject anonymous callers", async () => {
@@ -90,21 +102,31 @@ describe("Helpers", () => {
     expect(isValidSaIban("SA12")).toBe(false);
   });
   it("only accepts our own file references", () => {
-    expect(isSafeFileUrl("/api/files/invoices/1-" + "a".repeat(32) + ".pdf")).toBe(true);
+    const validRaw = "/api/files/invoices/1-" + "a".repeat(32) + ".pdf";
+    expect(isSafeFileUrl(validRaw)).toBe(true);
+    expect(isSafeFileUrl(signFileUrl(validRaw, 60)!)).toBe(true);
+    expect(isSafeFileUrl("/uploads/foo.pdf")).toBe(false);
+    expect(isSafeFileUrl("/api/files/quotes/test.pdf")).toBe(false);
     expect(isSafeFileUrl("javascript:alert(1)")).toBe(false);
     expect(isSafeFileUrl("https://evil.example/x.pdf")).toBe(false);
     expect(isSafeFileUrl("/uploads/../../etc/passwd")).toBe(false);
   });
-  it("normalises Saudi mobiles", () => {
+  it("normalises Saudi mobiles and verifies Mongo customer phone match", () => {
     expect(isSaudiMobile(normalizePhone("+966 55 391 4420"))).toBe(true);
     expect(isSaudiMobile("123456789")).toBe(false);
+    expect(customerMatchesPhone({ phone: "0569809578" }, "569809578")).toBe(true);
+    expect(customerMatchesPhone({ phone: "0550000000" }, "569809578")).toBe(false);
+    expect(customerMatchesPhone({}, "569809578")).toBe(false);
   });
-  it("encrypts/decrypts bank fields and masks IBANs", () => {
+  it("encrypts/decrypts bank fields and masks IBANs & account holder without leaking ciphertext", () => {
     process.env.FIELD_ENCRYPTION_KEY = crypto.randomBytes(32).toString("hex");
-    const enc = encryptField("SA0380000000608010167519")!;
-    expect(enc.startsWith("enc:v1:")).toBe(true);
-    expect(decryptField(enc)).toBe("SA0380000000608010167519");
-    expect(maskIban(enc)).toBe("SA03••••••••••••••••7519");
+    const encIban = encryptField("SA0380000000608010167519")!;
+    const encHolder = encryptField("Awais")!;
+    expect(encIban.startsWith("enc:v1:")).toBe(true);
+    expect(decryptField(encIban)).toBe("SA0380000000608010167519");
+    expect(maskIban(encIban)).toBe("SA03••••••••••••••••7519");
+    const plainHolder = decryptField(encHolder)!;
+    expect("•••• " + plainHolder.slice(-3)).toBe("•••• ais");
     delete process.env.FIELD_ENCRYPTION_KEY;
   });
 });

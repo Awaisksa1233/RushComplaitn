@@ -5,6 +5,7 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "fs";
+import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { createAuthRouter } from "./routes/auth";
 import { createCustomerRouter } from "./routes/customer";
@@ -13,9 +14,11 @@ import { createUploadRouter } from "./routes/upload";
 import { createAdminRouter } from "./routes/admin";
 import helmet from "helmet";
 import { getFileFromR2, resolveLocalPath } from "./services/storage";
-import { CORS_ORIGINS } from "./config/env";
+import { CORS_ORIGINS, CUSTOMER_JWT_SECRET, STAFF_JWT_SECRET } from "./config/env";
 import { globalLimiter } from "./middleware/security";
 import { startRetentionScheduler } from "./services/retention";
+import { startSlaSweeper } from "./services/slaSweeper";
+import { verifyFileUrlSig } from "./utils/crypto";
 
 const app = express();
 const prisma = new PrismaClient();
@@ -67,9 +70,30 @@ app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
 // Uploaded files: unguessable server-generated keys only, never executable/renderable as HTML.
 const FILE_KEY = /^(media|quotations|invoices|complaints|damage)\/\d+-[0-9a-f]{32}\.(jpg|png|webp|pdf|mp4|mov)$/;
+function hasValidFileAuth(req: express.Request, key: string): boolean {
+  const exp = typeof req.query.exp === "string" ? req.query.exp : "";
+  const sig = typeof req.query.sig === "string" ? req.query.sig : "";
+  if (verifyFileUrlSig(key, exp, sig)) return true;
+
+  const authHeader = req.headers.authorization || "";
+  if (/^Bearer\s+/i.test(authHeader)) {
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    try {
+      jwt.verify(token, CUSTOMER_JWT_SECRET, { audience: "rush-customer", issuer: "rush-care", algorithms: ["HS256"] });
+      return true;
+    } catch {}
+    try {
+      jwt.verify(token, STAFF_JWT_SECRET, { audience: "rush-staff", issuer: "rush-care", algorithms: ["HS256"] });
+      return true;
+    } catch {}
+  }
+  return false;
+}
+
 app.get("/api/files/:key(*)", async (req, res) => {
   const key = req.params.key;
   if (!FILE_KEY.test(key)) return res.status(404).json({ error: "File not found" });
+  if (!hasValidFileAuth(req, key)) return res.status(401).json({ error: "Unauthorized file access" });
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
   res.setHeader("Cache-Control", "private, no-store");
@@ -140,4 +164,5 @@ if (process.env.NODE_ENV !== "test") {
     console.log(`[RUSH Customer Care Portal API] Listening on port ${PORT}`);
   });
   startRetentionScheduler(prisma);
+  startSlaSweeper(prisma);
 }

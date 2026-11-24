@@ -1,12 +1,15 @@
 import { Router, Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { STAFF_JWT_SECRET } from "../config/env";
 import { staffLoginLimiter, ibanRevealLimiter } from "../middleware/security";
 import { deleteFiles } from "../services/storage";
+import { findPaidOrderCeilingInMongo } from "../services/mongo";
+import { sendStaffWhatsAppViaChatwoot } from "../services/chatwoot";
 import { asyncHandler } from "../utils/asyncHandler";
-import { encryptField, decryptField, maskIban, randomCode } from "../utils/crypto";
+import { encryptField, decryptField, maskIban, randomCode, signFileUrl } from "../utils/crypto";
 import { anonymiseCustomer, exportCustomerData } from "../services/retention";
 import {
   PrismaClient,
@@ -49,24 +52,43 @@ function auditLog(staff: StaffPayload | undefined, action: string, detail: strin
   console.warn(`[AUDIT] ${new Date().toISOString()} staff=${staff?.staffId} role=${staff?.role} action=${action} ${detail}`);
 }
 
+function pwdFp(hash: string | null | undefined): string {
+  return crypto.createHmac("sha256", STAFF_JWT_SECRET).update(hash || "").digest("hex").slice(0, 16);
+}
+
+function formatRiyadhCsv(d: Date): string {
+  return (
+    new Intl.DateTimeFormat("sv-SE", {
+      timeZone: "Asia/Riyadh",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(d) + " AST"
+  );
+}
+
+const claimsCache = new Map<string, { data: any; expiresAt: number }>();
+
+export function invalidateClaimsCache() {
+  claimsCache.clear();
+}
+
 export function createAdminRouter(prisma: PrismaClient): Router {
   const router = Router();
 
   // In-memory caching to eliminate redundant cross-continental Tokyo DB queries
   interface CachedStaff {
     staff: StaffPayload;
+    pwdFp: string;
     expiresAt: number;
   }
   const staffCache = new Map<string, CachedStaff>();
 
   let cachedConfig: any = null;
   let cachedConfigExpiresAt = 0;
-
-  let cachedClaims: { data: any; key: string; expiresAt: number } | null = null;
-
-  function invalidateClaimsCache() {
-    cachedClaims = null;
-  }
 
   // Invalidate claims cache on any mutating request
   router.use((req, _res, next) => {
@@ -75,6 +97,17 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     }
     next();
   });
+
+  async function notifyCustomerWhatsApp(ticketId: string, customerId: string, text: string) {
+    try {
+      const cust = await prisma.customer.findUnique({ where: { id: customerId }, select: { phone: true } });
+      if (cust?.phone) {
+        await sendStaffWhatsAppViaChatwoot({ ticketId, phone: cust.phone, text });
+      }
+    } catch (err: any) {
+      console.warn(`[Admin] Chatwoot WhatsApp notify failed for #${ticketId}:`, err?.message || err);
+    }
+  }
 
   async function getSystemConfig() {
     if (cachedConfig && cachedConfigExpiresAt > Date.now()) {
@@ -104,10 +137,17 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
     const token = authHeader.replace("Bearer ", "").trim();
     try {
-      const decoded = jwt.verify(token, STAFF_JWT_SECRET, { algorithms: ["HS256"], audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER }) as StaffPayload;
+      const decoded = jwt.verify(token, STAFF_JWT_SECRET, {
+        algorithms: ["HS256"],
+        audience: STAFF_AUDIENCE,
+        issuer: STAFF_ISSUER,
+      }) as StaffPayload & { pwdFp?: string };
 
       const cached = staffCache.get(decoded.staffId);
       if (cached && cached.expiresAt > Date.now()) {
+        if (!decoded.pwdFp || decoded.pwdFp !== cached.pwdFp) {
+          return res.status(401).json({ error: "Invalid or expired staff token" });
+        }
         req.staff = cached.staff;
         return next();
       }
@@ -119,6 +159,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       if (!user.active) {
         return res.status(403).json({ error: "Staff account is currently paused or inactive" });
       }
+      const currentFp = pwdFp(user.passwordHash);
+      if (!decoded.pwdFp || decoded.pwdFp !== currentFp) {
+        return res.status(401).json({ error: "Invalid or expired staff token" });
+      }
 
       const staffPayload: StaffPayload = {
         staffId: user.id,
@@ -127,7 +171,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         branch: user.branch,
         email: user.email,
       };
-      staffCache.set(user.id, { staff: staffPayload, expiresAt: Date.now() + 15 * 1000 });
+      staffCache.set(user.id, { staff: staffPayload, pwdFp: currentFp, expiresAt: Date.now() + 15 * 1000 });
       req.staff = staffPayload;
       next();
     } catch (err: any) {
@@ -202,7 +246,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       email: user.email,
     };
 
-    const token = jwt.sign(payload, STAFF_JWT_SECRET, { expiresIn: "8h", audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER });
+    const token = jwt.sign(
+      { ...payload, pwdFp: pwdFp(user.passwordHash) },
+      STAFF_JWT_SECRET,
+      { expiresIn: "8h", audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER }
+    );
     return res.json({ token, user: payload });
   }));
 
@@ -240,8 +288,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     const schema = z.object({
       damageApprovalCapSar: z.number().nonnegative().max(1000000).optional(),
       maxSlaHours: z.number().int().min(4).max(168).optional(),
+      companyName: z.string().min(2).max(150).optional(),
       vatNumber: z.string().regex(/^3\d{14}$/, "VAT must be 15 digits starting with 3").optional(),
       crNumber: z.string().regex(/^\d{10}$/, "CR must be 10 digits").optional(),
+      unifiedNationalNumber: z.string().regex(/^\d{10}$/, "Unified National Number must be 10 digits").optional(),
+      whatsappNumber: z.string().regex(/^\d{9,15}$/, "WhatsApp number must be 9-15 digits").optional(),
     });
 
     const parsed = schema.safeParse(req.body);
@@ -404,8 +455,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     }
 
     const cacheKey = JSON.stringify({ where, overdueOnly: overdueOnly === "true", role: req.staff!.role, branch: req.staff!.branch });
-    if (cachedClaims && cachedClaims.key === cacheKey && cachedClaims.expiresAt > Date.now()) {
-      return res.json(cachedClaims.data);
+    const cachedHit = claimsCache.get(cacheKey);
+    if (cachedHit && cachedHit.expiresAt > Date.now()) {
+      return res.json(cachedHit.data);
     }
 
     let complaints = await prisma.complaint.findMany({
@@ -448,10 +500,10 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         requestedAmount: c.requestedAmount ? Number(c.requestedAmount) : null,
         approvedAmount: c.approvedAmount ? Number(c.approvedAmount) : null,
         quotedAmount: c.quotedAmount ? Number(c.quotedAmount) : null,
-        quotationUrl: c.quotationUrl,
+        quotationUrl: signFileUrl(c.quotationUrl),
         quotationApproved: c.quotationApproved,
         waiverSigned: c.waiverSigned,
-        invoiceUrl: c.invoiceUrl,
+        invoiceUrl: signFileUrl(c.invoiceUrl),
         bankName: c.bankName,
         accountHolder: c.accountHolder ? "•••• " + String(decryptField(c.accountHolder) || "").slice(-3) : null,
         iban: c.iban ? maskIban(c.iban) : null,
@@ -461,7 +513,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         transferRef: c.transferRef,
         resolutionNote: c.resolutionNote,
         csatRating: c.csatRating,
-        mediaUrls: c.mediaUrls,
+        mediaUrls: (c.mediaUrls || []).map((u) => signFileUrl(u) || u),
         messages: c.messages.map((m) => ({
           id: m.id,
           sender: m.sender,
@@ -483,11 +535,14 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       mapped = mapped.filter((c) => c.isSlaBreached);
     }
 
-    cachedClaims = {
+    if (claimsCache.size >= 50) {
+      const oldestKey = claimsCache.keys().next().value;
+      if (oldestKey) claimsCache.delete(oldestKey);
+    }
+    claimsCache.set(cacheKey, {
       data: mapped,
-      key: cacheKey,
       expiresAt: Date.now() + 10 * 1000,
-    };
+    });
 
     return res.json(mapped);
   }));
@@ -508,7 +563,16 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     }
 
     const { iban, accountHolder, waiverSignature, ...rest } = complaint;
-    return res.json({ ...rest, iban: iban ? maskIban(iban) : null, accountHolder: accountHolder ? "••••" : null });
+    const holderPlain = decryptField(accountHolder);
+    return res.json({
+      ...rest,
+      quotationUrl: signFileUrl(rest.quotationUrl),
+      invoiceUrl: signFileUrl(rest.invoiceUrl),
+      bankSmsUrl: signFileUrl(rest.bankSmsUrl),
+      mediaUrls: (rest.mediaUrls || []).map((u) => signFileUrl(u) || u),
+      iban: iban ? maskIban(iban) : null,
+      accountHolder: holderPlain ? "•••• " + holderPlain.slice(-3) : null,
+    });
   }));
 
   // ==========================================
@@ -621,6 +685,11 @@ export function createAdminRouter(prisma: PrismaClient): Router {
             },
           },
         });
+        void notifyCustomerWhatsApp(
+          claim.id,
+          claim.customerId,
+          `Your complimentary Rewash pass ${rewashCode} is approved! Present it at RUSH Car Wash Al Kharj within 7 days.`
+        );
         return res.json({ success: true, rewashCode, complaint: updated });
       } catch (e: any) {
         if (e?.code === "P2002") continue;
@@ -647,9 +716,21 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       return res.status(409).json({ error: "Refund can only be approved on an open billing ticket" });
     }
 
-    // Refund may never exceed what was paid (POS order) or what the customer claimed
+    // Refund may never exceed what was paid (POS order in PostgreSQL or MongoDB) or requested amount for ORD-UNLISTED
+    const customer = await prisma.customer.findUnique({ where: { id: claim.customerId }, select: { licensePlate: true } });
     const order = await prisma.posOrder.findUnique({ where: { id: claim.posRecordId } });
-    const ceiling = order ? Number(order.amountSar) : claim.requestedAmount != null ? Number(claim.requestedAmount) : null;
+    const mongoCeiling =
+      !order && claim.posRecordId !== "ORD-UNLISTED" && customer
+        ? await findPaidOrderCeilingInMongo(customer.licensePlate, claim.posRecordId)
+        : null;
+    const ceiling =
+      claim.posRecordId === "ORD-UNLISTED"
+        ? claim.requestedAmount != null
+          ? Number(claim.requestedAmount)
+          : null
+        : order
+          ? Number(order.amountSar)
+          : mongoCeiling;
     if (ceiling == null || parsed.data.amount > ceiling) {
       return res.status(400).json({
         error: ceiling == null
@@ -660,6 +741,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     const dupRrn = await prisma.complaint.findFirst({ where: { rrn: parsed.data.rrn, id: { not: claim.id } } });
     if (dupRrn) return res.status(409).json({ error: "This RRN is already attached to another ticket" });
 
+    const waText = `Your refund of SAR ${parsed.data.amount} has been processed back to your card (RRN: ${parsed.data.rrn}). Expected in 2-5 business days.`;
     const updated = await prisma.complaint.update({
       where: { id: claim.id },
       data: {
@@ -681,12 +763,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Your refund of SAR ${parsed.data.amount} has been processed back to your card (RRN: ${parsed.data.rrn}). Expected in 2-5 business days.`,
+            body: waText,
           },
         },
       },
     });
 
+    void notifyCustomerWhatsApp(claim.id, claim.customerId, waText);
     return res.json({ success: true, complaint: updated });
   }));
 
@@ -703,6 +786,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       return res.status(409).json({ error: "Quotation can only be requested on open Damage claims awaiting a quotation" });
     }
 
+    const waText = `Hi, your damage claim ${complaint.id} has been approved for repair review. Please open your tracker to upload the official repair quotation and sign the waiver: ${process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/"}`;
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {
@@ -722,12 +806,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Hi, your damage claim ${complaint.id} has been approved for repair review. Please open your tracker to upload the official repair quotation and sign the waiver: ${process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa/"}`,
+            body: waText,
           },
         },
       },
     });
 
+    void notifyCustomerWhatsApp(complaint.id, complaint.customerId, waText);
     return res.json({ success: true, complaint: updated });
   }));
 
@@ -760,6 +845,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       });
     }
 
+    const waText = `Your repair quotation of SAR ${quoted} has been approved! Please upload your official repair invoice and IBAN to receive payout.`;
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {
@@ -778,12 +864,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Your repair quotation of SAR ${quoted} has been approved! Please upload your official repair invoice and IBAN to receive payout.`,
+            body: waText,
           },
         },
       },
     });
 
+    void notifyCustomerWhatsApp(complaint.id, complaint.customerId, waText);
     return res.json({ success: true, complaint: updated });
   }));
 
@@ -797,6 +884,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     if (!claim) return;
     if (isClosed(claim)) return res.status(409).json({ error: "Ticket is already closed or paid" });
 
+    const waText = `Update on ticket ${claim.id}: After review, we are unable to approve this claim. Reason: ${parsed.data.resolutionNote}`;
     const updated = await prisma.complaint.update({
       where: { id: claim.id },
       data: {
@@ -816,12 +904,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Update on ticket ${claim.id}: After review, we are unable to approve this claim. Reason: ${parsed.data.resolutionNote}`,
+            body: waText,
           },
         },
       },
     });
 
+    void notifyCustomerWhatsApp(claim.id, claim.customerId, waText);
     return res.json({ success: true, complaint: updated });
   }));
 
@@ -877,6 +966,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     const message = await prisma.message.create({
       data: { complaintId: claim.id, sender: req.staff!.name, channel: parsed.data.channel, body: parsed.data.body },
     });
+    if (parsed.data.channel === MessageChannel.WHATSAPP) {
+      void notifyCustomerWhatsApp(claim.id, claim.customerId, parsed.data.body);
+    }
     return res.json(message);
   }));
 
@@ -954,6 +1046,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     const amount = Number(complaint.approvedAmount || complaint.quotedAmount || 0);
     if (!(amount > 0)) return res.status(409).json({ error: "No approved amount on this ticket" });
 
+    const waText = `Your payment has been sent to your bank account! Transfer Ref: ${parsed.data.transferRef}. Thank you for choosing RUSH Car Wash.`;
     const updated = await prisma.complaint.update({
       where: { id: complaint.id },
       data: {
@@ -975,12 +1068,13 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           create: {
             sender: req.staff!.name,
             channel: MessageChannel.WHATSAPP,
-            body: `Your payment has been sent to your bank account! Transfer Ref: ${parsed.data.transferRef}. Thank you for choosing RUSH Car Wash.`,
+            body: waText,
           },
         },
       },
     });
 
+    void notifyCustomerWhatsApp(complaint.id, complaint.customerId, waText);
     return res.json({ success: true, complaint: updated });
   }));
 
@@ -1005,7 +1099,7 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         [
           c.id, c.site, c.type, c.status, c.payoutStatus, c.customer.name, c.customer.phone, c.customer.licensePlate,
           amt.toFixed(2), c.iban ? maskIban(c.iban) : "", c.bankName || "", c.transferRef || c.rrn || "", c.rewashCode || "",
-          c.assignedStaffName || "", c.createdAt.toISOString(),
+          c.assignedStaffName || "", formatRiyadhCsv(c.createdAt),
         ].map(csvCell).join(",")
       );
     }

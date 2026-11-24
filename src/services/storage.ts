@@ -113,7 +113,7 @@ const VALID_STORAGE_KEY = /^(media|quotations|invoices|complaints|damage)\/\d+-[
 
 export function extractStorageKey(fileUrlOrKey: string | null | undefined): string | null {
   if (!fileUrlOrKey) return null;
-  const trimmed = fileUrlOrKey.trim();
+  const trimmed = fileUrlOrKey.trim().split("?")[0];
   const key = trimmed.startsWith("/api/files/") ? trimmed.slice("/api/files/".length) : trimmed;
   return VALID_STORAGE_KEY.test(key) ? key : null;
 }

@@ -16,6 +16,7 @@ const derive = (label: string) => crypto.createHmac("sha256", MASTER).update(lab
 export const CUSTOMER_JWT_SECRET = derive("rush:customer-jwt:v1");
 export const STAFF_JWT_SECRET = derive("rush:staff-jwt:v1");
 export const OTP_PEPPER = derive("rush:otp:v1");
+export const FILE_URL_SECRET = derive("rush:file-url:v1");
 
 export const isProd = process.env.NODE_ENV === "production";
 export const exposeDevOtp = process.env.NODE_ENV === "development" && process.env.EXPOSE_DEV_OTP === "true";

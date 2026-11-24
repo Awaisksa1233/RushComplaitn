@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import { PrismaClient, StaffRole } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 import { assertSafeToRunDestructive } from "./guard";
 
@@ -19,39 +21,42 @@ async function main() {
       id: "default",
       damageApprovalCapSar: 200.00,
       maxSlaHours: 48,
-      vatNumber: "310482917400003",
-      crNumber: "1010684920",
+      companyName: "شركة رَش للتجارة المتقدمة",
+      vatNumber: "311949083200003",
+      crNumber: "1011154912",
+      unifiedNationalNumber: "7037475576",
+      whatsappNumber: "966503444958",
     },
   });
   console.log("SystemConfig ready:", config);
 
   // 2. Staff Directory
+  const initialPassword = process.env.SEED_STAFF_PASSWORD || crypto.randomBytes(18).toString("base64url") + "aA1!";
+  if (initialPassword.length < 12) throw new Error("SEED_STAFF_PASSWORD must be at least 12 characters");
+  const passwordHash = bcrypt.hashSync(initialPassword, 12);
+
   const staff = [
     {
       name: "Muhammad Awais",
       email: "awais@rush.com.sa",
-      phone: "0500000001",
       role: StaffRole.BUSINESS_OWNER,
       branch: "All Branches",
     },
     {
       name: "Sara Al-Qahtani",
       email: "sara@rush.com.sa",
-      phone: "0500000002",
       role: StaffRole.ADMIN,
       branch: "All Branches",
     },
     {
       name: "Faisal Al-Harbi",
       email: "faisal@rush.com.sa",
-      phone: "0500000003",
       role: StaffRole.OPS_MANAGER,
       branch: "RUSH Al Kharj",
     },
     {
       name: "Omar Al-Dosari",
       email: "omar@rush.com.sa",
-      phone: "0500000004",
       role: StaffRole.CSM,
       branch: "All Branches",
     },
@@ -69,7 +74,7 @@ async function main() {
       create: {
         name: s.name,
         email: s.email,
-        phone: s.phone,
+        passwordHash,
         role: s.role,
         branch: s.branch,
         active: true,
@@ -77,6 +82,7 @@ async function main() {
     });
     console.log(`Staff ready: ${user.name} (${user.role} - ${user.branch})`);
   }
+  console.log(process.env.SEED_STAFF_PASSWORD ? "Staff password: (from SEED_STAFF_PASSWORD)" : `One-time password for newly created staff: ${initialPassword}`);
 
   // 3. Update existing complaints with staff name if missing
   const complaints = await prisma.complaint.findMany();

@@ -255,6 +255,7 @@
             </div>
             <div class="flex flex-wrap justify-center gap-2.5 pt-2">
               <button id="btn-track-created" type="button" onclick="trackCreatedTicket()" class="min-h-[44px] px-5 py-3 rounded-xl bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold shadow-sm transition">Track This Complaint</button>
+              <a id="btn-wa-created" href="https://wa.me/966503444958" target="_blank" rel="noopener noreferrer" class="min-h-[44px] inline-flex items-center justify-center gap-1.5 px-5 py-3 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shadow-sm transition">Chat on WhatsApp ↗</a>
               <button id="btn-submit-another" type="button" onclick="resetFileFlow()" class="min-h-[44px] px-5 py-3 rounded-xl border border-neutral-300 text-xs font-bold text-neutral-700 hover:bg-neutral-50 transition">Submit Another</button>
             </div>
           </div>
@@ -292,7 +293,7 @@
         <!-- Mobile Footer -->
         <footer class="max-w-xl w-full mx-auto pt-8 mt-6 border-t border-neutral-100 flex flex-wrap items-center justify-between gap-2 text-[11px] text-neutral-600">
           <span>© 2026 RUSH Car Wash</span>
-          <span dir="ltr">+966 55 312 3848 · contactus@rush.com.sa</span>
+          <span dir="ltr">+966 50 344 4958 · contactus@rush.com.sa</span>
         </footer>
       </div>
     </main>
@@ -350,7 +351,15 @@
       bankSmsName: "",
       createdTicketId: null,
       trackedId: null,
-      multiTicketIds: []
+      multiTicketIds: [],
+      rushTaxDetails: {
+        companyName: "شركة رَش للتجارة المتقدمة",
+        vatNumber: "311949083200003",
+        crNumber: "1011154912",
+        unifiedNationalNumber: "7037475576",
+        whatsappNumber: "966503444958",
+        address: "Prince Muhammad Bin Salman Rd, Al Kharj"
+      }
     };
 
     const API_BASE = (window.location.protocol === "http:" || window.location.protocol === "https:") ? "" : "http://localhost:4000";
@@ -383,21 +392,21 @@
       if (!iso) return "";
       const d = new Date(iso);
       if (isNaN(d.getTime())) return String(iso);
-      return d.toLocaleDateString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric" });
+      return d.toLocaleDateString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric", timeZone: "Asia/Riyadh" });
     }
 
     function formatDateTime(iso) {
       if (!iso) return "";
       const d = new Date(iso);
       if (isNaN(d.getTime())) return String(iso);
-      return d.toLocaleString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric" });
+      return d.toLocaleString(appState.lang === "ar" ? "ar-SA" : "en-US", { month: "short", day: "numeric", hour: "numeric", minute: "numeric", timeZone: "Asia/Riyadh" });
     }
 
     function formatTime(iso) {
       if (!iso) return "";
       const d = new Date(iso);
       if (isNaN(d.getTime())) return String(iso);
-      return d.toLocaleTimeString(appState.lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit" });
+      return d.toLocaleTimeString(appState.lang === "ar" ? "ar-SA" : "en-US", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" });
     }
 
     function isValidSaIban(raw) {
@@ -551,6 +560,16 @@
     function normPlate(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9\u0621-\u064A]/g, "").slice(0, 12); }
     function normPhone(p) { return String(p || "").replace(/\D/g, "").slice(-9); }
 
+    function buildWhatsAppSupportUrl(ticketId, plate, isAr) {
+      const cleanId = ticketId || "";
+      const cleanPlate = plate || "";
+      const waNum = String(appState.rushTaxDetails?.whatsappNumber || "966503444958").replace(/\D/g, "");
+      const text = isAr
+        ? `مرحباً رش واش، بخصوص البلاغ رقم ${cleanId}${cleanPlate ? ` (لوحة المركبة: ${cleanPlate})` : ""}: `
+        : `Hi Rush Wash, regarding Ticket ${cleanId}${cleanPlate ? ` (Vehicle Plate: ${cleanPlate})` : ""}: `;
+      return `https://wa.me/${waNum}?text=${encodeURIComponent(text)}`;
+    }
+
     function applyLang(lang) {
       appState.lang = lang;
       try { localStorage.setItem("rush_portal_lang", lang); } catch (e) {}
@@ -703,6 +722,13 @@
       }
       const bTrackCreated = document.getElementById("btn-track-created");
       if (bTrackCreated) bTrackCreated.textContent = isAr ? "تتبع حالة هذا البلاغ" : "Track This Complaint";
+      const bWaCreated = document.getElementById("btn-wa-created");
+      if (bWaCreated) {
+        bWaCreated.textContent = isAr ? "تواصل عبر واتساب ↗" : "Chat on WhatsApp ↗";
+        if (appState.createdTicketId) {
+          bWaCreated.href = buildWhatsAppSupportUrl(appState.createdTicketId, appState.customer?.plate || appState.pendingPlate, isAr);
+        }
+      }
       const bSubmitAnother = document.getElementById("btn-submit-another");
       if (bSubmitAnother) bSubmitAnother.textContent = isAr ? "تقديم بلاغ آخر" : "Submit Another";
 
@@ -1400,9 +1426,15 @@
       const cust = appState.customer;
       const isBilling = appState.issueType === "Billing / Refund";
       const isUnlisted = isBilling && appState.selectedRecordId === "ORD-UNLISTED";
+      const isGeneralVisit = appState.selectedRecordId === "VISIT-GENERAL";
+      const isUnlistedVisit = appState.selectedRecordId === "VISIT-UNLISTED";
       const rec = isUnlisted
         ? { id: "ORD-UNLISTED", item: "Unlisted Card Charge", site: "RUSH Al Kharj", package: "Unlisted" }
-        : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-UNKNOWN", site: "RUSH Al Kharj", package: "Standard Wash" };
+        : isGeneralVisit
+          ? { id: "VISIT-GENERAL", item: "General Inquiry", site: "RUSH Al Kharj", package: "General Inquiry" }
+          : isUnlistedVisit
+            ? { id: "VISIT-UNLISTED", item: "Unlisted Visit", site: "RUSH Al Kharj", package: "Earlier / Unlisted Wash" }
+            : (isBilling ? cust.orders : cust.washes).find(x => x.id === appState.selectedRecordId) || { id: "VISIT-GENERAL", item: "General Inquiry", site: "RUSH Al Kharj", package: "General Inquiry" };
 
       const desc = document.getElementById("inp-desc").value.trim();
       if (desc.length < 3) {
@@ -1498,6 +1530,8 @@
 
           document.getElementById("created-ticket-id").textContent = data.id;
           document.getElementById("confirm-phone").textContent = "+966 " + (cust.phone || document.getElementById("inp-phone").value);
+          const waBtn = document.getElementById("btn-wa-created");
+          if (waBtn) waBtn.href = buildWhatsAppSupportUrl(data.id, cust.plate, isAr);
           goToStep(5);
           showToast(isAr ? `تم تقديم البلاغ ${data.id}` : `Ticket ${data.id} submitted`);
           return;
@@ -1589,6 +1623,7 @@
         if (res.ok) {
           const data = await res.json();
           if (data.trackToken) appState.trackToken = data.trackToken;
+          if (data.rushTaxDetails) appState.rushTaxDetails = data.rushTaxDetails;
           if (data.tickets && data.tickets.length > 0) {
             const serverTickets = data.tickets.map(st => mapServerTicket(st, ph));
 
@@ -1784,18 +1819,19 @@
 
               <!-- Rush Company Tax Details Card -->
               <div class="bg-[#FDF2F3] border border-[#F7C5CA] rounded-lg p-3 text-xs space-y-1">
-                <div class="font-bold text-[#881320]">${isAr ? "إصدار الفاتورة الضريبية باسم (بيانات شركة رش واش):" : "Issue Repair Tax Invoice To (Rush Tax Details):"}</div>
-                <div><strong>${isAr ? "اسم الشركة:" : "Company Name:"}</strong> ${isAr ? "شركة عمليات رش واش" : "Rush Car Wash Operations Co."}</div>
-                <div><strong>${isAr ? "الرقم الضريبي:" : "VAT / Tax Number:"}</strong> <span class="font-mono font-bold" dir="ltr">310482917400003</span></div>
-                <div><strong>${isAr ? "رقم السجل التجاري:" : "CR Number:"}</strong> <span class="font-mono" dir="ltr">1010684920</span> · <strong>${isAr ? "العنوان:" : "Address:"}</strong> ${isAr ? "طريق الأمير محمد بن سلمان، الخرج" : "Prince Muhammad Bin Salman Rd, Al Kharj"}</div>
+                <div class="font-bold text-[#881320]">${isAr ? "إصدار الفاتورة الضريبية باسم (بيانات الشركة):" : "Issue Repair Tax Invoice To (Company Tax Details):"}</div>
+                <div><strong>${isAr ? "اسم الشركة:" : "Company Name:"}</strong> ${esc(appState.rushTaxDetails?.companyName || "شركة رَش للتجارة المتقدمة")}</div>
+                <div><strong>${isAr ? "الرقم الضريبي:" : "VAT / Tax Number:"}</strong> <span class="font-mono font-bold" dir="ltr">${esc(appState.rushTaxDetails?.vatNumber || "311949083200003")}</span></div>
+                <div><strong>${isAr ? "رقم السجل التجاري:" : "CR Number:"}</strong> <span class="font-mono" dir="ltr">${esc(appState.rushTaxDetails?.crNumber || "1011154912")}</span> · <strong>${isAr ? "الرقم الوطني الموحد:" : "Unified National No.:"}</strong> <span class="font-mono font-bold" dir="ltr">${esc(appState.rushTaxDetails?.unifiedNationalNumber || "7037475576")}</span></div>
+                <div><strong>${isAr ? "العنوان:" : "Address:"}</strong> ${isAr ? "طريق الأمير محمد بن سلمان، الخرج" : esc(appState.rushTaxDetails?.address || "Prince Muhammad Bin Salman Rd, Al Kharj")}</div>
               </div>
 
               ${step2Done ? `
-                <!-- Confirmed Summary Card -->
+                <!-- Confirmed Summary Card (Write-Once Bank Details) -->
                 <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-3 space-y-2 text-xs">
-                  <div class="flex items-center justify-between">
+                  <div class="flex items-center justify-between gap-2 flex-wrap">
                     <span class="font-bold text-neutral-800">${isAr ? "بيانات الحساب البنكي والتحويل المؤكدة:" : "Confirmed Bank &amp; Payout Details:"}</span>
-                    ${!isPaid ? `<button type="button" ${quoteApproved ? "" : "disabled"} onclick="document.getElementById('edit-bank-form-${safeTid}').classList.toggle('hidden')" class="min-h-[44px] px-2 text-[11px] text-[#C91E2F] font-bold underline hover:text-black">${isAr ? "تعديل البيانات" : "Edit Details"}</button>` : ""}
+                    <span class="text-[11px] font-semibold text-neutral-600">${isAr ? "مقفلة لحماية الصرف المالي" : "Locked for payout security"}</span>
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-neutral-700">
                     <div>${isAr ? "البنك:" : "Bank:"} <strong>${esc(df.bankName || "—")}</strong></div>
@@ -1809,37 +1845,8 @@
                       ${t.transferRef ? `<span class="font-mono text-[11px]" dir="ltr">${isAr ? "رقم المرجع: " : "Ref: "}${esc(t.transferRef)}</span>` : ""}
                     </div>
                   ` : `
-                    <div class="mt-1 text-[11px] text-neutral-600">${isAr ? "يقوم الفريق المالي بالتحقق من الفاتورة الضريبية وسيتم تحويل مبلغ التعويض مباشرة إلى حسابك البنكي." : "Our finance team is reviewing your tax invoice and will initiate payment directly to your account."}</div>
+                    <div class="mt-1 text-[11px] text-neutral-600">${isAr ? "يقوم الفريق المالي بالتحقق من الفاتورة الضريبية وسيتم تحويل مبلغ التعويض مباشرة إلى حسابك البنكي. إذا احتجت لتعديل البيانات، تواصل مع خدمة العملاء أدناه." : "Our finance team is reviewing your tax invoice and will initiate payment directly to your account. Contact Customer Care below if an update is needed."}</div>
                   `}
-                </div>
-
-                <!-- Hidden Collapsible Edit Form -->
-                <div id="edit-bank-form-${safeTid}" class="hidden pt-2 border-t border-neutral-200 space-y-2.5">
-                  <div class="text-xs font-bold text-neutral-700">${isAr ? "تحديث البيانات البنكية:" : "Update Bank Details:"}</div>
-                  <div class="flex flex-wrap items-center justify-between gap-2 text-xs bg-[#F2F2F2] border border-neutral-200 rounded-lg px-3 py-2">
-                    <span>${isAr ? "الفاتورة الضريبية:" : "Tax Invoice:"} <strong class="font-mono text-[#C91E2F]">${invHref ? `<a href="${invHref}" target="_blank" rel="noopener noreferrer" class="underline hover:text-black font-bold">${isAr ? "عرض الملف ↗" : "View File ↗"}</a>` : (isAr ? "لم يتم الرفع" : "Not uploaded")}</strong></span>
-                    <label for="dmg-inv-edit-${safeTid}" class="min-h-[44px] inline-flex items-center text-[#C91E2F] font-bold cursor-pointer hover:underline">
-                      ${isAr ? "تغيير الفاتورة" : "Replace Invoice"}
-                      <input id="dmg-inv-edit-${safeTid}" type="file" ${quoteApproved ? "" : "disabled"} accept=".pdf,image/*" class="hidden" onchange="uploadDmgDoc('${safeTid}', 'invoiceFile', this.files)" />
-                    </label>
-                  </div>
-                  <form onsubmit="saveBankDetails(event, '${safeTid}')" class="space-y-2.5">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div>
-                        <label for="dmg-bank" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "اسم البنك *" : "Bank Name *"}</label>
-                        <input id="dmg-bank" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.bankName || "")}" placeholder="${isAr ? "مثال: مصرف الراجحي / الأهلي" : "e.g. Al Rajhi Bank / SNB"}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
-                      </div>
-                      <div>
-                        <label for="dmg-holder" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "صاحب الحساب *" : "Account Holder *"}</label>
-                        <input id="dmg-holder" type="text" required ${quoteApproved ? "" : "disabled"} value="${esc(df.accountHolder || t.customerName || "")}" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
-                      </div>
-                    </div>
-                    <div>
-                      <label for="dmg-iban" class="block text-[11px] font-bold text-neutral-700 mb-1">${isAr ? "الآيبان *" : "IBAN *"}</label>
-                      <input id="dmg-iban" type="text" dir="ltr" required ${quoteApproved ? "" : "disabled"} value="${esc(df.iban || "")}" placeholder="SA03 8000 0000 6080 1016 7519" class="w-full min-h-[44px] rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs font-mono uppercase" />
-                    </div>
-                    <button type="submit" ${quoteApproved ? "" : "disabled"} class="w-full min-h-[44px] py-2.5 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition">${isAr ? "حفظ البيانات المعدلة" : "Save Updated Details"}</button>
-                  </form>
                 </div>
               ` : `
                 <!-- Unsubmitted Initial Form -->
@@ -1920,29 +1927,6 @@
 
       const createdAtDisplay = formatDateTime(t.createdAtRaw);
 
-      const chatHtml = t.messages.length === 0
-        ? `<div class="rounded-xl border border-dashed border-neutral-300 bg-[#F2F2F2] p-4 text-center text-xs text-neutral-600">${isAr ? "لا توجد رسائل بعد. أرسل رسالة أدناه للتواصل مع فريق خدمة العملاء." : "No messages yet. Send a message below to reach our Customer Care team."}</div>`
-        : t.messages.map(m => {
-            const senderLabel = isAr
-              ? (m.sender === "Customer" ? "العميل" : (m.sender === "Agent" || m.sender === "Admin" ? "خدمة عملاء رش واش" : m.sender))
-              : m.sender;
-            const channelLabel = isAr
-              ? (m.channel === "WhatsApp" ? "واتساب" : "البوابة")
-              : m.channel;
-            return `
-              <div class="rounded-xl border p-3 ${m.channel === "WhatsApp" ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-[#F2F2F2]"}">
-                <div class="flex items-center justify-between text-xs mb-1">
-                  <span class="font-bold text-black flex items-center gap-1.5">
-                    ${esc(senderLabel)}
-                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${m.channel === "WhatsApp" ? "bg-emerald-600 text-white" : "bg-neutral-200 text-neutral-700"}">${esc(channelLabel)}</span>
-                  </span>
-                  <span class="text-neutral-600">${esc(formatTime(m.timeRaw))}</span>
-                </div>
-                <p class="text-xs sm:text-sm text-neutral-800">${esc(m.text)}</p>
-              </div>
-            `;
-          }).join("");
-
       box.innerHTML = `
         <div class="bg-[#F2F2F2] border border-neutral-200 rounded-xl p-4 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2">
@@ -1989,29 +1973,19 @@
           </div>
         ` : ""}
 
-        <div class="space-y-2.5">
-          <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-neutral-600">${isAr ? `سجل المحادثة (${t.messages.length})` : `Message History (${t.messages.length})`}</h4>
-            <span class="text-[11px] font-bold text-emerald-700">${isAr ? "متزامن مع واتساب" : "WhatsApp Synced"}</span>
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+              <span>${isAr ? "تحتاج مساعدة أو ترغب بإرسال صور إضافية؟" : "Need help or want to share extra photos/videos?"}</span>
+            </div>
+            <p class="text-xs text-emerald-800">${isAr ? "تحدث مباشرة مع خدمة عملاء رش واش عبر واتساب الرسمي مع إرفاق رقم البلاغ تلقائياً." : "Continue directly with Rush Wash Customer Care on Official WhatsApp with your Ticket ID pre-filled."}</p>
           </div>
-          <div class="space-y-2 max-h-56 overflow-y-auto scrollbar-thin pe-1">
-            ${chatHtml}
-          </div>
+          <a id="btn-open-whatsapp-${esc(t.id)}" href="${buildWhatsAppSupportUrl(t.id, t.plate, isAr)}" target="_blank" rel="noopener noreferrer" class="min-h-[44px] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shrink-0 shadow-sm transition">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>${isAr ? "تواصل مع خدمة العملاء عبر واتساب ↗" : "Chat with Customer Care on WhatsApp ↗"}</span>
+          </a>
         </div>
-
-        <form onsubmit="sendWhatsApp(event, '${esc(t.id)}')" class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 space-y-2">
-          <div class="flex items-center justify-between gap-2 flex-wrap">
-            <label for="wa-input-${t.id}" class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-              <i data-lucide="message-circle" class="w-4 h-4 text-emerald-600"></i>
-              <span>${isAr ? "💬 الرد عبر محادثة واتساب الرسمية" : "💬 Reply via Official WhatsApp Channel"}</span>
-            </label>
-            <a href="https://wa.me/966553123848?text=${encodeURIComponent("RUSH Ticket " + t.id + ": ")}" target="_blank" rel="noopener noreferrer" class="min-h-[44px] inline-flex items-center text-[11px] font-bold text-emerald-800 hover:underline">${isAr ? "فتح تطبيق واتساب ↗" : "Open WhatsApp App ↗"}</a>
-          </div>
-          <div class="flex gap-2">
-            <input id="wa-input-${t.id}" type="text" required placeholder="${isAr ? "اكتب رسالتك لخدمة العملاء هنا..." : "Type a WhatsApp message for ticket " + t.id + "..."}" class="flex-1 min-h-[44px] rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
-            <button type="submit" class="min-h-[44px] px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold shrink-0 transition">${isAr ? "إرسال" : "Send"}</button>
-          </div>
-        </form>
       `;
       lucide.createIcons();
       if (document.getElementById("cust-sig")) initSig();
@@ -2186,6 +2160,7 @@
       setBtnLoading(btn, true, isAr ? "جاري حفظ الفاتورة والآيبان..." : "Saving Bank Details...");
 
       try {
+        let serverTicket = null;
         if (id.startsWith("C-")) {
           const res = await fetch(`${API_BASE}/api/complaints/${id}/damage/step2`, {
             method: "POST",
@@ -2202,12 +2177,13 @@
             showToast(typeof data.error === "string" ? data.error : (isAr ? "تعذر حفظ البيانات البنكية" : "Submission failed"));
             return;
           }
+          serverTicket = data;
         }
-        t.damageFlow.bankName = bank;
-        t.damageFlow.accountHolder = holder;
-        t.damageFlow.iban = iban;
+        t.damageFlow.bankName = serverTicket?.bankName || bank;
+        t.damageFlow.accountHolder = serverTicket?.accountHolder || ("•••• " + holder.slice(-3));
+        t.damageFlow.iban = serverTicket?.iban || `${iban.slice(0, 4)}${"•".repeat(Math.max(0, iban.length - 8))}${iban.slice(-4)}`;
+        if (serverTicket?.invoiceUrl) t.damageFlow.invoiceFile = serverTicket.invoiceUrl;
         t.status = "Pending Payout";
-        t.messages.push({ sender: "Customer", channel: "Web Portal", timeRaw: new Date().toISOString(), text: `Submitted Tax Invoice & Bank Details (${bank} · ${iban}).` });
         renderTrackedTicket();
         showToast(isAr ? "تم إرسال الفاتورة والآيبان للمراجعة" : "Invoice & IBAN submitted for review");
       } catch (ex) {
@@ -2215,35 +2191,6 @@
       } finally {
         setBtnLoading(btn, false);
       }
-    }
-
-    async function sendWhatsApp(e, id) {
-      e.preventDefault();
-      const t = tickets.find(x => x.id === id);
-      const inp = document.getElementById(`wa-input-${id}`) || document.getElementById("wa-input");
-      if (!t || !inp || !inp.value.trim()) return;
-      const isAr = appState.lang === "ar";
-      const text = inp.value.trim().slice(0, 2000);
-      try {
-        const res = await fetch(`${API_BASE}/api/complaints/${encodeURIComponent(id)}/whatsapp`, {
-          method: "POST",
-          headers: authHeaders({ "Content-Type": "application/json" }),
-          body: JSON.stringify({ body: text })
-        });
-        if (!res.ok) {
-          showToast(res.status === 401
-            ? (isAr ? "يرجى البحث برقم البلاغ لإرسال رسالة" : "Look up by ticket ID to send a message")
-            : (isAr ? "تعذر إرسال الرسالة" : "Message failed"));
-          return;
-        }
-      } catch {
-        showToast(isAr ? "تعذر إرسال الرسالة" : "Message failed");
-        return;
-      }
-      t.messages.push({ sender: "Customer", channel: "WhatsApp", timeRaw: new Date().toISOString(), text });
-      inp.value = "";
-      renderTrackedTicket();
-      showToast(isAr ? "تم إرسال الرسالة وحفظها في السجل" : "Message sent & saved to history");
     }
 
     async function rateTicket(id, stars) {

@@ -50,8 +50,11 @@ async function main() {
       id: "default",
       damageApprovalCapSar: 200.00,
       maxSlaHours: 48,
-      vatNumber: "310482917400003",
-      crNumber: "1010684920",
+      companyName: "شركة رَش للتجارة المتقدمة",
+      vatNumber: "311949083200003",
+      crNumber: "1011154912",
+      unifiedNationalNumber: "7037475576",
+      whatsappNumber: "966503444958",
     },
   });
   console.log(`- SystemConfig ready: SAR ${config.damageApprovalCapSar} cap, ${config.maxSlaHours}h SLA`);

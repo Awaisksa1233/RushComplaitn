@@ -19,25 +19,14 @@ async function main() {
   await prisma.posOrder.deleteMany();
   await prisma.customer.deleteMany();
 
-  // 1. Create Primary Demo Customer: Mohammed Al-Qahtani
+  // 1. Create Primary Demo Customer (Rule 14 authorized test customer: Awais)
   const customer1 = await prisma.customer.create({
     data: {
-      name: "Mohammed Al-Qahtani",
-      phone: "553914420",
-      licensePlate: "8821KSA",
-      vehicleModel: "Toyota Land Cruiser 2024",
-      email: "m.alqahtani@example.com",
-    },
-  });
-
-  // 2. Create Second Demo Customer: Fahad Al-Subaie
-  const customer2 = await prisma.customer.create({
-    data: {
-      name: "Fahad Al-Subaie",
-      phone: "501234567",
-      licensePlate: "7412ZXR",
-      vehicleModel: "Toyota Camry 2023",
-      email: "f.subaie@example.com",
+      name: "Awais",
+      phone: "569809578",
+      licensePlate: "5962HSS",
+      vehicleModel: "MG",
+      email: "awais.test@rush.com.sa",
     },
   });
 
@@ -46,13 +35,13 @@ async function main() {
   const fourDaysAgo = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
   const twelveDaysAgo = new Date(now.getTime() - 12 * 24 * 60 * 60 * 1000);
 
-  // 3. Create Wash Visits (2 within 7 days, 1 older)
+  // 2. Create Wash Visits (2 within 7 days, 1 older)
   await prisma.washVisit.createMany({
     data: [
       {
         id: "POS-94102",
         customerId: customer1.id,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Tunnel Lane 2",
         packageName: "Nano Ceramic + Interior Clean",
         washedAt: twoDaysAgo,
@@ -60,7 +49,7 @@ async function main() {
       {
         id: "POS-93881",
         customerId: customer1.id,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Express Lane 1",
         packageName: "Fresh Wash",
         washedAt: fourDaysAgo,
@@ -68,29 +57,21 @@ async function main() {
       {
         id: "POS-91400",
         customerId: customer1.id,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Tunnel Lane 1",
         packageName: "Shiny Wash",
         washedAt: twelveDaysAgo, // > 7 days ago
       },
-      {
-        id: "POS-94210",
-        customerId: customer2.id,
-        site: "Al Kharj Main",
-        lane: "Tunnel Lane 2",
-        packageName: "Fresh Wash",
-        washedAt: twoDaysAgo,
-      },
     ],
   });
 
-  // 4. Create POS Orders for Billing / Refund
+  // 3. Create POS Orders for Billing / Refund
   await prisma.posOrder.createMany({
     data: [
       {
         id: "ORD-88241",
         customerId: customer1.id,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         itemName: "Annual Nano Subscription Renewal",
         amountSar: 189.0,
         paymentMethod: "Mada (•••• 4192)",
@@ -99,7 +80,7 @@ async function main() {
       {
         id: "ORD-87102",
         customerId: customer1.id,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         itemName: "Interior Deep Detail Package",
         amountSar: 120.0,
         paymentMethod: "Apple Pay",
@@ -108,7 +89,7 @@ async function main() {
     ],
   });
 
-  // 5. Create Demo Complaints
+  // 4. Create Demo Complaints
   // Ticket C-1041: Unsatisfied & Approved with Rewash QR Code
   await prisma.complaint.create({
     data: {
@@ -119,12 +100,12 @@ async function main() {
       resolutionStatus: ResolutionStatus.APPROVED,
       resolutionNote: "Apology accepted. Complimentary rewash code issued.",
       assignedRole: StaffRole.ADMIN,
-      site: "Al Kharj Main",
+      site: "RUSH Al Kharj",
       posRecordId: "POS-93881",
       posRecordLabel: "Fresh Wash · Express Lane 1",
       summary: "Water spots remaining on front windshield and side mirrors.",
       qualityTags: ["Windshield Spots", "Side Mirrors"],
-      rewashCode: "RW-8821",
+      rewashCode: "RW-8821A1B2",
       csatRating: 5,
       messages: {
         create: [
@@ -154,14 +135,14 @@ async function main() {
       status: TicketStatus.INVESTIGATING,
       resolutionStatus: ResolutionStatus.PENDING,
       assignedRole: StaffRole.OPS_MANAGER,
-      site: "Al Kharj Main",
+      site: "RUSH Al Kharj",
       posRecordId: "POS-94102",
       posRecordLabel: "Nano Ceramic · Tunnel Lane 2",
       summary: "Scratch detected along passenger side front door panel.",
-      vehicleZones: ["Passenger Front Door"],
-      quotationUrl: "https://rush.com.sa/samples/quotation_workshop_sample.pdf",
+      vehicleZones: ["Passenger Side & Mirror"],
+      quotationUrl: "/api/files/quotations/1700000000001-11111111111111111111111111111111.pdf",
       waiverSigned: true,
-      waiverSignature: "data:image/png;base64,sample_signature_data_url_here",
+      waiverSignature: "DIGITALLY_SIGNED_ON_PORTAL",
       quotationApproved: true, // Management approved quotation, now ready for tax invoice!
       messages: {
         create: [
@@ -184,9 +165,8 @@ async function main() {
 
   console.log("Seeding successfully completed!");
   console.log("Demo Credentials:");
-  console.log("- License Plate: 8821KSA | Mobile: 0553914420 (Customer: Mohammed Al-Qahtani)");
+  console.log("- License Plate: 5962HSS | Mobile: 0569809578 (Customer: Awais · MG)");
   console.log("- Active Tickets: C-1041 (Resolved Unsatisfied), C-1042 (Approved Quotation Damage)");
-  console.log("- License Plate: 7412ZXR | Mobile: 0501234567 (Customer: Fahad Al-Subaie)");
 }
 
 main()

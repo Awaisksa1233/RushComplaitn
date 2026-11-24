@@ -4,12 +4,13 @@ import { z } from "zod";
 import { PrismaClient, ComplaintType, StaffRole, MessageChannel, TicketStatus, PayoutStatus, Prisma } from "@prisma/client";
 import { AuthedRequest, requireCustomerJwt, ownsTicket, signCustomerToken } from "../middleware/auth";
 import { normalizePlate, normalizePhone, isSaudiMobile, isSafeFileUrl } from "../utils/normalize";
-import { encryptField, maskIban } from "../utils/crypto";
+import { encryptField, decryptField, maskIban, cleanFileUrl, signFileUrl } from "../utils/crypto";
 import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET, CHATWOOT_WEBHOOK_SECRET } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { trackLimiter, webhookLimiter } from "../middleware/security";
 import { findCustomerInMongo, getWashesFromMongo, getOrdersFromMongo } from "../services/mongo";
 import { syncComplaintToChatwoot, forwardCustomerMessageToChatwoot } from "../services/chatwoot";
+import { invalidateClaimsCache } from "./admin";
 
 const safeUrl = z.string().refine(isSafeFileUrl, "Invalid file reference");
 
@@ -37,6 +38,7 @@ function ticketDto(t: any, full: boolean) {
       : undefined,
   };
   if (!full) return base;
+  const holderPlain = decryptField(t.accountHolder);
   return {
     ...base,
     resolutionNote: t.resolutionNote,
@@ -51,18 +53,15 @@ function ticketDto(t: any, full: boolean) {
     requestedAmount: t.requestedAmount != null ? Number(t.requestedAmount) : null,
     approvedAmount: t.approvedAmount != null ? Number(t.approvedAmount) : null,
     quotedAmount: t.quotedAmount != null ? Number(t.quotedAmount) : null,
-    quotationUrl: t.quotationUrl,
+    quotationUrl: signFileUrl(t.quotationUrl),
     waiverSigned: t.waiverSigned,
     quotationApproved: t.quotationApproved,
-    invoiceUrl: t.invoiceUrl,
+    invoiceUrl: signFileUrl(t.invoiceUrl),
     bankName: t.bankName,
-    accountHolder: t.accountHolder ? "•••• " + String(t.accountHolder).slice(-3) : null,
+    accountHolder: holderPlain ? "•••• " + String(holderPlain).slice(-3) : null,
     iban: t.iban ? maskIban(t.iban) : null,
     csatRating: t.csatRating,
-    mediaUrls: t.mediaUrls,
-    messages: (t.messages || [])
-      .filter((m: any) => m.channel !== MessageChannel.INTERNAL)
-      .map((m: any) => ({ id: m.id, sender: m.sender, channel: m.channel, body: m.body, createdAt: m.createdAt })),
+    mediaUrls: (t.mediaUrls || []).map((u: string) => signFileUrl(u) || u),
   };
 }
 
@@ -138,6 +137,26 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       if (recentUnlisted >= 2) {
         return res.status(429).json({ error: "Daily limit for unlisted-order claims reached." });
       }
+    } else if (data.posRecordId === "VISIT-GENERAL") {
+      if (data.type !== "OTHER") {
+        return res.status(400).json({ error: "General visit selection is only valid for Other inquiries." });
+      }
+      const recentGeneral = await prisma.complaint.count({
+        where: { customerId, posRecordId: "VISIT-GENERAL", createdAt: { gt: new Date(Date.now() - 24 * 3600 * 1000) } },
+      });
+      if (recentGeneral >= 3) {
+        return res.status(429).json({ error: "Daily limit for general inquiries reached." });
+      }
+    } else if (data.posRecordId === "VISIT-UNLISTED") {
+      if (data.type === "BILLING_REFUND") {
+        return res.status(400).json({ error: "Use ORD-UNLISTED for unlisted billing orders." });
+      }
+      const recentUnlistedVisit = await prisma.complaint.count({
+        where: { customerId, posRecordId: "VISIT-UNLISTED", createdAt: { gt: new Date(Date.now() - 24 * 3600 * 1000) } },
+      });
+      if (recentUnlistedVisit >= 2) {
+        return res.status(429).json({ error: "Daily limit for unlisted-visit claims reached." });
+      }
     } else {
       if (!(await recordBelongsToCustomer(req, data.type, data.posRecordId))) {
         return res.status(400).json({ error: "The selected visit/order was not found on your account." });
@@ -178,14 +197,16 @@ export function createComplaintsRouter(prisma: PrismaClient) {
             requestedAmount: data.requestedAmount,
             cardLast4: data.cardLast4,
             bankSmsText: data.bankSmsText,
-            bankSmsUrl: data.bankSmsUrl,
-            mediaUrls: data.mediaUrls,
+            bankSmsUrl: cleanFileUrl(data.bankSmsUrl) ?? undefined,
+            mediaUrls: data.mediaUrls.map((u) => cleanFileUrl(u) || u),
             messages: {
               create: { sender: "Customer", channel: MessageChannel.WEB_PORTAL, body: data.summary },
             },
           },
           include: { messages: true, customer: true },
         });
+
+        invalidateClaimsCache();
 
         // Asynchronously sync ticket with Chatwoot & send customer confirmation WhatsApp
         syncComplaintToChatwoot(complaint).catch((err) => {
@@ -257,9 +278,11 @@ export function createComplaintsRouter(prisma: PrismaClient) {
 
     return res.json({
       rushTaxDetails: {
-        companyName: process.env.RUSH_TAX_COMPANY || "Rush Car Wash Operations Co.",
-        vatNumber: cfg?.vatNumber || process.env.RUSH_VAT_NUMBER,
-        crNumber: cfg?.crNumber || process.env.RUSH_CR_NUMBER,
+        companyName: cfg?.companyName || process.env.RUSH_TAX_COMPANY || "شركة رَش للتجارة المتقدمة",
+        vatNumber: cfg?.vatNumber || process.env.RUSH_VAT_NUMBER || "311949083200003",
+        crNumber: cfg?.crNumber || process.env.RUSH_CR_NUMBER || "1011154912",
+        unifiedNationalNumber: cfg?.unifiedNationalNumber || process.env.RUSH_UNIFIED_NUMBER || "7037475576",
+        whatsappNumber: cfg?.whatsappNumber || process.env.RUSH_WHATSAPP_NUMBER || "966503444958",
         address: process.env.RUSH_TAX_ADDRESS,
       },
       limited: !byId,
@@ -287,14 +310,16 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       return res.status(403).json({ error: "Invoice upload is unlocked only after the quotation is approved." });
     }
 
+    const cleanDocUrl = cleanFileUrl(parsed.data.url) || parsed.data.url;
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: {
-        [parsed.data.field]: parsed.data.url,
+        [parsed.data.field]: cleanDocUrl,
         ...(parsed.data.field === "quotationUrl" ? { payoutStatus: PayoutStatus.AWAITING_QUOTE_APPROVAL } : {}),
       },
       include: { customer: true, messages: true },
     });
+    invalidateClaimsCache();
     return res.json({ success: true, ticket: ticketDto(updated, true) });
   }));
 
@@ -318,7 +343,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: {
-        quotationUrl: parsed.data.quotationUrl,
+        quotationUrl: cleanFileUrl(parsed.data.quotationUrl) || parsed.data.quotationUrl,
         waiverSigned: true,
         waiverSignature: parsed.data.waiverSignature,
         quotationApproved: false,
@@ -328,6 +353,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       include: { customer: true, messages: true },
     });
 
+    invalidateClaimsCache();
     return res.json({
       ticket: ticketDto(updated, true),
       notice:
@@ -365,7 +391,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const updated = await prisma.complaint.update({
       where: { id: ticket.id },
       data: {
-        invoiceUrl: parsed.data.invoiceUrl,
+        invoiceUrl: cleanFileUrl(parsed.data.invoiceUrl) || parsed.data.invoiceUrl,
         bankName: parsed.data.bankName,
         accountHolder: encryptField(parsed.data.accountHolder),
         iban: encryptField(parsed.data.iban),
@@ -382,6 +408,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       include: { messages: true, customer: true },
     });
 
+    invalidateClaimsCache();
     return res.json(ticketDto(updated, true));
   }));
 
@@ -396,6 +423,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const msg = await prisma.message.create({
       data: { complaintId: ticket.id, sender: "Customer", channel: MessageChannel.WHATSAPP, body: parsed.data.body },
     });
+    invalidateClaimsCache();
 
     // Forward customer reply into Chatwoot conversation
     forwardCustomerMessageToChatwoot({
@@ -461,6 +489,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
                 externalId,
               },
             });
+            invalidateClaimsCache();
             console.log(`[Chatwoot Webhook] Synced agent reply to ticket #${ticketId}`);
           }
         }
@@ -511,6 +540,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
         externalId: parsed.data.externalId,
       },
     });
+    invalidateClaimsCache();
     return res.status(201).json({ id: msg.id });
   }));
 
@@ -534,6 +564,7 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       data: { csatRating: parsed.data.rating },
       include: { customer: true, messages: true },
     });
+    invalidateClaimsCache();
     return res.json(ticketDto(updated, true));
   }));
 

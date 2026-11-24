@@ -5,6 +5,7 @@ import { uploadFile, ALLOWED_UPLOAD_TYPES, sniffMatches } from "../services/stor
 import { CUSTOMER_JWT_SECRET, STAFF_JWT_SECRET } from "../config/env";
 import { uploadLimiter } from "../middleware/security";
 import { asyncHandler } from "../utils/asyncHandler";
+import { signFileUrl } from "../utils/crypto";
 
 const CATEGORIES = new Set(["media", "quotations", "invoices", "complaints", "damage"]);
 
@@ -41,8 +42,8 @@ export function createUploadRouter() {
       }
       const cat = String(req.body.category || "media");
       const prefix = CATEGORIES.has(cat) ? cat : "media";
-      const url = await uploadFile(req.file.buffer, req.file.mimetype, prefix);
-      return res.status(201).json({ url });
+      const rawUrl = await uploadFile(req.file.buffer, req.file.mimetype, prefix);
+      return res.status(201).json({ url: signFileUrl(rawUrl, 7200), key: rawUrl });
     } catch {
       return res.status(500).json({ error: "Failed to upload file" });
     }

@@ -34,6 +34,14 @@ export interface MongoCustomerMatch {
   vehicleModel: string;
 }
 
+export function customerMatchesPhone(cust: any, normPhone: string): boolean {
+  if (!normPhone || normPhone.length !== 9) return false;
+  const candidates = [cust?.phone, cust?.normalizedPhone, cust?.mobile, cust?.phoneNumber]
+    .filter((v) => v != null && String(v).trim() !== "")
+    .map((v) => normalizePhone(String(v)));
+  return candidates.some((c) => c.length === 9 && c === normPhone);
+}
+
 export async function findCustomerInMongo(
   rawPlate: string,
   rawPhone: string
@@ -45,7 +53,7 @@ export async function findCustomerInMongo(
     const normPhone = normalizePhone(rawPhone);
     const normPl = normalizePlate(rawPlate);
 
-    // 1. First search vehicles directly by license plate
+    // 1. First search vehicles directly by license plate, then verify phone ownership
     const vehicle = await database.collection("rushwash_vehicles").findOne({
       $or: [
         { normalizedPlate: normPl },
@@ -61,7 +69,7 @@ export async function findCustomerInMongo(
         _id: vehicle.customerId,
       });
 
-      if (cust) {
+      if (cust && customerMatchesPhone(cust, normPhone)) {
         return {
           mongoCustomerId: String(cust._id),
           name: cust.name || "RUSH Customer",
@@ -72,7 +80,7 @@ export async function findCustomerInMongo(
       }
     }
 
-    // 2. Fallback: Search by phone if plate alone didn't resolve customer
+    // 2. Fallback: Search by phone if plate lookup didn't resolve verified customer
     const phoneRegex = new RegExp(`${escapeRegex(normPhone)}$`);
     const customers = await database
       .collection("rushwash_customers")
@@ -85,6 +93,7 @@ export async function findCustomerInMongo(
       .toArray();
 
     for (const cust of customers) {
+      if (!customerMatchesPhone(cust, normPhone)) continue;
       const v = await database.collection("rushwash_vehicles").findOne({
         customerId: cust._id,
         $or: [
@@ -321,6 +330,15 @@ export async function getOrdersFromMongo(
     console.warn("[MongoDB Local Adapter] Error fetching orders:", err.message);
     return [];
   }
+}
+
+export async function findPaidOrderCeilingInMongo(
+  licensePlate: string,
+  orderId: string
+): Promise<number | null> {
+  const orders = await getOrdersFromMongo(licensePlate, undefined, 25);
+  const match = orders.find((o) => o.id === orderId);
+  return match ? Number(match.amountSar) : null;
 }
 
 function formatPlanName(type: string): string {

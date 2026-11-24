@@ -159,7 +159,7 @@
         <div>
           <div class="flex items-center gap-2 notranslate" translate="no">
             <span class="font-extrabold tracking-wider uppercase text-lg italic text-white">RUSH</span>
-            <span class="text-sm font-bold text-white/80">رش</span>
+            <span class="text-sm font-bold text-white/80">رش واش</span>
           </div>
           <div id="login-modal-title" class="text-xs text-neutral-300">Operations Console Sign In</div>
         </div>
@@ -389,13 +389,25 @@
               </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="sm:col-span-2">
+                <label for="cfg-company-name" class="block text-xs font-bold text-neutral-700 mb-1">Company Legal Name (Tax Invoice)</label>
+                <input id="cfg-company-name" type="text" dir="auto" value="شركة رَش للتجارة المتقدمة" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-semibold" />
+              </div>
               <div>
                 <label for="cfg-vat" class="block text-xs font-bold text-neutral-700 mb-1">Rush VAT / Tax Number</label>
-                <input id="cfg-vat" type="text" dir="ltr" value="310482917400003" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+                <input id="cfg-vat" type="text" dir="ltr" value="311949083200003" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
               </div>
               <div>
                 <label for="cfg-cr" class="block text-xs font-bold text-neutral-700 mb-1">Rush CR Number</label>
-                <input id="cfg-cr" type="text" dir="ltr" value="1010684920" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+                <input id="cfg-cr" type="text" dir="ltr" value="1011154912" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+              </div>
+              <div>
+                <label for="cfg-unified" class="block text-xs font-bold text-neutral-700 mb-1">Unified National Number (الرقم الوطني الموحد)</label>
+                <input id="cfg-unified" type="text" dir="ltr" value="7037475576" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
+              </div>
+              <div>
+                <label for="cfg-whatsapp" class="block text-xs font-bold text-neutral-700 mb-1">Official WhatsApp Number</label>
+                <input id="cfg-whatsapp" type="text" dir="ltr" value="966503444958" class="w-full rounded-lg border border-neutral-300 px-3 py-2 text-xs font-mono" />
               </div>
             </div>
             <button id="btn-save-cfg" type="submit" class="px-4 py-2 rounded-lg bg-[#C91E2F] hover:bg-[#A61726] text-white text-xs font-bold transition motion-reduce:transition-none">Save Configuration</button>
@@ -640,8 +652,11 @@
     let sysConfig = {
       damageApprovalCapSar: 200,
       maxSlaHours: 48,
-      vatNumber: "310482917400003",
-      crNumber: "1010684920"
+      companyName: "شركة رَش للتجارة المتقدمة",
+      vatNumber: "311949083200003",
+      crNumber: "1011154912",
+      unifiedNationalNumber: "7037475576",
+      whatsappNumber: "966503444958"
     };
 
     let staffUsers = [];
@@ -806,7 +821,9 @@
     }
 
     function canEditClaim(c) {
-      if (uiState.role === "Business Owner") return true;
+      if (uiState.role === "Business Owner" || uiState.role === "Admin") return true;
+      if (uiState.role === "Ops Manager") return c.type === "Damage" && c.branch === uiState.opsBranch;
+      if (uiState.role === "CSM") return c.type === "Damage" || c.type === "Unsatisfied";
       return c.assignedRole === uiState.role;
     }
 
@@ -1290,7 +1307,7 @@
 
       if (uiState.detailTab === "resolution") {
         const lockClass = editable ? "" : "opacity-60 pointer-events-none";
-        const canApproveQuote = uiState.role === "Business Owner" || (!needsOwner && (uiState.role === "CSM" || uiState.role === "Ops Manager"));
+        const canApproveQuote = uiState.role === "Business Owner" || (!needsOwner && (uiState.role === "CSM" || uiState.role === "Admin"));
         const qUrl = safeUrl(c.damageFlow.quotationFile);
         const invUrl = safeUrl(c.damageFlow.invoiceFile);
 
@@ -1489,8 +1506,14 @@
     function renderSettings() {
       document.getElementById("cfg-cap").value = sysConfig.damageApprovalCapSar;
       document.getElementById("cfg-sla").value = sysConfig.maxSlaHours;
+      const cmpEl = document.getElementById("cfg-company-name");
+      if (cmpEl) cmpEl.value = sysConfig.companyName || "شركة رَش للتجارة المتقدمة";
       document.getElementById("cfg-vat").value = sysConfig.vatNumber;
       document.getElementById("cfg-cr").value = sysConfig.crNumber;
+      const uniEl = document.getElementById("cfg-unified");
+      if (uniEl) uniEl.value = sysConfig.unifiedNationalNumber || "7037475576";
+      const waEl = document.getElementById("cfg-whatsapp");
+      if (waEl) waEl.value = sysConfig.whatsappNumber || "966503444958";
       const isOwner = isOwnerRole();
 
       const btnSaveCfg = document.getElementById("btn-save-cfg");
@@ -1682,8 +1705,11 @@
           const cfg = await cfgRes.json();
           sysConfig.damageApprovalCapSar = Number(cfg.damageApprovalCapSar);
           sysConfig.maxSlaHours = Number(cfg.maxSlaHours);
+          if (cfg.companyName) sysConfig.companyName = cfg.companyName;
           sysConfig.vatNumber = cfg.vatNumber;
           sysConfig.crNumber = cfg.crNumber;
+          if (cfg.unifiedNationalNumber) sysConfig.unifiedNationalNumber = cfg.unifiedNationalNumber;
+          if (cfg.whatsappNumber) sysConfig.whatsappNumber = cfg.whatsappNumber;
         }
 
         if (staffRes.ok) {
@@ -1762,7 +1788,7 @@
               messages: (c.messages || []).map(m => ({
                 sender: m.sender,
                 channel: m.channel === "WHATSAPP" ? "WhatsApp" : m.channel === "INTERNAL" ? "Internal" : "Web Portal",
-                time: new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                time: new Date(m.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Riyadh" }),
                 text: m.text
               }))
             }));
@@ -1791,8 +1817,11 @@
       if (!isOwnerRole()) return showToast("Only Business Owner can edit config");
       const cap = Number(document.getElementById("cfg-cap").value);
       const sla = Number(document.getElementById("cfg-sla").value);
+      const companyName = document.getElementById("cfg-company-name")?.value.trim();
       const vat = document.getElementById("cfg-vat").value.trim();
       const cr = document.getElementById("cfg-cr").value.trim();
+      const unifiedNationalNumber = document.getElementById("cfg-unified")?.value.trim();
+      const whatsappNumber = document.getElementById("cfg-whatsapp")?.value.replace(/\D/g, "");
 
       const token = await ensureStaffLogin();
       if (!token) return;
@@ -1800,14 +1829,25 @@
         const res = await fetch("/api/admin/config", {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ damageApprovalCapSar: cap, maxSlaHours: sla, vatNumber: vat, crNumber: cr })
+          body: JSON.stringify({
+            damageApprovalCapSar: cap,
+            maxSlaHours: sla,
+            ...(companyName ? { companyName } : {}),
+            vatNumber: vat,
+            crNumber: cr,
+            ...(unifiedNationalNumber ? { unifiedNationalNumber } : {}),
+            ...(whatsappNumber ? { whatsappNumber } : {})
+          })
         });
         if (!res.ok) return;
         const updated = await res.json();
         sysConfig.damageApprovalCapSar = Number(updated.damageApprovalCapSar);
         sysConfig.maxSlaHours = Number(updated.maxSlaHours);
+        if (updated.companyName) sysConfig.companyName = updated.companyName;
         sysConfig.vatNumber = updated.vatNumber;
         sysConfig.crNumber = updated.crNumber;
+        if (updated.unifiedNationalNumber) sysConfig.unifiedNationalNumber = updated.unifiedNationalNumber;
+        if (updated.whatsappNumber) sysConfig.whatsappNumber = updated.whatsappNumber;
         renderRbacBanner();
         renderAllActive();
         showToast(`Saved: Damage cap SAR ${sysConfig.damageApprovalCapSar}, SLA ${sysConfig.maxSlaHours}h`);

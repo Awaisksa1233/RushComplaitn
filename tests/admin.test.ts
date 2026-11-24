@@ -22,25 +22,27 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
     await prisma.complaint.deleteMany({
       where: { id: { startsWith: "C-TEST-" } },
     });
-  });
+  }, 30000);
 
   afterAll(async () => {
     // Clean up any test records created during test execution
     if (testComplaintId) {
-      await prisma.message.deleteMany({ where: { complaintId: testComplaintId } });
+      await prisma.auditLog.deleteMany({ where: { complaintId: testComplaintId } }).catch(() => {});
+      await prisma.message.deleteMany({ where: { complaintId: testComplaintId } }).catch(() => {});
       await prisma.complaint.delete({ where: { id: testComplaintId } }).catch(() => {});
     }
     if (testCustomerId) {
       await prisma.customer.delete({ where: { id: testCustomerId } }).catch(() => {});
     }
     if (createdStaffIds.length > 0) {
+      await prisma.auditLog.deleteMany({ where: { staffId: { in: createdStaffIds } } }).catch(() => {});
       await prisma.staffUser.deleteMany({ where: { id: { in: createdStaffIds } } }).catch(() => {});
     }
     await prisma.staffUser.deleteMany({
       where: { email: { startsWith: "test." } },
     });
     await prisma.$disconnect();
-  });
+  }, 30000);
 
   // Test 1: Staff Authentication & Roles
   it("1. should authenticate admin with email/password and reject bad passwords", async () => {
@@ -68,7 +70,7 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
       .send({ email: process.env.TEST_OWNER_EMAIL!, password: process.env.TEST_OWNER_PASSWORD! });
     expect(resOwner.status).toBe(200);
     expect(resOwner.body.token).toBeDefined();
-    expect(resOwner.body.user.email).toBe("admin@rush.com.sa");
+    expect(resOwner.body.user.email).toBe(process.env.TEST_OWNER_EMAIL!.toLowerCase());
     expect(resOwner.body.user.role).toBe(StaffRole.BUSINESS_OWNER);
     ownerToken = resOwner.body.token;
 
@@ -228,7 +230,7 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.rewashCode).toMatch(/^RW-\d{4}$/);
+    expect(res.body.rewashCode).toMatch(/^RW-[A-Z0-9]{8}$/);
     expect(res.body.complaint.status).toBe("RESOLVED");
   });
 
@@ -247,7 +249,7 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
 
     expect(resCsv.status).toBe(200);
     expect(resCsv.headers["content-type"]).toContain("text/csv");
-    expect(resCsv.text).toContain("Ticket ID,Branch,Type");
+    expect(resCsv.text).toContain('"Ticket ID","Branch","Type"');
   });
 
   // Test 8: Static HTML Serving on /admin
@@ -255,6 +257,28 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
     const res = await request(app).get("/admin");
     expect(res.status).toBe(200);
     expect(res.headers["content-type"]).toContain("text/html");
-    expect(res.text).toContain("RUSH رش | Admin & Operations Console");
+    expect(res.text).toContain("RUSH رش واش | Admin &amp; Operations Console");
+  });
+
+  // Test 9: Password Reset Invalidates Prior Staff JWT
+  it("9. should invalidate existing staff JWT immediately after password reset", async () => {
+    const targetId = createdStaffIds[2]; // test.omar CSM
+    expect(targetId).toBeDefined();
+
+    const preRes = await request(app)
+      .get("/api/admin/claims")
+      .set("Authorization", `Bearer ${csmToken}`);
+    expect(preRes.status).toBe(200);
+
+    const resetRes = await request(app)
+      .post(`/api/admin/staff/${targetId}/reset-password`)
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ newPassword: "New-Reset!Pass2026#" });
+    expect(resetRes.status).toBe(200);
+
+    const postRes = await request(app)
+      .get("/api/admin/claims")
+      .set("Authorization", `Bearer ${csmToken}`);
+    expect(postRes.status).toBe(401);
   });
 });

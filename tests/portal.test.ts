@@ -23,44 +23,45 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     });
     testCustomerId = customer.id;
 
-    // Clean up any test complaints, visits, and OTP sessions from prior test runs
+    // Clean up only portal.test.ts records while preserving E2E C-900* & POS-E2E-* fixtures
+    const e2eIds = ["C-9001", "C-9002", "C-9003", "C-9004", "C-9005", "C-9006"];
     await prisma.otpSession.deleteMany({ where: { phone: "569809578" } });
-    await prisma.complaint.deleteMany({ where: { customerId: testCustomerId } });
-    await prisma.washVisit.deleteMany({ where: { customerId: testCustomerId } });
+    await prisma.complaint.deleteMany({ where: { customerId: testCustomerId, id: { notIn: e2eIds } } });
+    await prisma.washVisit.deleteMany({ where: { id: { in: ["POS-94102", "POS-93881", "POS-91400"] } } });
 
-    // Seed test wash visits for test 2 and test 3
+    // Seed test wash visits for test 2 and test 3 (most recent within 7 days)
     const now = Date.now();
     await prisma.washVisit.upsert({
       where: { id: "POS-94102" },
-      update: { customerId: testCustomerId },
+      update: { customerId: testCustomerId, washedAt: new Date(now - 10 * 60 * 1000) },
       create: {
         id: "POS-94102",
         customerId: testCustomerId,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Express Lane 1",
         packageName: "Fresh Wash",
-        washedAt: new Date(now - 2 * 24 * 3600 * 1000),
+        washedAt: new Date(now - 10 * 60 * 1000),
       },
     });
     await prisma.washVisit.upsert({
       where: { id: "POS-93881" },
-      update: { customerId: testCustomerId },
+      update: { customerId: testCustomerId, washedAt: new Date(now - 20 * 60 * 1000) },
       create: {
         id: "POS-93881",
         customerId: testCustomerId,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Express Lane 2",
         packageName: "Shiny Wash",
-        washedAt: new Date(now - 4 * 24 * 3600 * 1000),
+        washedAt: new Date(now - 20 * 60 * 1000),
       },
     });
     await prisma.washVisit.upsert({
       where: { id: "POS-91400" },
-      update: { customerId: testCustomerId },
+      update: { customerId: testCustomerId, washedAt: new Date(now - 12 * 24 * 3600 * 1000) },
       create: {
         id: "POS-91400",
         customerId: testCustomerId,
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         lane: "Express Lane 1",
         packageName: "Nano Ceramic Wash",
         washedAt: new Date(now - 12 * 24 * 3600 * 1000),
@@ -75,7 +76,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
         id: "C-1041",
         customerId: testCustomerId,
         type: "UNSATISFIED",
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         posRecordId: "POS-93881",
         posRecordLabel: "Fresh Wash · Express Lane 1",
         summary: "Previous complaint",
@@ -92,7 +93,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
         type: "DAMAGE",
         posRecordId: "POS-91400",
         quotationApproved: true,
-        quotationUrl: "/api/files/quotes/test.pdf",
+        quotationUrl: "/api/files/quotations/1-00000000000000000000000000000000.pdf",
         quotedAmount: 500,
         status: "INVESTIGATING",
         assignedRole: "OPS_MANAGER",
@@ -106,12 +107,12 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
         id: "C-1042",
         customerId: testCustomerId,
         type: "DAMAGE",
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         posRecordId: "POS-91400",
         posRecordLabel: "Nano Ceramic Wash",
         summary: "Bumper scratch approved",
         quotationApproved: true,
-        quotationUrl: "/api/files/quotes/test.pdf",
+        quotationUrl: "/api/files/quotations/1-00000000000000000000000000000000.pdf",
         quotedAmount: 500,
         status: "INVESTIGATING",
         assignedRole: "OPS_MANAGER",
@@ -120,6 +121,10 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
   }, 30000);
 
   afterAll(async () => {
+    const e2eIds = ["C-9001", "C-9002", "C-9003", "C-9004", "C-9005", "C-9006"];
+    await prisma.otpSession.deleteMany({ where: { phone: "569809578" } }).catch(() => {});
+    await prisma.complaint.deleteMany({ where: { customerId: testCustomerId, id: { notIn: e2eIds } } }).catch(() => {});
+    await prisma.washVisit.deleteMany({ where: { id: { in: ["POS-94102", "POS-93881", "POS-91400"] } } }).catch(() => {});
     await prisma.$disconnect();
   });
 
@@ -300,5 +305,35 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
     expect(trackRes.body.limited).toBe(true);
     expect(trackRes.body.tickets[0].iban).toBeUndefined();
     expect(trackRes.body.tickets[0].messages).toBeUndefined();
+  });
+
+  // Test 7: VISIT-GENERAL (Other) & VISIT-UNLISTED submissions
+  it("7. should allow OTHER with VISIT-GENERAL and UNSATISFIED with VISIT-UNLISTED", async () => {
+    const genRes = await request(app)
+      .post("/api/complaints")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({
+        type: "OTHER",
+        posRecordId: "VISIT-GENERAL",
+        posRecordLabel: "VISIT-GENERAL (General Inquiry)",
+        site: "RUSH Al Kharj",
+        summary: "[Topic: General Feedback] Great service at Al Kharj tunnel lane.",
+      });
+    expect(genRes.status).toBe(201);
+    expect(genRes.body.posRecordId).toBe("VISIT-GENERAL");
+
+    const unlRes = await request(app)
+      .post("/api/complaints")
+      .set("Authorization", `Bearer ${customerToken}`)
+      .send({
+        type: "UNSATISFIED",
+        posRecordId: "VISIT-UNLISTED",
+        posRecordLabel: "VISIT-UNLISTED (Earlier Wash)",
+        site: "RUSH Al Kharj",
+        summary: "[Tags: Water Spots] Previous week visit water spots.",
+        qualityTags: ["Water Spots"],
+      });
+    expect(unlRes.status).toBe(201);
+    expect(unlRes.body.posRecordId).toBe("VISIT-UNLISTED");
   });
 });

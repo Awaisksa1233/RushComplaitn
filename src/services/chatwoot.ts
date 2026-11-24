@@ -9,11 +9,17 @@
  * 5. Forwards customer messages from the web portal into Chatwoot.
  */
 
+import { signFileUrl } from "../utils/crypto";
+
 const CHATWOOT_BASE_URL = (process.env.CHATWOOT_BASE_URL || "https://chatwoot.rush.com.sa").replace(/\/+$/, "");
 const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || "";
 const CHATWOOT_ACCOUNT_ID = process.env.CHATWOOT_ACCOUNT_ID || "1";
 const CHATWOOT_INBOX_ID = parseInt(process.env.CHATWOOT_INBOX_ID || "1", 10);
 const PORTAL_PUBLIC_URL = (process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa").replace(/\/+$/, "");
+
+function isChatwootDisabled(): boolean {
+  return process.env.NODE_ENV === "test" || process.env.DISABLE_OUTBOUND_MESSAGING === "true" || !CHATWOOT_API_TOKEN;
+}
 
 function getHeaders() {
   return {
@@ -42,7 +48,7 @@ export async function findOrCreateContact(params: {
   branch?: string;
 }): Promise<any> {
   const formattedPhone = formatChatwootPhone(params.phone);
-  if (!formattedPhone || !CHATWOOT_API_TOKEN) return null;
+  if (!formattedPhone || isChatwootDisabled()) return null;
 
   try {
     // 1. Search existing contact
@@ -160,7 +166,13 @@ export async function postPrivateStaffNote(params: {
 
   let evidenceText = "لا توجد مرفقات";
   if (Array.isArray(t.mediaUrls) && t.mediaUrls.length) {
-    evidenceText = t.mediaUrls.map((u: string, idx: number) => `  ${idx + 1}. [مرفق ${idx + 1}](${u})`).join("\n");
+    evidenceText = t.mediaUrls
+      .map((u: string, idx: number) => {
+        const signed = signFileUrl(u, 7 * 24 * 3600) || u;
+        const absUrl = signed.startsWith("/") ? `${PORTAL_PUBLIC_URL}${signed}` : signed;
+        return `  ${idx + 1}. [مرفق ${idx + 1}](${absUrl})`;
+      })
+      .join("\n");
   }
 
   const noteContent = `📋 **تفاصيل بلاغ جديد من العميل (#${t.id})**\n------------------------------------------------\n- **الفرع:** فرع الخرج (${t.site || "Al Kharj"})\n- **المركبة:** ${t.customer?.vehicleModel || "—"} (لوحة: ${t.customer?.licensePlate || "—"})\n- **جوال العميل:** ${t.customer?.phone || "—"}\n- **نوع البلاغ:** ${t.type}\n- **الزيارة / الفاتورة:** ${t.posRecordLabel || t.posRecordId || "—"}\n- **الأجزاء المتضررة (Zones):** ${zonesText}\n- **شرح المشكلة:** ${t.summary || "لا يوجد"}\n\n📎 **مرفقات وصور المعاينة:**\n${evidenceText}\n\n🔗 [عرض ومتابعة البلاغ في لوحة الإدارة](${PORTAL_PUBLIC_URL}/admin)`;
@@ -188,7 +200,7 @@ export async function forwardCustomerMessageToChatwoot(params: {
   phone: string;
   text: string;
 }): Promise<boolean> {
-  if (!CHATWOOT_API_TOKEN) return false;
+  if (isChatwootDisabled()) return false;
   try {
     const contact = await findOrCreateContact({ phone: params.phone });
     if (!contact?.id) return false;
@@ -218,11 +230,57 @@ export async function forwardCustomerMessageToChatwoot(params: {
   }
 }
 
+export async function sendStaffWhatsAppViaChatwoot(params: {
+  ticketId: string;
+  phone: string;
+  text: string;
+}): Promise<boolean> {
+  if (isChatwootDisabled()) return false;
+  try {
+    const contact = await findOrCreateContact({ phone: params.phone });
+    if (!contact?.id) return false;
+
+    const convsUrl = `${CHATWOOT_BASE_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/contacts/${contact.id}/conversations`;
+    const res = await fetch(convsUrl, { headers: getHeaders() });
+    let convId: number | undefined;
+    if (res.ok) {
+      const data: any = await res.json();
+      const list: any[] = data.payload || [];
+      const exact = list.find((c) => c?.custom_attributes?.ticket_code === params.ticketId);
+      convId = exact?.id || list[0]?.id;
+    }
+    if (!convId) {
+      const created = await createComplaintConversation({
+        contactId: contact.id,
+        ticketId: params.ticketId,
+        issueType: "COMPLAINT",
+      });
+      convId = created?.id || created?.payload?.id;
+    }
+    if (!convId) return false;
+
+    const msgUrl = `${CHATWOOT_BASE_URL}/api/v1/accounts/${CHATWOOT_ACCOUNT_ID}/conversations/${convId}/messages`;
+    const msgRes = await fetch(msgUrl, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        content: params.text,
+        message_type: "outgoing",
+        private: false,
+      }),
+    });
+    return msgRes.ok;
+  } catch (err: any) {
+    console.warn("[Chatwoot] sendStaffWhatsAppViaChatwoot error:", err?.message || err);
+    return false;
+  }
+}
+
 /**
  * High-level background task: Orchestrates full Chatwoot dispatch upon new complaint submission
  */
 export async function syncComplaintToChatwoot(ticket: any): Promise<void> {
-  if (!CHATWOOT_API_TOKEN) return;
+  if (isChatwootDisabled()) return;
   try {
     const phone = ticket.customer?.phone;
     if (!phone) return;

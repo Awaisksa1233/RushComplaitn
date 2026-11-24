@@ -16,7 +16,7 @@ A dedicated, full-stack customer service and complaints settlement platform buil
   - **Billing & Refunds**: Transaction dispute tracking with Retrieval Reference Number (RRN).
   - **Damage Claims (2-Step Settlement)**:
     - **Step 1**: Official repair quotation upload + Interactive electronic liability waiver signing canvas.
-    - **Step 2**: Verified company tax details box (`شركة عمليات رش واش` · VAT `310482917400003` · CR `1010684920`), tax invoice upload, IBAN & bank account submission, confirmed card summary, and payout settlement status.
+    - **Step 2**: Verified company tax details box (`شركة رَش للتجارة المتقدمة` · VAT `311949083200003` · CR `1011154912` · Unified `7037475576`), tax invoice upload, IBAN & bank account submission, confirmed card summary, and payout settlement status.
   - **General Feedback & Inquiries**: Categorized feedback routing.
 - **WhatsApp Synchronization**: Real-time message history and instant customer support chat reply.
 - **CSAT Rating**: 5-star resolution satisfaction rating.
@@ -122,7 +122,7 @@ Customer Portal/
 ---
 
 ## 📄 License
-Internal proprietary software for **RUSH Car Wash Operations Co. (شركة عمليات رش واش)**.
+Internal proprietary software for **RUSH Car Wash (`شركة رَش للتجارة المتقدمة`)**.
 
 
 ---

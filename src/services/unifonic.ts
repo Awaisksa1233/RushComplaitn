@@ -13,6 +13,9 @@ function maskPhone(digits: string): string {
 }
 
 export async function sendSmsOtp(phone: string, code: string): Promise<boolean> {
+  if (process.env.NODE_ENV === "test" || process.env.DISABLE_OUTBOUND_MESSAGING === "true") {
+    return false;
+  }
   if (!UNIFONIC_APP_ID) {
     console.warn("[Unifonic] UNIFONIC_APP_ID missing; skipping SMS dispatch.");
     return false;
