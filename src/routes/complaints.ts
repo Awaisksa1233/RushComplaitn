@@ -2,9 +2,10 @@ import crypto from "crypto";
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { PrismaClient, ComplaintType, StaffRole, MessageChannel, TicketStatus, PayoutStatus, Prisma } from "@prisma/client";
-import { AuthedRequest, requireCustomerJwt, ownsTicket, signCustomerToken } from "../middleware/auth";
+import { AuthedRequest, requireCustomerJwt, ownsTicket, signCustomerToken, tryDecodeCustomerJwt } from "../middleware/auth";
 import { normalizePlate, normalizePhone, isSaudiMobile, isSafeFileUrl } from "../utils/normalize";
 import { encryptField, decryptField, maskIban, cleanFileUrl, signFileUrl } from "../utils/crypto";
+import { withKeyLock } from "../utils/lock";
 import { ALLOWED_SITES, WHATSAPP_WEBHOOK_SECRET, CHATWOOT_WEBHOOK_SECRET } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { trackLimiter, webhookLimiter } from "../middleware/security";
@@ -63,6 +64,17 @@ function ticketDto(t: any, full: boolean) {
     iban: t.iban ? maskIban(t.iban) : null,
     csatRating: t.csatRating,
     mediaUrls: (t.mediaUrls || []).map((u: string) => signFileUrl(u) || u),
+    messages: Array.isArray(t.messages)
+      ? t.messages
+          .filter((m: any) => m.channel !== "INTERNAL")
+          .map((m: any) => ({
+            id: m.id,
+            sender: m.sender,
+            channel: m.channel,
+            body: m.body,
+            createdAt: m.createdAt,
+          }))
+      : [],
   };
 }
 
@@ -120,6 +132,9 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     }
 
     const data = parsed.data;
+    if (data.type === "DAMAGE" && data.mediaUrls.length === 0) {
+      return res.status(400).json({ error: "At least one photo or video is required for vehicle damage claims." });
+    }
     const customerId = req.customer!.customerId;
     const site = ALLOWED_SITES.includes(data.site) ? data.site : ALLOWED_SITES[0];
 
@@ -176,61 +191,94 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     const assignedRole: StaffRole =
       data.type === ComplaintType.DAMAGE ? StaffRole.OPS_MANAGER : StaffRole.ADMIN;
 
-    // Collision-safe sequential ticket IDs (retry on unique violation instead of trusting count())
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const count = await prisma.complaint.count();
-      const ticketId = `C-${1043 + count + attempt}`;
-      try {
-        const complaint = await prisma.complaint.create({
-          data: {
-            id: ticketId,
-            customerId,
-            type: data.type as ComplaintType,
-            assignedRole,
-            site,
-            posRecordId: data.posRecordId,
-            posRecordLabel: data.posRecordLabel,
-            summary: data.summary,
-            callbackWindow: data.callbackWindow,
-            qualityTags: data.qualityTags,
-            vehicleZones: data.vehicleZones,
-            billingReason: data.billingReason,
-            requestedAmount: data.requestedAmount,
-            cardLast4: data.cardLast4,
-            bankSmsText: data.bankSmsText,
-            bankSmsUrl: cleanFileUrl(data.bankSmsUrl) ?? undefined,
-            mediaUrls: data.mediaUrls.map((u) => cleanFileUrl(u) || u),
-            messages: {
-              create: { sender: "Customer", channel: MessageChannel.WEB_PORTAL, body: data.summary },
-            },
-          },
-          include: { messages: true, customer: true },
+    // Serialize check-then-insert per customer+record & allocate non-sequential CSPRNG ticket IDs (REM-001, REM-007)
+    const createdResult = await withKeyLock(`${customerId}:${data.posRecordId}`, async () => {
+      const isSpecialRecord =
+        data.posRecordId === "ORD-UNLISTED" ||
+        data.posRecordId === "VISIT-GENERAL" ||
+        data.posRecordId === "VISIT-UNLISTED";
+      if (!isSpecialRecord) {
+        const dup = await prisma.complaint.findFirst({
+          where: { customerId, posRecordId: data.posRecordId },
         });
-
-        invalidateClaimsCache();
-
-        // Asynchronously sync ticket with Chatwoot & send customer confirmation WhatsApp
-        syncComplaintToChatwoot(complaint).catch((err) => {
-          console.warn("[Complaints] Chatwoot sync failed for #" + complaint.id, err);
-        });
-
-        // Issue a ticket-scoped token so the customer can follow up without a new OTP
-        const trackToken = signCustomerToken(
-          { customerId, phone: req.customer!.phone, licensePlate: req.customer!.licensePlate, scope: "track", ticketIds: [complaint.id] },
-          "2h"
-        );
-        return res.status(201).json({ ...ticketDto(complaint, true), cardLast4: complaint.cardLast4, trackToken });
-      } catch (e: any) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") continue;
-        throw e;
+        if (dup) {
+          return { conflictTicketId: dup.id } as const;
+        }
       }
+
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const ticketId = `C-${crypto.randomInt(10000000, 100000000)}`;
+        try {
+          const complaint = await prisma.complaint.create({
+            data: {
+              id: ticketId,
+              customerId,
+              type: data.type as ComplaintType,
+              assignedRole,
+              site,
+              posRecordId: data.posRecordId,
+              posRecordLabel: data.posRecordLabel,
+              summary: data.summary,
+              callbackWindow: data.callbackWindow,
+              qualityTags: data.qualityTags,
+              vehicleZones: data.vehicleZones,
+              billingReason: data.billingReason,
+              requestedAmount: data.requestedAmount,
+              cardLast4: data.cardLast4,
+              bankSmsText: data.bankSmsText,
+              bankSmsUrl: cleanFileUrl(data.bankSmsUrl) ?? undefined,
+              mediaUrls: data.mediaUrls.map((u) => cleanFileUrl(u) || u),
+              messages: {
+                create: { sender: "Customer", channel: MessageChannel.WEB_PORTAL, body: data.summary },
+              },
+            },
+            include: { messages: true, customer: true },
+          });
+          return { complaint } as const;
+        } catch (e: any) {
+          if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+            const target = Array.isArray(e.meta?.target) ? e.meta.target.join(",") : String(e.meta?.target || "");
+            if (target.includes("posRecordId")) {
+              const dup = await prisma.complaint.findFirst({ where: { customerId, posRecordId: data.posRecordId } });
+              if (dup) return { conflictTicketId: dup.id } as const;
+            }
+            continue;
+          }
+          throw e;
+        }
+      }
+      return { unavailable: true } as const;
+    });
+
+    if ("conflictTicketId" in createdResult) {
+      return res.status(409).json({
+        error: "A complaint has already been submitted for this visit.",
+        ticketId: createdResult.conflictTicketId,
+      });
     }
-    return res.status(503).json({ error: "Could not allocate a ticket number, please retry." });
+    if ("unavailable" in createdResult) {
+      return res.status(503).json({ error: "Could not allocate a ticket number, please retry." });
+    }
+
+    const complaint = createdResult.complaint;
+    invalidateClaimsCache();
+
+    // Asynchronously sync ticket with Chatwoot & send customer confirmation WhatsApp
+    syncComplaintToChatwoot(complaint).catch((err) => {
+      console.warn("[Complaints] Chatwoot sync failed for #" + complaint.id, err);
+    });
+
+    // Issue a ticket-scoped token so the customer can follow up without a new OTP
+    const trackToken = signCustomerToken(
+      { customerId, phone: req.customer!.phone, licensePlate: req.customer!.licensePlate, scope: "track", ticketIds: [complaint.id] },
+      "2h"
+    );
+    return res.status(201).json({ ...ticketDto(complaint, true), cardLast4: complaint.cardLast4, trackToken });
   }));
 
   // 2. Track Complaint
-  //    Ticket-ID lookup (+ phone) -> full customer-safe view and a ticket-scoped token.
-  //    Plate lookup (+ phone) -> status summary only (plate/phone are weak secrets).
+  //    Unauthenticated lookups (Ticket ID or Plate + Phone) ALWAYS return limited status only (no trackToken, no messages, no IBAN/docs).
+  //    Full view + trackToken are only returned when the caller already holds a verified Customer JWT (OTP or direct ?t=).
   router.post("/track", trackLimiter, asyncHandler(async (req, res) => {
     const parsed = z
       .object({ query: z.string().min(2).max(30), phone: z.string().min(9).max(20) })
@@ -265,8 +313,16 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     }
 
     const cfg = await prisma.systemConfig.findUnique({ where: { id: "default" } });
+    const authedCustomer = tryDecodeCustomerJwt(req);
+    const fullAccess = Boolean(
+      byId &&
+      authedCustomer &&
+      authedCustomer.customerId === tickets[0].customerId &&
+      (authedCustomer.scope !== "track" || authedCustomer.ticketIds?.includes(tickets[0].id))
+    );
+
     let trackToken: string | undefined;
-    if (byId) {
+    if (fullAccess) {
       const t = tickets[0] as any;
       const cust = await prisma.customer.findUnique({ where: { id: t.customerId } });
       if (cust) {
@@ -286,9 +342,9 @@ export function createComplaintsRouter(prisma: PrismaClient) {
         whatsappNumber: cfg?.whatsappNumber || process.env.RUSH_WHATSAPP_NUMBER || "966503444958",
         address: process.env.RUSH_TAX_ADDRESS,
       },
-      limited: !byId,
+      limited: !fullAccess,
       trackToken,
-      tickets: tickets.map((t) => ticketDto(t, byId)),
+      tickets: tickets.map((t) => ticketDto(t, fullAccess)),
     });
   }));
 
@@ -435,8 +491,13 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       .safeParse(req.body);
     if (!parsed.success) return res.status(400).json({ error: parsed.error.flatten() });
 
-    const updated = await prisma.complaint.update({
-      where: { id: ticket.id },
+    const claimed = await prisma.complaint.updateMany({
+      where: {
+        id: ticket.id,
+        quotationApproved: true,
+        iban: null,
+        status: { notIn: [TicketStatus.PENDING_PAYOUT, TicketStatus.RESOLVED] },
+      },
       data: {
         invoiceUrl: cleanFileUrl(parsed.data.invoiceUrl) || parsed.data.invoiceUrl,
         bankName: parsed.data.bankName,
@@ -444,14 +505,22 @@ export function createComplaintsRouter(prisma: PrismaClient) {
         iban: encryptField(parsed.data.iban),
         status: TicketStatus.PENDING_PAYOUT,
         payoutStatus: PayoutStatus.PENDING_BANK_TRANSFER,
-        messages: {
-          create: {
-            sender: "Customer",
-            channel: MessageChannel.WEB_PORTAL,
-            body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${maskIban(parsed.data.iban)}).`,
-          },
-        },
       },
+    });
+    if (claimed.count !== 1) {
+      return res.status(409).json({ error: "Bank details were already submitted. Contact customer care to change them." });
+    }
+
+    await prisma.message.create({
+      data: {
+        complaintId: ticket.id,
+        sender: "Customer",
+        channel: MessageChannel.WEB_PORTAL,
+        body: `Submitted Tax Invoice & Bank Details (${parsed.data.bankName} · ${maskIban(parsed.data.iban)}).`,
+      },
+    });
+    const updated = await prisma.complaint.findUnique({
+      where: { id: ticket.id },
       include: { messages: true, customer: true },
     });
 
@@ -491,12 +560,10 @@ export function createComplaintsRouter(prisma: PrismaClient) {
     }
     const raw: Buffer | undefined = (req as any).rawBody;
     const sigHeader = String(req.headers["x-chatwoot-signature"] || req.headers["x-hub-signature-256"] || "").replace(/^sha256=/, "");
-    const queryToken = typeof req.query.token === "string" ? req.query.token.trim() : "";
     const tokenHeader = String(
       req.headers["x-chatwoot-webhook-token"] ||
       req.headers["x-webhook-secret"] ||
-      (req.headers.authorization || "").replace(/^Bearer\s+/i, "") ||
-      queryToken
+      (req.headers.authorization || "").replace(/^Bearer\s+/i, "")
     ).trim();
     const expectedHmac = raw ? crypto.createHmac("sha256", CHATWOOT_WEBHOOK_SECRET).update(raw).digest("hex") : "";
     const sigValid = Boolean(
@@ -538,15 +605,15 @@ export function createComplaintsRouter(prisma: PrismaClient) {
           ticket = await prisma.complaint.findUnique({ where: { id: attrTicketId.trim().toUpperCase() } });
         }
 
-        // 2. Fallback: extract explicit C-\d+ ticket ID from message text (verified against sender phone if available)
-        if (!ticket) {
+        // 2. Fallback: extract explicit C-\d+ ticket ID from message text (strictly require verified sender phone match)
+        if (!ticket && isSaudiMobile(normSenderPhone)) {
           const match = bodyText.match(/\b(C-\d+)\b/i);
           if (match) {
             const candidate = await prisma.complaint.findUnique({
               where: { id: match[1].toUpperCase() },
               include: { customer: { select: { phone: true } } },
             });
-            if (candidate && (!isSaudiMobile(normSenderPhone) || candidate.customer?.phone === normSenderPhone)) {
+            if (candidate && candidate.customer?.phone === normSenderPhone) {
               ticket = candidate;
             }
           }
@@ -582,15 +649,22 @@ export function createComplaintsRouter(prisma: PrismaClient) {
             if (recentSame) return res.status(200).json({ ok: true, duplicate: true });
           }
 
-          await prisma.message.create({
-            data: {
-              complaintId: ticket.id,
-              sender: senderName,
-              channel: MessageChannel.WHATSAPP,
-              body: bodyText,
-              externalId,
-            },
-          });
+          try {
+            await prisma.message.create({
+              data: {
+                complaintId: ticket.id,
+                sender: senderName,
+                channel: MessageChannel.WHATSAPP,
+                body: bodyText,
+                externalId,
+              },
+            });
+          } catch (e: any) {
+            if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+              return res.status(200).json({ ok: true, duplicate: true });
+            }
+            throw e;
+          }
           invalidateClaimsCache();
           console.log(`[Chatwoot Webhook] Synced ${isIncoming ? "inbound customer" : "agent"} message to ticket #${ticket.id}`);
         }
@@ -632,17 +706,62 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       if (seen) return res.status(200).json({ id: seen.id, duplicate: true });
     }
 
+    let msg: any;
+    try {
+      msg = await prisma.message.create({
+        data: {
+          complaintId: ticket.id,
+          sender: parsed.data.sender,
+          channel: MessageChannel.WHATSAPP,
+          body: parsed.data.body,
+          externalId: parsed.data.externalId,
+        },
+      });
+    } catch (e: any) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002" && parsed.data.externalId) {
+        const seen = await prisma.message.findFirst({ where: { externalId: parsed.data.externalId } });
+        return res.status(200).json({ id: seen?.id, duplicate: true });
+      }
+      throw e;
+    }
+    invalidateClaimsCache();
+    return res.status(201).json({ id: msg.id });
+  }));
+
+  // 6.5 Customer Follow-up Message (ticket owner only)
+  router.post("/:id/messages", requireCustomerJwt, asyncHandler(async (req: AuthedRequest, res) => {
+    const parsed = z.object({ body: z.string().trim().min(1).max(2000) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Message body is required (max 2000 chars)." });
+
+    const ticket = await loadOwnedTicket(req, res);
+    if (!ticket) return;
+
+    const cust = await prisma.customer.findUnique({ where: { id: ticket.customerId } });
     const msg = await prisma.message.create({
       data: {
         complaintId: ticket.id,
-        sender: parsed.data.sender,
-        channel: MessageChannel.WHATSAPP,
+        sender: cust?.name || "Customer",
+        channel: MessageChannel.WEB_PORTAL,
         body: parsed.data.body,
-        externalId: parsed.data.externalId,
       },
     });
     invalidateClaimsCache();
-    return res.status(201).json({ id: msg.id });
+
+    if (cust?.phone) {
+      forwardCustomerMessageToChatwoot({
+        ticketId: ticket.id,
+        phone: cust.phone,
+        text: parsed.data.body,
+      }).catch(() => {});
+    }
+
+    return res.status(201).json({
+      id: msg.id,
+      sender: msg.sender,
+      channel: msg.channel,
+      body: msg.body,
+      createdAt: msg.createdAt,
+    });
   }));
 
   // 7. CSAT Rating (resolved tickets only, once)
@@ -660,9 +779,15 @@ export function createComplaintsRouter(prisma: PrismaClient) {
       return res.status(409).json({ error: "Rating already submitted." });
     }
 
-    const updated = await prisma.complaint.update({
-      where: { id: ticket.id },
+    const claimed = await prisma.complaint.updateMany({
+      where: { id: ticket.id, status: TicketStatus.RESOLVED, csatRating: null },
       data: { csatRating: parsed.data.rating },
+    });
+    if (claimed.count !== 1) {
+      return res.status(409).json({ error: "Rating already submitted." });
+    }
+    const updated = await prisma.complaint.findUnique({
+      where: { id: ticket.id },
       include: { customer: true, messages: true },
     });
     invalidateClaimsCache();

@@ -6,7 +6,12 @@ import { StaffRole } from "@prisma/client";
 // Ephemeral fixture credential for throw-away test users (deleted in afterAll). The real owner login comes from env.
 const TEST_PW = "Tst-Only!Fixture-9xQ2";
 
-describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWORD)("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => {
+describe.skipIf(
+  !process.env.TEST_OWNER_EMAIL ||
+  !process.env.TEST_OWNER_PASSWORD ||
+  (process.env.ALLOW_LIVE_DB_TESTS !== "true" &&
+    !/^(localhost|127\.0\.0\.1)$/i.test((() => { try { return new URL(process.env.DATABASE_URL || "").hostname; } catch { return ""; } })()))
+)("RUSH Admin & Operations Console API Tests", { timeout: 60000 }, () => {
   let ownerToken: string;
   let adminToken: string;
   let opsToken: string;
@@ -201,10 +206,10 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
     if (!cust) {
       cust = await prisma.customer.create({
         data: {
-          licensePlate: "TEST 9999",
-          phone: "0559999999",
-          name: "Test Customer",
-          vehicleModel: "2024 Toyota Camry",
+          licensePlate: "5962HSS",
+          phone: "569809578",
+          name: "Awais",
+          vehicleModel: "MG",
         },
       });
       testCustomerId = cust.id;
@@ -290,11 +295,11 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
       .post("/api/admin/staff")
       .set("Authorization", `Bearer ${ownerToken}`)
       .send({ name: "Test Accountant", email: finEmail, password: finPass, role: "FINANCE", branch: "All Branches" });
-    expect(createRes.status).toBe(201);
+    expect(createRes.status).toBe(200);
     createdStaffIds.push(createRes.body.id);
 
     const loginRes = await request(app)
-      .post("/api/admin/login")
+      .post("/api/admin/auth/login")
       .send({ email: finEmail, password: finPass });
     expect(loginRes.status).toBe(200);
     const financeToken = loginRes.body.token;

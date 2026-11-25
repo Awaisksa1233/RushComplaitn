@@ -3,7 +3,10 @@ import request from "supertest";
 import { app, prisma } from "../src/server";
 import { hashOtp } from "../src/utils/normalize";
 
-describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, () => {
+describe.skipIf(
+  process.env.ALLOW_LIVE_DB_TESTS !== "true" &&
+  !/^(localhost|127\.0\.0\.1)$/i.test((() => { try { return new URL(process.env.DATABASE_URL || "").hostname; } catch { return ""; } })())
+)("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, () => {
   let customerToken: string;
   let testCustomerId: string;
 
@@ -241,7 +244,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
 
   // Test 5: Damage Step 2 Server-Side Lock (Must be rejected with 403 unless quotationApproved === true)
   it("5. should reject Damage Step 2 with 403 if quotation is not approved", async () => {
-    // Create a new Damage ticket with quotationApproved = false
+    // Create a new Damage ticket with quotationApproved = false (including required mediaUrls)
     const newDmg = await request(app)
       .post("/api/complaints")
       .set("Authorization", `Bearer ${customerToken}`)
@@ -249,9 +252,10 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
         type: "DAMAGE",
         posRecordId: "POS-94102",
         posRecordLabel: "Fresh Wash",
-        site: "Al Kharj Main",
+        site: "RUSH Al Kharj",
         summary: "Side scratch on bumper",
         vehicleZones: ["Front Bumper"],
+        mediaUrls: ["/api/files/media/1-00000000000000000000000000000000.jpg"],
       });
 
     expect(newDmg.status).toBe(201);
@@ -389,6 +393,7 @@ describe("RUSH Customer Care Portal API Integration Tests", { timeout: 30000 }, 
 
     const trackRes = await request(app)
       .post("/api/complaints/track")
+      .set("Authorization", `Bearer ${customerToken}`)
       .send({ query: "C-1041", phone: "0569809578" });
     expect(trackRes.status).toBe(200);
     expect(trackRes.body.trackToken).toBeDefined();

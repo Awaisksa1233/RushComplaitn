@@ -20,6 +20,17 @@ export const FILE_URL_SECRET = derive("rush:file-url:v1");
 
 export const isProd = process.env.NODE_ENV === "production";
 export const exposeDevOtp = process.env.NODE_ENV === "development" && process.env.EXPOSE_DEV_OTP === "true";
+export const E2E_DEMO_MODE = !isProd && process.env.E2E_DEMO_MODE === "true";
+export const E2E_TEST_PHONE = (process.env.E2E_TEST_PHONE || "569809578").replace(/\D/g, "");
+
+/** Returns true only when E2E_DEMO_MODE is enabled and the phone matches the authorized test number (Rule 14). */
+export function isE2eTestPhone(phone: string): boolean {
+  if (!E2E_DEMO_MODE) return false;
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("966") && digits.length === 12) digits = digits.slice(3);
+  if (digits.startsWith("05") && digits.length === 10) digits = digits.slice(1);
+  return digits === E2E_TEST_PHONE;
+}
 
 export const ALLOWED_SITES = (process.env.ALLOWED_SITES || "RUSH Al Kharj").split(",").map((s) => s.trim());
 export const CORS_ORIGINS = (process.env.CORS_ORIGINS || "").split(",").map((s) => s.trim()).filter(Boolean);

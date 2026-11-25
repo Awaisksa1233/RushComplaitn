@@ -82,17 +82,18 @@ model StaffUser {
 }
 
 model AuditLog {
-  id          String    @id @default(cuid())
-  complaintId String
-  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  id          String     @id @default(cuid())
+  complaintId String?
+  complaint   Complaint? @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   staffId     String?
   staff       StaffUser? @relation(fields: [staffId], references: [id])
   actorName   String
-  action      String    // e.g. "HANDOFF_CSM", "APPROVE_QUOTE", "MARK_PAID", "SLA_NUDGE"
+  action      String     // e.g. "HANDOFF_CSM", "APPROVE_QUOTE", "MARK_PAID", "SLA_NUDGE", "CONFIG_UPDATE"
   details     String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime   @default(now())
 
   @@index([complaintId, createdAt])
+  @@index([createdAt])
 }
 
 model Customer {
@@ -147,6 +148,7 @@ model OtpSession {
   createdAt    DateTime @default(now())
 
   @@index([phone, licensePlate])
+  @@index([createdAt])
 }
 
 model Complaint {
@@ -177,7 +179,7 @@ model Complaint {
 
   // Resolution outputs
   rewashCode       String?          @unique
-  rrn              String?
+  rrn              String?          @unique
 
   // Damage 2-step settlement (uploading quotation does NOT approve payout)
   quotedAmount      Decimal?        @db.Decimal(10, 2)
@@ -224,6 +226,10 @@ model Complaint {
 
   @@index([customerId])
   @@index([posRecordId])
+  @@index([customerId, posRecordId])
+  @@index([status, createdAt])
+  @@index([site, status, createdAt])
+  @@index([payoutStatus, updatedAt])
 }
 
 model Message {
@@ -233,7 +239,7 @@ model Message {
   sender      String
   channel     MessageChannel
   body        String
-  externalId  String?        // WhatsApp Cloud API message ID
+  externalId  String?        @unique // WhatsApp Cloud API / Chatwoot message ID
   createdAt   DateTime       @default(now())
 
   @@index([complaintId, createdAt])

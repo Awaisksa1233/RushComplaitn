@@ -323,6 +323,7 @@
           <option value="Unsatisfied">Unsatisfied</option>
           <option value="Billing / Refund">Billing / Refund</option>
           <option value="Damage">Damage</option>
+          <option value="Other">Other</option>
         </select>
       </div>
 
@@ -777,7 +778,7 @@
     }
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        ["modal-add-staff", "modal-mark-paid", "modal-refuse", "modal-staff-toggle"].forEach(id => {
+        ["modal-add-staff", "modal-mark-paid", "modal-refuse", "modal-staff-toggle", "modal-staff-sign", "modal-print-form"].forEach(id => {
           const el = document.getElementById(id);
           if (el && !el.classList.contains("hidden")) closeModal(id);
         });
@@ -1044,14 +1045,15 @@
       charts.types = new Chart(document.getElementById("chart-types"), {
         type: "doughnut",
         data: {
-          labels: ["Unsatisfied", "Billing / Refund", "Damage"],
+          labels: ["Unsatisfied", "Billing / Refund", "Damage", "Other"],
           datasets: [{
             data: [
               vis.filter(c => c.type === "Unsatisfied").length,
               vis.filter(c => c.type === "Billing / Refund").length,
-              vis.filter(c => c.type === "Damage").length
+              vis.filter(c => c.type === "Damage").length,
+              vis.filter(c => c.type === "Other").length
             ],
-            backgroundColor: ["#737373", "#000000", "#C91E2F"]
+            backgroundColor: ["#737373", "#000000", "#C91E2F", "#D4D4D4"]
           }]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -1220,9 +1222,9 @@
                   ? "bg-[#FDF2F3] border-[#C91E2F] text-[#C91E2F]"
                   : "bg-neutral-50 border-neutral-200 text-neutral-600";
               return `
-                <div class="rounded-lg border px-2.5 py-2 text-xs font-bold flex items-center gap-1.5 ${cls}">
+                <div class="rounded-lg border px-2.5 py-2 text-[11px] leading-tight font-bold flex items-center gap-1.5 min-w-0 ${cls}">
                   <span class="w-2 h-2 rounded-full shrink-0 ${st.done ? "bg-emerald-600" : isCurrent ? "bg-[#C91E2F]" : "bg-neutral-400"}"></span>
-                  <span class="truncate">${esc(st.label)}</span>
+                  <span class="break-words">${esc(st.label)}</span>
                 </div>
               `;
             }).join("")}
@@ -1332,10 +1334,20 @@
                   <div class="text-neutral-700"><span dir="ltr" class="font-mono">${esc(c.customer.phone)}</span> · Callback: <strong>${esc(c.customer.callbackWindow)}</strong></div>
                   <div class="pt-1 border-t border-neutral-200 font-mono text-[#C91E2F] font-bold" dir="ltr">${esc(c.receipt)}</div>
                 </div>
-                <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-1.5">
+                <div class="bg-[#FAFAFA] border border-neutral-200 rounded-xl p-3.5 text-xs space-y-2">
                   <div class="font-bold uppercase tracking-wider text-neutral-600">Vehicle &amp; Site Inspection</div>
                   <div class="text-sm font-bold text-black"><span dir="auto">${esc(c.vehicle.model)}</span> (<span dir="ltr" class="font-mono notranslate" translate="no">${esc(c.vehicle.plate)}</span>)</div>
                   <div class="text-neutral-700"><strong>Evidence Files:</strong> ${c.evidence.filesCount} · <strong>Work Order:</strong> <span dir="ltr" class="font-mono notranslate" translate="no">${esc(c.evidence.workOrder)}</span></div>
+                  ${Array.isArray(c.mediaUrls) && c.mediaUrls.length ? `
+                    <div class="flex flex-wrap gap-2 pt-1">
+                      ${c.mediaUrls.map((u, idx) => {
+                        const isPdf = /\.pdf(\?|$)/i.test(u);
+                        return isPdf
+                          ? `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-neutral-300 hover:border-[#C91E2F] text-[#C91E2F] font-bold">Attachment ${idx + 1} (PDF) ↗</a>`
+                          : `<a href="${esc(u)}" target="_blank" rel="noopener noreferrer" class="block group"><img src="${esc(u)}" alt="Evidence ${idx + 1}" class="w-20 h-20 object-cover rounded-lg border border-neutral-300 group-hover:border-[#C91E2F]" /></a>`;
+                      }).join("")}
+                    </div>
+                  ` : ""}
                   <div class="text-neutral-800 bg-white border border-neutral-200 rounded-lg p-2.5" dir="auto">${esc(c.evidence.note || "No inspection or resolution note recorded yet.")}</div>
                 </div>
                 <div class="bg-white border border-neutral-200 rounded-xl p-3.5 text-xs">
@@ -1588,10 +1600,11 @@
                   <span class="font-bold text-black" dir="auto">${esc(m.sender)} <span class="ml-1 px-1.5 py-0.5 rounded text-xs ${m.channel === "WhatsApp" ? "bg-emerald-700 text-white" : "bg-neutral-200 text-neutral-800"}">${esc(m.channel)}</span></span>
                   <span class="text-neutral-600">${esc(m.time)}</span>
                 </div>
-                <p class="text-xs sm:text-sm text-neutral-800" dir="auto">${esc(m.text)}</p>
+                <p class="text-xs sm:text-sm text-neutral-800 break-all" dir="auto">${esc(m.text)}</p>
               </div>
             `).join("")}
           </div>
+          ${uiState.role !== "Accountant" ? `
           <form onsubmit="sendStaffMsg(event, '${esc(c.id)}')" class="flex gap-2 pt-2 border-t border-neutral-100">
             <label for="staff-msg-channel" class="sr-only">Message channel</label>
             <select id="staff-msg-channel" class="rounded-lg border border-neutral-300 px-2.5 py-2 text-xs font-bold bg-white">
@@ -1602,6 +1615,7 @@
             <input id="staff-msg-input" type="text" required dir="auto" placeholder="Reply to customer or log internal note..." class="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm focus:ring-2 focus:ring-[#C91E2F] focus:outline-none" />
             <button type="submit" class="px-4 py-2 rounded-lg bg-black hover:bg-[#C91E2F] text-white text-xs font-bold transition motion-reduce:transition-none">Send</button>
           </form>
+          ` : ""}
         </div>
       `;
     }
@@ -1749,6 +1763,7 @@
         }
         adminToken = data.token;
         sessionStorage.setItem("rush_staff_token", adminToken);
+        sessionStorage.setItem("rush_staff_user", JSON.stringify(data.user));
         uiState.currentUser = data.user;
         uiState.role = enumToRole(data.user.role);
         uiState.opsBranch = data.user.branch || "RUSH Al Kharj";
@@ -1757,7 +1772,10 @@
         updateUserDisplay(data.user.name, uiState.role);
         document.getElementById("login-modal").classList.add("hidden");
         document.getElementById("login-password").value = "";
+        uiState.loading = true;
         syncRolePermissionsUI();
+        renderRbacBanner();
+        renderAllActive();
         await loadLiveAdminData();
         renderRbacBanner();
         renderAllActive();
@@ -1821,6 +1839,7 @@
 
     function handleLogout() {
       sessionStorage.removeItem("rush_staff_token");
+      sessionStorage.removeItem("rush_staff_user");
       adminToken = null;
       uiState.currentUser = null;
       uiState.role = "Guest";
@@ -1847,7 +1866,7 @@
           fetch("/api/admin/auth/me", { headers }),
           fetch("/api/admin/me/signature", { headers }),
           fetch("/api/admin/config", { headers }),
-          isOwnerRole() || isFinanceRole() ? fetch("/api/admin/staff", { headers }) : Promise.resolve({ ok: false }),
+          isOwnerRole() || uiState.role === "Admin" ? fetch("/api/admin/staff", { headers }) : Promise.resolve({ ok: false }),
           fetch("/api/admin/claims", { headers })
         ]);
 
@@ -1859,6 +1878,7 @@
         if (meRes.ok) {
           const meData = await meRes.json();
           if (meData.staff) {
+            sessionStorage.setItem("rush_staff_user", JSON.stringify(meData.staff));
             uiState.currentUser = meData.staff;
             uiState.role = enumToRole(meData.staff.role);
             uiState.opsBranch = meData.staff.branch || "RUSH Al Kharj";
@@ -1930,6 +1950,7 @@
               posRecordId: c.posRecordId || "",
               zones: Array.isArray(c.vehicleZones) ? c.vehicleZones : [],
               summary: c.summary || "",
+              mediaUrls: Array.isArray(c.mediaUrls) ? c.mediaUrls : [],
               evidence: {
                 filesCount: (c.mediaUrls?.length || 0) + (c.quotationUrl ? 1 : 0) + (c.invoiceUrl ? 1 : 0),
                 workOrder: c.rewashCode || "None",
@@ -2137,7 +2158,14 @@
       }
     }
 
-    // ---- Claim Mutations (strict res.ok) ----
+    const inFlightActions = new Set();
+    async function withActionLock(key, fn) {
+      if (inFlightActions.has(key)) return;
+      inFlightActions.add(key);
+      try { return await fn(); } finally { inFlightActions.delete(key); }
+    }
+
+    // ---- Claim Mutations (strict res.ok + double-click lock) ----
     async function toggleZone(id, z) {
       const c = claims.find(x => x.id === id);
       if (!c) return;
@@ -2164,38 +2192,40 @@
     }
 
     async function handoffToCsm(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const hasZones = Array.isArray(c.zones) && c.zones.length > 0;
-      const hasNote = Boolean((c.resolutionNote && c.resolutionNote.trim()) || (c.evidence?.note && c.evidence.note.trim()));
-      if (!hasZones || !hasNote) {
-        showToast("Tag at least 1 damaged zone and save an inspection note before handing off to CSM");
-        return;
-      }
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/handoff-csm`, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json().catch(() => null);
-        c.assignedRole = "CSM";
-        c.status = "Investigating";
-        if (data?.complaint?.assignedStaffName) c.assignedStaffName = data.complaint.assignedStaffName;
-        c.messages.push({
-          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
-          channel: "Internal",
-          time: "Just now",
-          text: "Site inspection completed. Handed off to CSM for customer settlement."
-        });
-        renderRbacBanner();
-        renderAllActive();
-        showToast(`${id} handed off to CSM`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+      return withActionLock(`handoff:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        const hasZones = Array.isArray(c.zones) && c.zones.length > 0;
+        const hasNote = Boolean((c.resolutionNote && c.resolutionNote.trim()) || (c.evidence?.note && c.evidence.note.trim()));
+        if (!hasZones || !hasNote) {
+          showToast("Tag at least 1 damaged zone and save an inspection note before handing off to CSM");
+          return;
+        }
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/handoff-csm`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (!res.ok) return;
+          const data = await res.json().catch(() => null);
+          c.assignedRole = "CSM";
+          c.status = "Investigating";
+          if (data?.complaint?.assignedStaffName) c.assignedStaffName = data.complaint.assignedStaffName;
+          c.messages.push({
+            sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+            channel: "Internal",
+            time: "Just now",
+            text: "Site inspection completed. Handed off to CSM for customer settlement."
+          });
+          renderRbacBanner();
+          renderAllActive();
+          showToast(`${id} handed off to CSM`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     async function reassignRole(id, r) {
@@ -2226,58 +2256,62 @@
     }
 
     async function saveResolutionNote(id) {
-      const c = claims.find(x => x.id === id);
-      const inp = document.getElementById(`inp-resolution-note-${id}`);
-      if (!c || !inp) return;
-      const val = inp.value.trim();
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ resolutionNote: val })
-        });
-        if (!res.ok) return;
-        c.resolutionNote = val;
-        c.evidence.note = val;
-        renderAllActive();
-        showToast(`Saved note on ${id}`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+      return withActionLock(`note:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        const inp = document.getElementById(`inp-resolution-note-${id}`);
+        if (!c || !inp) return;
+        const val = inp.value.trim();
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ resolutionNote: val })
+          });
+          if (!res.ok) return;
+          c.resolutionNote = val;
+          c.evidence.note = val;
+          renderAllActive();
+          showToast(`Saved note on ${id}`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     async function requestDamageQuote(id, customNote) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const noteInput = document.getElementById(`inp-resolution-note-${id}`);
-      const note = (customNote || noteInput?.value.trim() || c.resolutionNote || "Your damage claim has been approved for repair review. Please upload an official repair quotation and sign the liability waiver in your tracker.").trim();
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/request-quote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ resolutionNote: note })
-        });
-        if (!res.ok) return;
-        c.resolutionStatus = "Approved";
-        c.status = "Investigating";
-        c.payoutStatus = "Awaiting Quote Approval";
-        c.resolutionNote = note;
-        c.evidence.note = note;
-        c.messages.push({
-          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
-          channel: "WhatsApp",
-          time: "Just now",
-          text: `Damage claim approved for repair quotation: ${note}`
-        });
-        renderAllActive();
-        showToast(`Quotation requested from customer for ${id}`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+      return withActionLock(`reqQuote:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        const noteInput = document.getElementById(`inp-resolution-note-${id}`);
+        const note = (customNote || noteInput?.value.trim() || c.resolutionNote || "Your damage claim has been approved for repair review. Please upload an official repair quotation and sign the liability waiver in your tracker.").trim();
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/request-quote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ resolutionNote: note })
+          });
+          if (!res.ok) return;
+          c.resolutionStatus = "Approved";
+          c.status = "Investigating";
+          c.payoutStatus = "Awaiting Quote Approval";
+          c.resolutionNote = note;
+          c.evidence.note = note;
+          c.messages.push({
+            sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+            channel: "WhatsApp",
+            time: "Just now",
+            text: `Damage claim approved for repair quotation: ${note}`
+          });
+          renderAllActive();
+          showToast(`Quotation requested from customer for ${id}`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     function openRefuseModal(id) {
@@ -2323,68 +2357,72 @@
     }
 
     async function issueRewash(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/unsatisfied/approve`, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        c.resolutionStatus = "Approved";
-        c.payoutStatus = "Rewash Issued";
-        c.status = "Resolved";
-        c.rewashCode = data.rewashCode;
-        c.messages.push({
-          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
-          channel: "WhatsApp",
-          time: "Just now",
-          text: `Approved complimentary Rewash QR pass: ${c.rewashCode}`
-        });
-        renderAllActive();
-        showToast(`Issued Rewash QR ${c.rewashCode}`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+      return withActionLock(`rewash:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/unsatisfied/approve`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          if (!res.ok) return;
+          const data = await res.json();
+          c.resolutionStatus = "Approved";
+          c.payoutStatus = "Rewash Issued";
+          c.status = "Resolved";
+          c.rewashCode = data.rewashCode;
+          c.messages.push({
+            sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+            channel: "WhatsApp",
+            time: "Just now",
+            text: `Approved complimentary Rewash QR pass: ${c.rewashCode}`
+          });
+          renderAllActive();
+          showToast(`Issued Rewash QR ${c.rewashCode}`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     async function saveBillingRrn(id) {
-      const c = claims.find(x => x.id === id);
-      const rrn = document.getElementById("inp-rrn")?.value.trim();
-      const amtVal = parseFloat(document.getElementById("inp-billing-amount")?.value || "");
-      const amount = !isNaN(amtVal) && amtVal > 0 ? amtVal : Number(c?.approvedSar || c?.requestedSar || c?.quotedSar || 0);
-      if (!c || !rrn) return showToast("Enter RRN first");
-      if (!(amount > 0)) return showToast("Enter a valid positive refund amount (SAR)");
+      return withActionLock(`billing:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        const rrn = document.getElementById("inp-rrn")?.value.trim();
+        const amtVal = parseFloat(document.getElementById("inp-billing-amount")?.value || "");
+        const amount = !isNaN(amtVal) && amtVal > 0 ? amtVal : Number(c?.approvedSar || c?.requestedSar || c?.quotedSar || 0);
+        if (!c || !rrn) return showToast("Enter RRN first");
+        if (!(amount > 0)) return showToast("Enter a valid positive refund amount (SAR)");
 
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/billing/approve`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify({ rrn, amount })
-        });
-        if (!res.ok) return;
-        c.rrn = rrn;
-        c.approvedSar = amount;
-        c.resolutionStatus = "Approved";
-        c.payoutStatus = "Paid (RRN)";
-        c.transferRef = rrn;
-        c.status = "Resolved";
-        c.messages.push({
-          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
-          channel: "WhatsApp",
-          time: "Just now",
-          text: `Refund of SAR ${amount} approved & processed. Your RRN is ${rrn}.`
-        });
-        renderAllActive();
-        showToast(`Saved RRN ${rrn} & resolved ${id}`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/billing/approve`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify({ rrn, amount })
+          });
+          if (!res.ok) return;
+          c.rrn = rrn;
+          c.approvedSar = amount;
+          c.resolutionStatus = "Approved";
+          c.payoutStatus = "Paid (RRN)";
+          c.transferRef = rrn;
+          c.status = "Resolved";
+          c.messages.push({
+            sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+            channel: "WhatsApp",
+            time: "Just now",
+            text: `Refund of SAR ${amount} approved & processed. Your RRN is ${rrn}.`
+          });
+          renderAllActive();
+          showToast(`Saved RRN ${rrn} & resolved ${id}`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     function checkQuoteCapLive(id, rawVal) {
@@ -2403,39 +2441,41 @@
     }
 
     async function approveQuotation(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const quotedInp = document.getElementById(`inp-quoted-sar-${id}`);
-      const quotedSar = quotedInp && quotedInp.value ? parseFloat(quotedInp.value) : c.quotedSar;
-      if (quotedSar === undefined || isNaN(quotedSar) || quotedSar <= 0) {
-        showToast("Enter a valid positive quotation amount (SAR)");
-        return;
-      }
+      return withActionLock(`approveQuote:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        const quotedInp = document.getElementById(`inp-quoted-sar-${id}`);
+        const quotedSar = quotedInp && quotedInp.value ? parseFloat(quotedInp.value) : c.quotedSar;
+        if (quotedSar === undefined || isNaN(quotedSar) || quotedSar <= 0) {
+          showToast("Enter a valid positive quotation amount (SAR)");
+          return;
+        }
 
-      const token = await ensureStaffLogin();
-      if (!token) return;
-      try {
-        const payload = isOwnerRole() ? { quotedAmount: quotedSar } : {};
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/approve-quote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) return;
-        c.quotedSar = quotedSar;
-        c.damageFlow.quotationApproved = true;
-        c.payoutStatus = "Awaiting Invoice & IBAN";
-        c.messages.push({
-          sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
-          channel: "WhatsApp",
-          time: "Just now",
-          text: `Quotation (SAR ${c.quotedSar || 0}) approved. Step 2 (Tax Invoice & IBAN) is now unlocked in your tracker.`
-        });
-        renderAllActive();
-        showToast(`Quotation approved on ${id} — Invoice step unlocked`);
-      } catch {
-        showToast("Could not reach the server");
-      }
+        const token = await ensureStaffLogin();
+        if (!token) return;
+        try {
+          const payload = isOwnerRole() ? { quotedAmount: quotedSar } : {};
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}/damage/approve-quote`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) return;
+          c.quotedSar = quotedSar;
+          c.damageFlow.quotationApproved = true;
+          c.payoutStatus = "Awaiting Invoice & IBAN";
+          c.messages.push({
+            sender: uiState.currentUser?.name || getStaffNameByRole(uiState.role, uiState.opsBranch),
+            channel: "WhatsApp",
+            time: "Just now",
+            text: `Quotation (SAR ${c.quotedSar || 0}) approved. Step 2 (Tax Invoice & IBAN) is now unlocked in your tracker.`
+          });
+          renderAllActive();
+          showToast(`Quotation approved on ${id} — Invoice step unlocked`);
+        } catch {
+          showToast("Could not reach the server");
+        }
+      });
     }
 
     function openMarkPaidModal(id, prefillRef) {
@@ -2660,108 +2700,114 @@
     }
 
     async function submitStaffSignature(useSaved) {
-      const ticketId = document.getElementById("staff-sign-ticket-id").value;
-      const slot = document.getElementById("staff-sign-slot").value;
-      const saveAsDefault = document.getElementById("staff-sig-save-default").checked;
-      if (!useSaved && !staffSigHasStrokes) {
-        return showToast("Please draw your signature or use your saved signature");
-      }
-      const payload = useSaved
-        ? { slot, useSaved: true }
-        : { slot, signatureDataUrl: document.getElementById("staff-sig-canvas").toDataURL("image/png"), saveAsDefault };
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(ticketId)}/damage/sign`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) return showToast(data.error || "Could not save signature");
-        if (data.savedSignatureUrl) uiState.savedSignatureUrl = data.savedSignatureUrl;
-        const c = claims.find(x => x.id === ticketId);
-        if (c) {
-          if (slot === "tech") { c.damageFlow.techSignatureUrl = data.signatureUrl; c.damageFlow.techSignedBy = data.signedBy; }
-          if (slot === "ops") { c.damageFlow.opsSignatureUrl = data.signatureUrl; c.damageFlow.opsSignedBy = data.signedBy; }
-          if (slot === "finance") { c.damageFlow.financeSignatureUrl = data.signatureUrl; c.damageFlow.financeSignedBy = data.signedBy; }
+      return withActionLock("staffSign", async () => {
+        const ticketId = document.getElementById("staff-sign-ticket-id").value;
+        const slot = document.getElementById("staff-sign-slot").value;
+        const saveAsDefault = document.getElementById("staff-sig-save-default").checked;
+        if (!useSaved && !staffSigHasStrokes) {
+          return showToast("Please draw your signature or use your saved signature");
         }
-        closeModal("modal-staff-sign");
-        renderDetail();
-        showToast(useSaved ? "Signed using saved R2 signature" : "Signature saved to R2 & applied to ticket");
-      } catch {
-        showToast("Could not reach server to save signature");
-      }
+        const payload = useSaved
+          ? { slot, useSaved: true }
+          : { slot, signatureDataUrl: document.getElementById("staff-sig-canvas").toDataURL("image/png"), saveAsDefault };
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(ticketId)}/damage/sign`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) return showToast(data.error || "Could not save signature");
+          if (data.savedSignatureUrl) uiState.savedSignatureUrl = data.savedSignatureUrl;
+          const c = claims.find(x => x.id === ticketId);
+          if (c) {
+            if (slot === "tech") { c.damageFlow.techSignatureUrl = data.signatureUrl; c.damageFlow.techSignedBy = data.signedBy; }
+            if (slot === "ops") { c.damageFlow.opsSignatureUrl = data.signatureUrl; c.damageFlow.opsSignedBy = data.signedBy; }
+            if (slot === "finance") { c.damageFlow.financeSignatureUrl = data.signatureUrl; c.damageFlow.financeSignedBy = data.signedBy; }
+          }
+          closeModal("modal-staff-sign");
+          renderDetail();
+          showToast(useSaved ? "Signed using saved R2 signature" : "Signature saved to R2 & applied to ticket");
+        } catch {
+          showToast("Could not reach server to save signature");
+        }
+      });
     }
 
     async function saveInspectionFields(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      const initialAssessment = document.getElementById(`inp-initial-assessment-${id}`)?.value || "";
-      const vehicleColor = (document.getElementById(`inp-vehicle-color-${id}`)?.value || "").trim();
-      if (!adminToken) return showToast("Please sign in first");
-      try {
-        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
-          body: JSON.stringify({
-            initialAssessment: initialAssessment || null,
-            vehicleColor: vehicleColor || null,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) return showToast(data.error || "Could not save inspection fields");
-        c.damageFlow.initialAssessment = initialAssessment;
-        c.damageFlow.vehicleColor = vehicleColor;
-        showToast("Inspection fields saved");
-      } catch {
-        showToast("Could not reach server");
-      }
+      return withActionLock(`inspect:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        const initialAssessment = document.getElementById(`inp-initial-assessment-${id}`)?.value || "";
+        const vehicleColor = (document.getElementById(`inp-vehicle-color-${id}`)?.value || "").trim();
+        if (!adminToken) return showToast("Please sign in first");
+        try {
+          const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+            body: JSON.stringify({
+              initialAssessment: initialAssessment || null,
+              vehicleColor: vehicleColor || null,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) return showToast(data.error || "Could not save inspection fields");
+          c.damageFlow.initialAssessment = initialAssessment;
+          c.damageFlow.vehicleColor = vehicleColor;
+          showToast("Inspection fields saved");
+        } catch {
+          showToast("Could not reach server");
+        }
+      });
     }
 
     async function saveFinanceInvoiceDetails(id) {
-      const c = claims.find(x => x.id === id);
-      if (!c) return;
-      if (!adminToken) return showToast("Please sign in first");
-      const wafeqJournalNo = (document.getElementById(`inp-fin-wafeq-${id}`)?.value || "").trim();
-      const workshopName = (document.getElementById(`inp-fin-workshop-${id}`)?.value || "").trim();
-      const invoiceNumber = (document.getElementById(`inp-fin-invno-${id}`)?.value || "").trim();
-      const invoiceDate = (document.getElementById(`inp-fin-invdate-${id}`)?.value || "").trim();
-      const invoiceIssuedTo = (document.getElementById(`inp-fin-issuedto-${id}`)?.value || "").trim();
-      const totalRaw = (document.getElementById(`inp-fin-total-${id}`)?.value || "").trim();
-      const vatRaw = (document.getElementById(`inp-fin-vat-${id}`)?.value || "").trim();
-      const invoiceItems = (document.getElementById(`inp-fin-items-${id}`)?.value || "").trim();
+      return withActionLock(`invDetails:${id}`, async () => {
+        const c = claims.find(x => x.id === id);
+        if (!c) return;
+        if (!adminToken) return showToast("Please sign in first");
+        const wafeqJournalNo = (document.getElementById(`inp-fin-wafeq-${id}`)?.value || "").trim();
+        const workshopName = (document.getElementById(`inp-fin-workshop-${id}`)?.value || "").trim();
+        const invoiceNumber = (document.getElementById(`inp-fin-invno-${id}`)?.value || "").trim();
+        const invoiceDate = (document.getElementById(`inp-fin-invdate-${id}`)?.value || "").trim();
+        const invoiceIssuedTo = (document.getElementById(`inp-fin-issuedto-${id}`)?.value || "").trim();
+        const totalRaw = (document.getElementById(`inp-fin-total-${id}`)?.value || "").trim();
+        const vatRaw = (document.getElementById(`inp-fin-vat-${id}`)?.value || "").trim();
+        const invoiceItems = (document.getElementById(`inp-fin-items-${id}`)?.value || "").trim();
 
-      const invoiceTotalSar = totalRaw !== "" ? Number(totalRaw) : null;
-      const invoiceVatSar = vatRaw !== "" ? Number(vatRaw) : (invoiceTotalSar && invoiceTotalSar > 0 ? Number((invoiceTotalSar - invoiceTotalSar / 1.15).toFixed(2)) : null);
+        const invoiceTotalSar = totalRaw !== "" ? Number(totalRaw) : null;
+        const invoiceVatSar = vatRaw !== "" ? Number(vatRaw) : (invoiceTotalSar && invoiceTotalSar > 0 ? Number((invoiceTotalSar - invoiceTotalSar / 1.15).toFixed(2)) : null);
 
-      try {
-        const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/invoice-details`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
-          body: JSON.stringify({
-            wafeqJournalNo: wafeqJournalNo || null,
-            workshopName: workshopName || null,
-            invoiceNumber: invoiceNumber || null,
-            invoiceDate: invoiceDate || null,
-            invoiceIssuedTo: invoiceIssuedTo || null,
-            invoiceTotalSar: Number.isFinite(invoiceTotalSar) ? invoiceTotalSar : null,
-            invoiceVatSar: Number.isFinite(invoiceVatSar) ? invoiceVatSar : null,
-            invoiceItems: invoiceItems || null,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) return showToast(data.error || "Could not save invoice details");
-        c.damageFlow.wafeqJournalNo = wafeqJournalNo;
-        c.damageFlow.workshopName = workshopName;
-        c.damageFlow.invoiceNumber = invoiceNumber;
-        c.damageFlow.invoiceDate = invoiceDate;
-        c.damageFlow.invoiceIssuedTo = invoiceIssuedTo;
-        c.damageFlow.invoiceTotalSar = invoiceTotalSar ?? "";
-        c.damageFlow.invoiceVatSar = invoiceVatSar ?? "";
-        c.damageFlow.invoiceItems = invoiceItems;
-        showToast("Finance invoice & Wafeq details saved");
-      } catch {
-        showToast("Could not reach server");
-      }
+        try {
+          const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/invoice-details`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+            body: JSON.stringify({
+              wafeqJournalNo: wafeqJournalNo || null,
+              workshopName: workshopName || null,
+              invoiceNumber: invoiceNumber || null,
+              invoiceDate: invoiceDate || null,
+              invoiceIssuedTo: invoiceIssuedTo || null,
+              invoiceTotalSar: Number.isFinite(invoiceTotalSar) ? invoiceTotalSar : null,
+              invoiceVatSar: Number.isFinite(invoiceVatSar) ? invoiceVatSar : null,
+              invoiceItems: invoiceItems || null,
+            }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) return showToast(data.error || "Could not save invoice details");
+          c.damageFlow.wafeqJournalNo = wafeqJournalNo;
+          c.damageFlow.workshopName = workshopName;
+          c.damageFlow.invoiceNumber = invoiceNumber;
+          c.damageFlow.invoiceDate = invoiceDate;
+          c.damageFlow.invoiceIssuedTo = invoiceIssuedTo;
+          c.damageFlow.invoiceTotalSar = invoiceTotalSar ?? "";
+          c.damageFlow.invoiceVatSar = invoiceVatSar ?? "";
+          c.damageFlow.invoiceItems = invoiceItems;
+          showToast("Finance invoice & Wafeq details saved");
+        } catch {
+          showToast("Could not reach server");
+        }
+      });
     }
 
     async function printDamageCompensationForm(id) {
@@ -3041,6 +3087,20 @@
     }
 
     window.addEventListener("DOMContentLoaded", async () => {
+      if (adminToken) {
+        try {
+          const cachedUser = JSON.parse(sessionStorage.getItem("rush_staff_user") || "null");
+          if (cachedUser && cachedUser.role) {
+            uiState.currentUser = cachedUser;
+            uiState.role = enumToRole(cachedUser.role);
+            uiState.opsBranch = cachedUser.branch || "RUSH Al Kharj";
+            uiState.branchFilter = uiState.role === "Ops Manager" ? uiState.opsBranch : "all";
+            updateUserDisplay(cachedUser.name || "Staff", uiState.role);
+          }
+        } catch {}
+        uiState.loading = true;
+      }
+
       syncRolePermissionsUI();
       renderRbacBanner();
       renderDashboard();
