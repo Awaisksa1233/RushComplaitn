@@ -2694,7 +2694,18 @@
       const receiptNo = rawTicket?.posRecordLabel || c.receipt || c.evidence?.workOrder || "";
       const branchName = rawTicket?.site || c.branch;
       const summaryText = rawTicket?.summary || c.summary;
-      const techNote = rawTicket?.resolutionNote || c.resolutionNote || c.evidence?.note || "";
+      const rawResNote = String(rawTicket?.resolutionNote || c.resolutionNote || c.evidence?.note || "").trim();
+      const isPayoutAutoNote = /^Bank transfer executed\./i.test(rawResNote);
+      const quoteLog = (rawTicket?.auditLogs || []).find(l => l.action === "REQUEST_DAMAGE_QUOTE" && /Note:\s*/.test(l.details || ""));
+      const quoteLogNote = quoteLog ? quoteLog.details.split(/Note:\s*/).slice(1).join("Note: ").trim() : "";
+      const internalMsg = (rawTicket?.messages || []).find(m => m.channel === "INTERNAL" && m.body && !/^Damage claim handed off/i.test(m.body))
+        || (c.messages || []).find(m => m.channel === "Internal" && m.text && !/^Damage claim handed off/i.test(m.text));
+      const internalNote = internalMsg ? String(internalMsg.body || internalMsg.text || "").trim() : "";
+      const evidenceCount = (rawTicket?.mediaUrls?.length || c.evidence?.filesCount || 0);
+      let techNote = (!isPayoutAutoNote && rawResNote) ? rawResNote : (quoteLogNote || internalNote || "");
+      if (evidenceCount > 0) {
+        techNote = techNote ? `${techNote} (${evidenceCount} evidence file${evidenceCount === 1 ? "" : "s"} attached)` : `${evidenceCount} evidence file${evidenceCount === 1 ? "" : "s"} attached`;
+      }
       const quotedVal = Number(rawTicket?.quotedAmount || c.quotedSar || 0);
       const transferRef = rawTicket?.transferRef || c.transferRef || "";
 
