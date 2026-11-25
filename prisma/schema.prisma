@@ -196,6 +196,18 @@ model Complaint {
   financeSignatureUrl String?
   financeSignedBy     String?
 
+  // Compensation form inspection & finance fields
+  initialAssessment   String?
+  vehicleColor        String?
+  wafeqJournalNo      String?
+  workshopName        String?
+  invoiceNumber       String?
+  invoiceDate         String?
+  invoiceIssuedTo     String?
+  invoiceTotalSar     Decimal?        @db.Decimal(10, 2)
+  invoiceVatSar       Decimal?        @db.Decimal(10, 2)
+  invoiceItems        String?
+
   // Payout & SLA tracking
   payoutStatus        PayoutStatus  @default(PENDING_REVIEW)
   transferRef         String?

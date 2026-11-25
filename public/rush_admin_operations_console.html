@@ -1462,6 +1462,30 @@
                     }
                   </div>
 
+                  <!-- Technical Inspection: Initial Assessment & Vehicle Color -->
+                  <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2 text-xs">
+                    <div class="font-bold text-black">Technical Inspection Fields (Compensation Form)</div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end">
+                      <div class="sm:col-span-2">
+                        <label for="inp-initial-assessment-${esc(c.id)}" class="block font-bold text-neutral-700 mb-1">Initial Assessment (التقدير المبدئي)</label>
+                        <select id="inp-initial-assessment-${esc(c.id)}" ${isClosed ? "disabled" : ""} class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 bg-white text-xs font-semibold">
+                          <option value="">-- Select Assessment --</option>
+                          <option value="من الماكينة – يستحق / Eligible" ${c.damageFlow.initialAssessment === "من الماكينة – يستحق / Eligible" ? "selected" : ""}>من الماكينة – يستحق / Eligible</option>
+                          <option value="من الماكينة جزئيًا / Partly eligible" ${c.damageFlow.initialAssessment === "من الماكينة جزئيًا / Partly eligible" ? "selected" : ""}>من الماكينة جزئيًا / Partly eligible</option>
+                          <option value="ضرر سابق – مرفوض / Pre-existing" ${c.damageFlow.initialAssessment === "ضرر سابق – مرفوض / Pre-existing" ? "selected" : ""}>ضرر سابق – مرفوض / Pre-existing</option>
+                          <option value="ليس من الماكينة – مرفوض / Not machine" ${c.damageFlow.initialAssessment === "ليس من الماكينة – مرفوض / Not machine" ? "selected" : ""}>ليس من الماكينة – مرفوض / Not machine</option>
+                        </select>
+                      </div>
+                      <div class="flex gap-2 items-end">
+                        <div class="flex-1">
+                          <label for="inp-vehicle-color-${esc(c.id)}" class="block font-bold text-neutral-700 mb-1">Color (اللون)</label>
+                          <input id="inp-vehicle-color-${esc(c.id)}" type="text" dir="auto" value="${esc(c.damageFlow.vehicleColor || "")}" ${isClosed ? "disabled" : ""} placeholder="e.g. White / أبيض" class="w-full rounded-lg border border-neutral-300 px-2.5 py-1.5 text-xs" />
+                        </div>
+                        ${!isClosed ? `<button type="button" onclick="saveInspectionFields('${esc(c.id)}')" class="px-3 py-1.5 rounded-lg bg-black hover:bg-neutral-800 text-white font-bold shrink-0">Save</button>` : ""}
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- Step 2 Finance Payout Box -->
                   <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2.5 text-xs">
                     <div class="flex items-center justify-between">
@@ -1472,10 +1496,51 @@
                       <span>Invoice: <span class="font-mono text-[#C91E2F]">${invUrl ? `<a href="${invUrl}" target="_blank" rel="noopener noreferrer" class="font-bold underline text-[#C91E2F] hover:text-black">View Invoice ↗</a>` : `<span class="text-neutral-600">Pending customer upload</span>`}</span></span>
                       <span>· Bank: <strong>${esc(c.damageFlow.bankName || "—")}</strong></span>
                       <span>· IBAN: <span id="detail-iban-${esc(c.id)}" class="font-mono notranslate" translate="no" dir="ltr">${esc(c.damageFlow.iban || "—")}</span></span>
-                      ${c.damageFlow.iban && c.payoutStatus === "Pending Bank Transfer" ? `
+                      ${c.damageFlow.iban && (c.payoutStatus === "Pending Bank Transfer" || c.payoutStatus === "Paid") ? `
                         <button type="button" onclick="revealIban('${esc(c.id)}', 'detail-iban-${esc(c.id)}', this)" class="underline text-[#C91E2F] font-bold">Reveal (logged)</button>
                       ` : ""}
                     </div>
+                    ${isFinanceRole() ? `
+                      <div class="border-t border-neutral-200 pt-2.5 space-y-2">
+                        <div class="font-bold text-neutral-800">Finance: Repair Invoice &amp; Wafeq Entry (Compensation Form)</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                          <div>
+                            <label for="inp-fin-wafeq-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Wafeq Journal No.</label>
+                            <input id="inp-fin-wafeq-${esc(c.id)}" type="text" dir="ltr" value="${esc(c.damageFlow.wafeqJournalNo || "")}" placeholder="e.g. JRN-2026-014" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          </div>
+                          <div>
+                            <label for="inp-fin-workshop-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Workshop / Dealer</label>
+                            <input id="inp-fin-workshop-${esc(c.id)}" type="text" dir="auto" value="${esc(c.damageFlow.workshopName || "")}" placeholder="اسم الورشة / الوكالة" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          </div>
+                          <div>
+                            <label for="inp-fin-invno-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Invoice No.</label>
+                            <input id="inp-fin-invno-${esc(c.id)}" type="text" dir="ltr" value="${esc(c.damageFlow.invoiceNumber || "")}" placeholder="INV-..." class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          </div>
+                          <div>
+                            <label for="inp-fin-invdate-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Invoice Date</label>
+                            <input id="inp-fin-invdate-${esc(c.id)}" type="date" dir="ltr" value="${esc(c.damageFlow.invoiceDate || "")}" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          </div>
+                          <div>
+                            <label for="inp-fin-issuedto-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Invoice Issued To</label>
+                            <input id="inp-fin-issuedto-${esc(c.id)}" type="text" dir="auto" value="${esc(c.damageFlow.invoiceIssuedTo || "")}" placeholder="شركة رش / العميل" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          </div>
+                          <div class="grid grid-cols-2 gap-1.5">
+                            <div>
+                              <label for="inp-fin-total-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">Total (SAR)</label>
+                              <input id="inp-fin-total-${esc(c.id)}" type="number" step="0.01" min="0" dir="ltr" value="${c.damageFlow.invoiceTotalSar || ""}" placeholder="0.00" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                            </div>
+                            <div>
+                              <label for="inp-fin-vat-${esc(c.id)}" class="block text-[11px] font-bold text-neutral-600 mb-0.5">VAT (SAR)</label>
+                              <input id="inp-fin-vat-${esc(c.id)}" type="number" step="0.01" min="0" dir="ltr" value="${c.damageFlow.invoiceVatSar || ""}" placeholder="Auto 15%" class="w-full rounded border border-neutral-300 px-2 py-1 text-xs" />
+                            </div>
+                          </div>
+                        </div>
+                        <div class="flex gap-2">
+                          <input id="inp-fin-items-${esc(c.id)}" type="text" dir="auto" value="${esc(c.damageFlow.invoiceItems || "")}" placeholder="Items: Parts / Labor (البنود: قطع غيار / شغل يد)" class="flex-1 rounded border border-neutral-300 px-2 py-1 text-xs" />
+                          <button type="button" onclick="saveFinanceInvoiceDetails('${esc(c.id)}')" class="px-3 py-1 rounded bg-black hover:bg-neutral-800 text-white text-xs font-bold shrink-0">Save Invoice</button>
+                        </div>
+                      </div>
+                    ` : ""}
                     ${c.damageFlow.invoiceFile && c.payoutStatus === "Pending Bank Transfer" ? `
                       <div class="flex gap-2 pt-1">
                         <label for="inp-transfer-ref" class="sr-only">Bank Transfer Reference</label>
@@ -1862,6 +1927,7 @@
                 plate: c.customer?.plate || ""
               },
               receipt: c.receipt || "",
+              posRecordId: c.posRecordId || "",
               zones: Array.isArray(c.vehicleZones) ? c.vehicleZones : [],
               summary: c.summary || "",
               evidence: {
@@ -1890,7 +1956,17 @@
                 invoiceFile: c.invoiceUrl || "",
                 bankName: c.bankName || "",
                 accountHolder: c.accountHolder || "",
-                iban: c.iban || ""
+                iban: c.iban || "",
+                initialAssessment: c.initialAssessment || "",
+                vehicleColor: c.vehicleColor || "",
+                wafeqJournalNo: c.wafeqJournalNo || "",
+                workshopName: c.workshopName || "",
+                invoiceNumber: c.invoiceNumber || "",
+                invoiceDate: c.invoiceDate || "",
+                invoiceIssuedTo: c.invoiceIssuedTo || "",
+                invoiceTotalSar: c.invoiceTotalSar || "",
+                invoiceVatSar: c.invoiceVatSar || "",
+                invoiceItems: c.invoiceItems || ""
               },
               csat: c.csatRating || 0,
               messages: (c.messages || []).map(m => ({
@@ -2602,7 +2678,7 @@
         const data = await res.json().catch(() => ({}));
         if (!res.ok) return showToast(data.error || "Could not save signature");
         if (data.savedSignatureUrl) uiState.savedSignatureUrl = data.savedSignatureUrl;
-        const c = claimsData.find(x => x.id === ticketId);
+        const c = claims.find(x => x.id === ticketId);
         if (c) {
           if (slot === "tech") { c.damageFlow.techSignatureUrl = data.signatureUrl; c.damageFlow.techSignedBy = data.signedBy; }
           if (slot === "ops") { c.damageFlow.opsSignatureUrl = data.signatureUrl; c.damageFlow.opsSignedBy = data.signedBy; }
@@ -2613,6 +2689,78 @@
         showToast(useSaved ? "Signed using saved R2 signature" : "Signature saved to R2 & applied to ticket");
       } catch {
         showToast("Could not reach server to save signature");
+      }
+    }
+
+    async function saveInspectionFields(id) {
+      const c = claims.find(x => x.id === id);
+      if (!c) return;
+      const initialAssessment = document.getElementById(`inp-initial-assessment-${id}`)?.value || "";
+      const vehicleColor = (document.getElementById(`inp-vehicle-color-${id}`)?.value || "").trim();
+      if (!adminToken) return showToast("Please sign in first");
+      try {
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify({
+            initialAssessment: initialAssessment || null,
+            vehicleColor: vehicleColor || null,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return showToast(data.error || "Could not save inspection fields");
+        c.damageFlow.initialAssessment = initialAssessment;
+        c.damageFlow.vehicleColor = vehicleColor;
+        showToast("Inspection fields saved");
+      } catch {
+        showToast("Could not reach server");
+      }
+    }
+
+    async function saveFinanceInvoiceDetails(id) {
+      const c = claims.find(x => x.id === id);
+      if (!c) return;
+      if (!adminToken) return showToast("Please sign in first");
+      const wafeqJournalNo = (document.getElementById(`inp-fin-wafeq-${id}`)?.value || "").trim();
+      const workshopName = (document.getElementById(`inp-fin-workshop-${id}`)?.value || "").trim();
+      const invoiceNumber = (document.getElementById(`inp-fin-invno-${id}`)?.value || "").trim();
+      const invoiceDate = (document.getElementById(`inp-fin-invdate-${id}`)?.value || "").trim();
+      const invoiceIssuedTo = (document.getElementById(`inp-fin-issuedto-${id}`)?.value || "").trim();
+      const totalRaw = (document.getElementById(`inp-fin-total-${id}`)?.value || "").trim();
+      const vatRaw = (document.getElementById(`inp-fin-vat-${id}`)?.value || "").trim();
+      const invoiceItems = (document.getElementById(`inp-fin-items-${id}`)?.value || "").trim();
+
+      const invoiceTotalSar = totalRaw !== "" ? Number(totalRaw) : null;
+      const invoiceVatSar = vatRaw !== "" ? Number(vatRaw) : (invoiceTotalSar && invoiceTotalSar > 0 ? Number((invoiceTotalSar - invoiceTotalSar / 1.15).toFixed(2)) : null);
+
+      try {
+        const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/invoice-details`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify({
+            wafeqJournalNo: wafeqJournalNo || null,
+            workshopName: workshopName || null,
+            invoiceNumber: invoiceNumber || null,
+            invoiceDate: invoiceDate || null,
+            invoiceIssuedTo: invoiceIssuedTo || null,
+            invoiceTotalSar: Number.isFinite(invoiceTotalSar) ? invoiceTotalSar : null,
+            invoiceVatSar: Number.isFinite(invoiceVatSar) ? invoiceVatSar : null,
+            invoiceItems: invoiceItems || null,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return showToast(data.error || "Could not save invoice details");
+        c.damageFlow.wafeqJournalNo = wafeqJournalNo;
+        c.damageFlow.workshopName = workshopName;
+        c.damageFlow.invoiceNumber = invoiceNumber;
+        c.damageFlow.invoiceDate = invoiceDate;
+        c.damageFlow.invoiceIssuedTo = invoiceIssuedTo;
+        c.damageFlow.invoiceTotalSar = invoiceTotalSar ?? "";
+        c.damageFlow.invoiceVatSar = invoiceVatSar ?? "";
+        c.damageFlow.invoiceItems = invoiceItems;
+        showToast("Finance invoice & Wafeq details saved");
+      } catch {
+        showToast("Could not reach server");
       }
     }
 
@@ -2641,7 +2789,7 @@
         }
 
         const payoutSt = rawTicket?.payoutStatus || c.payoutStatus;
-        if (isFinanceRole() && (payoutSt === "PENDING_BANK_TRANSFER" || payoutSt === "Pending Bank Transfer") && iban) {
+        if (isFinanceRole() && (payoutSt === "PENDING_BANK_TRANSFER" || payoutSt === "Pending Bank Transfer" || payoutSt === "PAID" || payoutSt === "Paid") && iban) {
           try {
             const res = await fetch(`/api/admin/finance/${encodeURIComponent(id)}/bank-details`, {
               headers: { "Authorization": `Bearer ${adminToken}` }
@@ -2691,9 +2839,21 @@
       const custPhone = rawTicket?.customer?.phone || c.customer.phone;
       const vehModel = rawTicket?.customer?.vehicleModel || c.vehicle.model;
       const vehPlate = rawTicket?.customer?.licensePlate || c.vehicle.plate;
-      const receiptNo = rawTicket?.posRecordLabel || c.receipt || c.evidence?.workOrder || "";
+      const vehColor = rawTicket?.vehicleColor || c.damageFlow?.vehicleColor || "";
+      const receiptNo = rawTicket?.posRecordId || c.posRecordId || String(c.receipt || "").split(" · ")[0] || "";
       const branchName = rawTicket?.site || c.branch;
       const summaryText = rawTicket?.summary || c.summary;
+      const initialAssessment = rawTicket?.initialAssessment || c.damageFlow?.initialAssessment || "";
+      const wafeqJournalNo = rawTicket?.wafeqJournalNo || c.damageFlow?.wafeqJournalNo || "";
+      const workshopName = rawTicket?.workshopName || c.damageFlow?.workshopName || "";
+      const invoiceNumber = rawTicket?.invoiceNumber || c.damageFlow?.invoiceNumber || "";
+      const invoiceDate = rawTicket?.invoiceDate || c.damageFlow?.invoiceDate || "";
+      const invoiceIssuedTo = rawTicket?.invoiceIssuedTo || c.damageFlow?.invoiceIssuedTo || "";
+      const invTotalVal = Number(rawTicket?.invoiceTotalSar ?? c.damageFlow?.invoiceTotalSar ?? 0);
+      const invVatVal = Number(rawTicket?.invoiceVatSar ?? c.damageFlow?.invoiceVatSar ?? (invTotalVal > 0 ? invTotalVal - invTotalVal / 1.15 : 0));
+      const invTotalDisplay = invTotalVal > 0 ? `${invTotalVal.toFixed(2)} SAR` : "";
+      const invVatDisplay = invVatVal > 0 ? `${invVatVal.toFixed(2)} SAR` : "";
+      const invoiceItems = rawTicket?.invoiceItems || c.damageFlow?.invoiceItems || "";
       const rawResNote = String(rawTicket?.resolutionNote || c.resolutionNote || c.evidence?.note || "").trim();
       const isPayoutAutoNote = /^Bank transfer executed\./i.test(rawResNote);
       const quoteLog = (rawTicket?.auditLogs || []).find(l => l.action === "REQUEST_DAMAGE_QUOTE" && /Note:\s*/.test(l.details || ""));
@@ -2763,7 +2923,7 @@
         <td colspan="2" class="lbl">تاريخ البلاغ<br/>Claim Date</td>
         <td colspan="2" class="val" dir="ltr">${esc(claimDate)}</td>
         <td colspan="2" class="lbl">رقم القيد في وافق<br/>Wafeq Journal No.</td>
-        <td colspan="2" class="val"></td>
+        <td colspan="2" class="val" dir="ltr">${esc(wafeqJournalNo)}</td>
       </tr>
       <tr><td colspan="12" class="sec">بيانات العميل والسيارة  |  Customer &amp; Vehicle Details</td></tr>
       <tr>
@@ -2780,7 +2940,7 @@
         <td class="lbl">رقم اللوحة<br/>Plate No.</td>
         <td colspan="2" class="val" dir="ltr"><strong>${esc(vehPlate)}</strong></td>
         <td colspan="2" class="lbl">اللون<br/>Color</td>
-        <td colspan="3" class="val"></td>
+        <td colspan="3" class="val">${esc(vehColor)}</td>
       </tr>
       <tr><td colspan="12" class="sec">البلاغ ووصف الضرر  |  Claim &amp; Damage Description</td></tr>
       <tr>
@@ -2801,28 +2961,28 @@
         <td colspan="2" class="lbl" style="text-align:center;">التقدير المبدئي<br/>Initial Assessment</td>
       </tr>
       <tr>
-        <td colspan="2" class="val" dir="ltr" style="text-align:center;height:28px;">${quotedVal ? `${quotedVal.toFixed(2)} SAR` : ""}</td>
+        <td colspan="2" class="val" style="text-align:center;height:28px;font-weight:700;">${esc(initialAssessment)}</td>
       </tr>
       <tr><td colspan="12" class="sec">فاتورة الإصلاح والمبلغ المعتمد (بعد إحضار العميل للفاتورة)  |  Repair Invoice &amp; Approved Amount (after customer submits invoice)</td></tr>
       <tr>
         <td colspan="2" class="lbl">اسم الورشة / الوكالة<br/>Workshop / Dealer</td>
-        <td colspan="3" class="val"></td>
+        <td colspan="3" class="val">${esc(workshopName)}</td>
         <td colspan="2" class="lbl">رقم الفاتورة<br/>Invoice No.</td>
-        <td colspan="2" class="val"></td>
+        <td colspan="2" class="val" dir="ltr">${esc(invoiceNumber)}</td>
         <td class="lbl">التاريخ<br/>Date</td>
-        <td colspan="2" class="val"></td>
+        <td colspan="2" class="val" dir="ltr">${esc(invoiceDate)}</td>
       </tr>
       <tr>
         <td colspan="2" class="lbl">الفاتورة باسم<br/>Invoice Issued To</td>
-        <td colspan="3" class="val"></td>
+        <td colspan="3" class="val">${esc(invoiceIssuedTo)}</td>
         <td colspan="2" class="lbl">إجمالي الفاتورة<br/>Invoice Total (incl. VAT)</td>
-        <td colspan="2" class="val" dir="ltr">${amtVal > 0 ? amtDisplay : ""}</td>
+        <td colspan="2" class="val" dir="ltr">${esc(invTotalDisplay)}</td>
         <td class="lbl">الضريبة<br/>VAT</td>
-        <td colspan="2" class="val" dir="ltr" style="text-align:center;">${vatCalc}</td>
+        <td colspan="2" class="val" dir="ltr" style="text-align:center;">${esc(invVatDisplay)}</td>
       </tr>
       <tr>
         <td colspan="2" class="lbl">البنود: قطع غيار / شغل يد<br/>Items: Parts / Labor</td>
-        <td colspan="10" class="val"></td>
+        <td colspan="10" class="val">${esc(invoiceItems)}</td>
       </tr>
       <tr><td colspan="12" class="sec">الصرف  |  Payment</td></tr>
       <tr>

@@ -1059,6 +1059,8 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       assignedRole: z.nativeEnum(StaffRole).optional(),
       assignedStaffName: z.string().max(80).optional(),
       vehicleZones: z.array(z.string().max(60)).max(20).optional(),
+      initialAssessment: z.string().max(120).nullable().optional(),
+      vehicleColor: z.string().max(60).nullable().optional(),
     }).strict();
 
     const parsed = schema.safeParse(req.body);
@@ -1148,16 +1150,16 @@ export function createAdminRouter(prisma: PrismaClient): Router {
     );
   }));
 
-  // Reveal full bank details for a pending transfer — audited, rate limited, pending-transfer tickets only
+  // Reveal full bank details for a pending or paid transfer — audited, rate limited
   router.get("/finance/:id/bank-details", requireStaff, requireRoles(...financeRoles), ibanRevealLimiter, asyncHandler(async (req: StaffRequest, res) => {
     const c = await loadClaim(req, res);
     if (!c) return;
-    if (c.payoutStatus !== PayoutStatus.PENDING_BANK_TRANSFER || !c.iban) {
-      return res.status(409).json({ error: "No pending bank transfer for this ticket" });
+    if ((c.payoutStatus !== PayoutStatus.PENDING_BANK_TRANSFER && c.payoutStatus !== PayoutStatus.PAID) || !c.iban) {
+      return res.status(409).json({ error: "No bank transfer details available for this ticket" });
     }
     auditLog(req.staff, "REVEAL_BANK_DETAILS", `ticket=${c.id}`);
     await prisma.auditLog.create({
-      data: { complaintId: c.id, staffId: req.staff!.staffId, actorName: req.staff!.name, action: "REVEAL_BANK_DETAILS", details: "Full IBAN viewed for payout" },
+      data: { complaintId: c.id, staffId: req.staff!.staffId, actorName: req.staff!.name, action: "REVEAL_BANK_DETAILS", details: "Full IBAN viewed for payout/form" },
     });
     return res.json({
       id: c.id,
@@ -1166,6 +1168,45 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       bankName: c.bankName,
       amountSar: Number(c.approvedAmount || c.quotedAmount || 0),
     });
+  }));
+
+  // Save Finance Repair Invoice & Wafeq Journal details (Finance / Admin / Business Owner)
+  router.post("/finance/:id/invoice-details", requireStaff, requireRoles(...financeRoles), asyncHandler(async (req: StaffRequest, res) => {
+    const schema = z.object({
+      wafeqJournalNo: z.string().max(80).nullable().optional(),
+      workshopName: z.string().max(160).nullable().optional(),
+      invoiceNumber: z.string().max(80).nullable().optional(),
+      invoiceDate: z.string().max(40).nullable().optional(),
+      invoiceIssuedTo: z.string().max(160).nullable().optional(),
+      invoiceTotalSar: z.number().nonnegative().max(100000).nullable().optional(),
+      invoiceVatSar: z.number().nonnegative().max(100000).nullable().optional(),
+      invoiceItems: z.string().max(500).nullable().optional(),
+    }).strict();
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid invoice / Wafeq details payload" });
+    }
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (complaint.type !== "DAMAGE") {
+      return res.status(409).json({ error: "Invoice & Wafeq details apply only to Damage claims" });
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id: complaint.id },
+      data: {
+        ...parsed.data,
+        auditLogs: {
+          create: {
+            staffId: req.staff!.staffId,
+            actorName: req.staff!.name,
+            action: "UPDATE_FINANCE_INVOICE",
+            details: `Finance invoice/Wafeq details updated by ${req.staff!.name} (${req.staff!.role}).`,
+          },
+        },
+      },
+    });
+    return res.json({ success: true, complaint: updated });
   }));
 
   // Mark Bank Transfer Paid
