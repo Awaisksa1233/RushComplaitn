@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import bcrypt from "bcryptjs";
@@ -14,9 +15,9 @@ import {
   MessageChannel,
 } from "@prisma/client";
 import { encryptField } from "../src/utils/crypto";
+import { assertSafeToRunDestructive } from "./guard";
 
 const prisma = new PrismaClient();
-const E2E_PASSWORD = process.env.E2E_STAFF_PASSWORD || "E2e-Rush!2026-Sec#9";
 
 const SAMPLE_QUOTE_URL = "/api/files/quotations/1700000000001-11111111111111111111111111111111.pdf";
 const SAMPLE_INVOICE_URL = "/api/files/invoices/1700000000002-22222222222222222222222222222222.pdf";
@@ -50,6 +51,11 @@ function ensureSampleUploads() {
 }
 
 async function main() {
+  assertSafeToRunDestructive("seed_mock_e2e.ts");
+  const e2ePassword = process.env.E2E_STAFF_PASSWORD || crypto.randomBytes(18).toString("base64url") + "aA1!";
+  if (e2ePassword.length < 12) {
+    throw new Error("E2E_STAFF_PASSWORD must be at least 12 characters");
+  }
   ensureSampleUploads();
 
   // 1. Ensure SystemConfig exists
@@ -117,7 +123,7 @@ async function main() {
   }
 
   // 4. Upsert E2E RBAC Staff Accounts (never alters existing admin@rush.com.sa)
-  const passwordHash = await bcrypt.hash(E2E_PASSWORD, 12);
+  const passwordHash = await bcrypt.hash(e2ePassword, 12);
   const staffDefs = [
     { email: "e2e.owner@rush.com.sa", name: "Muhammad Awais", role: StaffRole.BUSINESS_OWNER, branch: "All Branches" },
     { email: "e2e.admin@rush.com.sa", name: "Sara Al-Qahtani", role: StaffRole.ADMIN, branch: "All Branches" },

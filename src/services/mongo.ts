@@ -341,6 +341,14 @@ export async function findPaidOrderCeilingInMongo(
   return match ? Number(match.amountSar) : null;
 }
 
+export async function closeMongoClient(): Promise<void> {
+  if (client) {
+    await client.close().catch(() => {});
+    client = null;
+    db = null;
+  }
+}
+
 function formatPlanName(type: string): string {
   const map: Record<string, string> = {
     exterior_wash: "Exterior Wash",

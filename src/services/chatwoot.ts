@@ -11,6 +11,7 @@
 
 import { signFileUrl } from "../utils/crypto";
 import { buildDirectTicketUrl } from "../middleware/auth";
+import { isE2eTestPhone } from "../config/env";
 
 const CHATWOOT_BASE_URL = (process.env.CHATWOOT_BASE_URL || "https://chatwoot.rush.com.sa").replace(/\/+$/, "");
 const CHATWOOT_API_TOKEN = process.env.CHATWOOT_API_TOKEN || "";
@@ -18,7 +19,8 @@ const CHATWOOT_ACCOUNT_ID = process.env.CHATWOOT_ACCOUNT_ID || "1";
 const CHATWOOT_INBOX_ID = parseInt(process.env.CHATWOOT_INBOX_ID || "1", 10);
 const PORTAL_PUBLIC_URL = (process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa").replace(/\/+$/, "");
 
-function isChatwootDisabled(): boolean {
+function isChatwootDisabled(phone?: string): boolean {
+  if (phone && isE2eTestPhone(phone)) return true;
   return process.env.NODE_ENV === "test" || process.env.DISABLE_OUTBOUND_MESSAGING === "true" || !CHATWOOT_API_TOKEN;
 }
 
@@ -49,7 +51,7 @@ export async function findOrCreateContact(params: {
   branch?: string;
 }): Promise<any> {
   const formattedPhone = formatChatwootPhone(params.phone);
-  if (!formattedPhone || isChatwootDisabled()) return null;
+  if (!formattedPhone || isChatwootDisabled(params.phone)) return null;
 
   try {
     // 1. Search existing contact
@@ -201,7 +203,7 @@ export async function forwardCustomerMessageToChatwoot(params: {
   phone: string;
   text: string;
 }): Promise<boolean> {
-  if (isChatwootDisabled()) return false;
+  if (isChatwootDisabled(params.phone)) return false;
   try {
     const contact = await findOrCreateContact({ phone: params.phone });
     if (!contact?.id) return false;
@@ -236,7 +238,7 @@ export async function sendStaffWhatsAppViaChatwoot(params: {
   phone: string;
   text: string;
 }): Promise<boolean> {
-  if (isChatwootDisabled()) return false;
+  if (isChatwootDisabled(params.phone)) return false;
   try {
     const contact = await findOrCreateContact({ phone: params.phone });
     if (!contact?.id) return false;
@@ -281,10 +283,9 @@ export async function sendStaffWhatsAppViaChatwoot(params: {
  * High-level background task: Orchestrates full Chatwoot dispatch upon new complaint submission
  */
 export async function syncComplaintToChatwoot(ticket: any): Promise<void> {
-  if (isChatwootDisabled()) return;
+  const phone = ticket.customer?.phone;
+  if (!phone || isChatwootDisabled(phone)) return;
   try {
-    const phone = ticket.customer?.phone;
-    if (!phone) return;
 
     const contact = await findOrCreateContact({
       phone,

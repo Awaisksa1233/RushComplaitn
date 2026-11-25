@@ -24,10 +24,26 @@ export function buildDirectTicketUrl(
 ): string {
   const token = signCustomerToken(
     { customerId: customer.id, phone: customer.phone, licensePlate: customer.licensePlate, scope: "track", ticketIds: [ticketId] },
-    "7d"
+    "48h"
   );
   const base = (process.env.PUBLIC_PORTAL_URL || "https://crm.rush.com.sa").replace(/\/+$/, "");
   return `${base}/?t=${encodeURIComponent(token)}`;
+}
+
+/** Optional customer JWT extraction for routes that elevate privileges only when verified. */
+export function tryDecodeCustomerJwt(req: Request): CustomerPayload | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !/^Bearer\s+/i.test(authHeader)) return null;
+  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+  try {
+    return jwt.verify(token, CUSTOMER_JWT_SECRET, {
+      algorithms: ["HS256"],
+      audience: "rush-customer",
+      issuer: "rush-care",
+    }) as CustomerPayload;
+  } catch {
+    return null;
+  }
 }
 
 export function requireCustomerJwt(req: AuthedRequest, res: Response, next: NextFunction) {

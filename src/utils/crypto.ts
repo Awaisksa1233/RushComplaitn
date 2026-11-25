@@ -2,7 +2,7 @@ import crypto from "crypto";
 import { getFieldKey, FILE_URL_SECRET } from "../config/env";
 
 const PREFIX = "enc:v1:";
-export const VALID_STORAGE_KEY = /^(media|quotations|invoices|complaints|damage)\/\d+-[0-9a-f]{32}\.(jpg|png|webp|pdf|mp4|mov)$/;
+export const VALID_STORAGE_KEY = /^(media|quotations|invoices|complaints|damage|signatures)\/\d+-[0-9a-f]{32}\.(jpg|png|webp|pdf|mp4|mov)$/;
 
 /** AES-256-GCM field encryption. Passes plaintext through when no key is configured (dev only). */
 export function encryptField(plain: string | null | undefined): string | null {

@@ -94,21 +94,32 @@ Customer Portal/
 ├── package.json                     # Dependencies & scripts
 ├── tsconfig.json                    # TypeScript compiler config
 ├── README.md                        # Documentation
-├── rush_wash_customer_care.html     # Bilingual Public Customer Portal
-├── rush_admin_operations_console.html # Al Kharj Admin Operations Console
+├── public/
+│   ├── rush_wash_customer_care.html       # Bilingual Public Customer Portal
+│   └── rush_admin_operations_console.html # Al Kharj Admin Operations Console
 ├── prisma/
-│   └── schema.prisma                # PostgreSQL models & enums
+│   ├── schema.prisma                      # PostgreSQL models & enums
+│   ├── migrations/                        # Versioned SQL migrations + RLS + partial indexes
+│   └── enable_rls.sql                     # Supabase RLS hardening script
 └── src/
-    ├── server.ts                    # Express app entry & middleware
-    ├── lib/
-    │   ├── prisma.ts                # Prisma database client
-    │   └── r2.ts                    # Cloudflare R2 storage client
+    ├── server.ts                          # Express app factory, CSP, & file proxy
+    ├── config/env.ts                      # Secret derivation & environment validation
     ├── middleware/
-    │   └── auth.ts                  # Admin JWT verification
+    │   ├── auth.ts                        # Customer JWT & direct ticket links
+    │   └── security.ts                    # Rate limiters
+    ├── services/
+    │   ├── storage.ts                     # Cloudflare R2 + local upload fallback
+    │   ├── mongo.ts                       # Read-only POS MongoDB adapter
+    │   ├── chatwoot.ts                    # Chatwoot WhatsApp integration
+    │   ├── unifonic.ts                    # Unifonic SMS OTP gateway
+    │   ├── retention.ts                   # PDPL data retention & anonymisation
+    │   └── slaSweeper.ts                  # Automated SLA escalation sweeper
     └── routes/
-        ├── admin.ts                 # Admin claims triage & approvals
-        ├── complaints.ts            # Public complaint & tracking API
-        └── upload.ts                # Cloudflare R2 streaming upload API
+        ├── auth.ts                        # OTP request & verify API
+        ├── customer.ts                    # Customer history API
+        ├── admin.ts                       # Admin claims triage, RBAC & payouts
+        ├── complaints.ts                  # Complaint submission, tracking & webhooks
+        └── upload.ts                      # Authenticated file upload API
 ```
 
 ---

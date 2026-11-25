@@ -15,25 +15,28 @@ export async function runSlaSweep(prisma: PrismaClient, now = new Date()): Promi
     take: 200,
   });
 
-  let flagged = 0;
-  for (const t of overdue) {
-    await prisma.complaint.update({
-      where: { id: t.id },
-      data: {
-        slaBreached: true,
-        slaBreachedNotified: true,
-        auditLogs: {
-          create: {
+  if (!overdue.length) return { flagged: 0 };
+
+  const ids = overdue.map((t) => t.id);
+  const updated = await prisma.complaint.updateMany({
+    where: { id: { in: ids }, slaBreachedNotified: false },
+    data: { slaBreached: true, slaBreachedNotified: true },
+  });
+  if (updated.count > 0) {
+    await Promise.all(
+      ids.map((id) =>
+        prisma.auditLog.create({
+          data: {
+            complaintId: id,
             actorName: "SLA Monitor",
             action: "SLA_BREACH_AUTO",
             details: `Ticket exceeded ${maxSlaHours}h SLA threshold`,
           },
-        },
-      },
-    });
-    flagged++;
+        })
+      )
+    );
   }
-  return { flagged };
+  return { flagged: updated.count };
 }
 
 export function startSlaSweeper(prisma: PrismaClient) {

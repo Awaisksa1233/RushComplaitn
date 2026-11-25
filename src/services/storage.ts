@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs";
 import crypto from "crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { VALID_STORAGE_KEY } from "../utils/crypto";
+import { isProd } from "../config/env";
 
 function getR2Config() {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -77,7 +79,10 @@ export async function uploadFile(fileBuffer: Buffer, mimeType: string, prefix: s
       // Always go through the authenticated-by-obscurity proxy route; objects are never public.
       return `/api/files/${key}`;
     } catch (err) {
-      console.warn("R2 upload error, falling back to local storage");
+      if (isProd && process.env.ALLOW_LOCAL_STORAGE_FALLBACK !== "true") {
+        throw err;
+      }
+      console.warn("R2 upload error, falling back to local storage (non-production)");
     }
   }
 
@@ -108,8 +113,6 @@ export async function getFileFromR2(key: string) {
     return null;
   }
 }
-
-const VALID_STORAGE_KEY = /^(media|quotations|invoices|complaints|damage)\/\d+-[0-9a-f]{32}\.(jpg|png|webp|pdf|mp4|mov)$/;
 
 export function extractStorageKey(fileUrlOrKey: string | null | undefined): string | null {
   if (!fileUrlOrKey) return null;

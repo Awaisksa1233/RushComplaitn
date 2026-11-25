@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import crypto from "crypto";
 import { signCustomerToken } from "../middleware/auth";
-import { exposeDevOtp } from "../config/env";
+import { exposeDevOtp, isE2eTestPhone } from "../config/env";
 import { otpRequestLimiter, otpVerifyLimiter } from "../middleware/security";
 import { PrismaClient } from "@prisma/client";
 import { normalizePlate, normalizePhone, isSaudiMobile, hashOtp } from "../utils/normalize";
@@ -39,12 +39,16 @@ export function createAuthRouter(prisma: PrismaClient) {
     const numbers = plate.replace(/[^0-9]/g, "");
     const candidatePlates = Array.from(new Set([plate, numbers + letters, letters + numbers].filter(Boolean)));
 
-    // Per-identity throttle (independent of client IP)
-    const recent = await prisma.otpSession.count({
-      where: { phone, createdAt: { gt: new Date(Date.now() - WINDOW_MS) } },
-    });
-    if (recent >= 5) {
-      return res.status(429).json({ error: "Too many OTP requests for this number. Try again later." });
+    const isE2e = isE2eTestPhone(phone);
+
+    // Per-identity throttle (independent of client IP); skipped for scoped E2E test phone
+    if (!isE2e) {
+      const recent = await prisma.otpSession.count({
+        where: { phone, createdAt: { gt: new Date(Date.now() - WINDOW_MS) } },
+      });
+      if (recent >= 5) {
+        return res.status(429).json({ error: "Too many OTP requests for this number. Try again later." });
+      }
     }
 
     let customer = await prisma.customer.findFirst({
@@ -101,15 +105,17 @@ export function createAuthRouter(prisma: PrismaClient) {
       },
     });
 
-    // Send real SMS OTP via Unifonic
-    sendSmsOtp(phone, code).catch((err) => {
-      console.warn("[Auth] Failed to dispatch Unifonic SMS OTP:", err);
-    });
+    // Send real SMS OTP via Unifonic (suppressed for scoped E2E test phone)
+    if (!isE2e) {
+      sendSmsOtp(phone, code).catch((err) => {
+        console.warn("[Auth] Failed to dispatch Unifonic SMS OTP:", err);
+      });
+    }
 
     return res.json({
       sent: true,
       message: `OTP sent to +966 ${phone.slice(0, 2)}•••••${phone.slice(-2)}`,
-      ...(exposeDevOtp ? { devOtp: code } : {}),
+      ...(exposeDevOtp || isE2e ? { devOtp: code } : {}),
     });
   }));
 

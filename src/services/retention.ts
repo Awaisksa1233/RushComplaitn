@@ -30,10 +30,10 @@ export async function runRetention(prisma: PrismaClient, now = new Date()): Prom
   };
   const bankDocs = await prisma.complaint.findMany({
     where: bankWhere,
-    select: { invoiceUrl: true, quotationUrl: true, bankSmsUrl: true },
+    select: { invoiceUrl: true, quotationUrl: true, bankSmsUrl: true, waiverSignature: true },
   });
   if (bankDocs.length) {
-    await deleteFiles(bankDocs.flatMap((d) => [d.invoiceUrl, d.quotationUrl, d.bankSmsUrl]));
+    await deleteFiles(bankDocs.flatMap((d) => [d.invoiceUrl, d.quotationUrl, d.bankSmsUrl, d.waiverSignature]));
   }
   const bank = await prisma.complaint.updateMany({
     where: bankWhere,
@@ -43,11 +43,11 @@ export async function runRetention(prisma: PrismaClient, now = new Date()): Prom
   const cutoff = new Date(now.getTime() - RETENTION.anonymiseTicketsAfterDays * DAY);
   const old = await prisma.complaint.findMany({
     where: { status: TicketStatus.RESOLVED, updatedAt: { lt: cutoff } },
-    select: { id: true, customerId: true, mediaUrls: true, invoiceUrl: true, quotationUrl: true, bankSmsUrl: true },
+    select: { id: true, customerId: true, mediaUrls: true, invoiceUrl: true, quotationUrl: true, bankSmsUrl: true, waiverSignature: true },
   });
   let tickets = 0;
   if (old.length) {
-    await deleteFiles(old.flatMap((o) => [...(o.mediaUrls || []), o.invoiceUrl, o.quotationUrl, o.bankSmsUrl]));
+    await deleteFiles(old.flatMap((o) => [...(o.mediaUrls || []), o.invoiceUrl, o.quotationUrl, o.bankSmsUrl, o.waiverSignature]));
     const ids = old.map((o) => o.id);
     const r = await prisma.complaint.updateMany({
       where: { id: { in: ids } },
