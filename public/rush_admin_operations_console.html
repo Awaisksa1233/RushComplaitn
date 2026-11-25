@@ -2447,7 +2447,7 @@
     }
 
     async function printDamageCompensationForm(id) {
-      let c = claimsData.find(x => x.id === id);
+      let c = claims.find(x => x.id === id);
       if (!c) return showToast("Ticket not found");
 
       let bankName = c.damageFlow?.bankName || "";
