@@ -2708,111 +2708,147 @@
         ? `<div style="margin-top:4px;"><img src="${esc(url)}" alt="Staff Signature" style="max-height:36px;max-width:140px;object-fit:contain;display:inline-block;" /><div style="font-size:9px;margin-top:2px;">${esc(by)}</div></div>`
         : `<br/><br/>التوقيع / Signature: _________________`;
 
+      const renderStaffSigExcel = (url, by) => url
+        ? `<div style="margin-top:3px;"><img src="${esc(url)}" alt="Staff Signature" style="max-height:30px;max-width:130px;object-fit:contain;display:inline-block;" /><div style="font-size:8px;">${esc(by)}</div></div>`
+        : ``;
+
       const sheetHtml = `
   <style>
-    .rush-print-sheet { font-family: Tahoma, Arial, sans-serif; color: #111; font-size: 11px; line-height: 1.35; }
-    .rush-print-sheet .hdr { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 6px; }
-    .rush-print-sheet .hdr-col { font-size: 10px; }
-    .rush-print-sheet .hdr-title { text-align: center; font-size: 14px; font-weight: 700; background: #111; color: #fff; padding: 5px 8px; margin-bottom: 6px; }
-    .rush-print-sheet table { width: 100%; border-collapse: collapse; margin-bottom: 6px; table-layout: fixed; }
-    .rush-print-sheet th, .rush-print-sheet td { border: 1px solid #333; padding: 4px 6px; vertical-align: middle; word-wrap: break-word; }
-    .rush-print-sheet .sec { background: #e5e5e5; font-weight: 700; text-align: center; font-size: 11px; }
-    .rush-print-sheet .lbl { background: #f7f7f7; font-weight: 700; width: 16%; font-size: 10px; }
-    .rush-print-sheet .val { width: 17%; }
-    .rush-print-sheet .chk-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 4px; }
-    .rush-print-sheet .chk-item { font-size: 9.5px; display: flex; align-items: center; gap: 4px; }
-    .rush-print-sheet .box { display: inline-block; width: 11px; height: 11px; border: 1px solid #111; text-align: center; line-height: 10px; font-weight: 700; font-size: 9px; }
-    .rush-print-sheet .sig-row td { height: 48px; vertical-align: top; text-align: center; font-size: 10px; }
+    .rush-print-sheet { font-family: 'IBM Plex Sans Arabic', Tahoma, Arial, sans-serif; color: #000; font-size: 9.5px; line-height: 1.25; direction: rtl; }
+    .rush-print-sheet table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .rush-print-sheet td { border: 1px solid #444; padding: 3px 5px; vertical-align: middle; word-wrap: break-word; }
+    .rush-print-sheet .noborder td { border: none; padding: 2px 4px; }
+    .rush-print-sheet .title-cell { border: none !important; text-align: center; font-size: 13px; font-weight: 700; padding: 4px 0 6px; }
+    .rush-print-sheet .sec { background: #BE1222 !important; color: #fff !important; font-weight: 700; text-align: right; font-size: 10.5px; padding: 4px 6px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .rush-print-sheet .lbl { font-weight: 700; text-align: right; font-size: 9px; background: #fff; }
+    .rush-print-sheet .val { text-align: right; font-size: 9.5px; background: #fff; }
+    .rush-print-sheet .dmg-lbl { text-align: center; font-size: 8px; padding: 2px 2px; line-height: 1.15; }
+    .rush-print-sheet .dmg-chk { text-align: center; font-size: 12px; font-weight: 700; height: 22px; }
+    .rush-print-sheet .sig-hdr { text-align: center; font-weight: 700; font-size: 9.5px; padding: 5px 4px; }
+    .rush-print-sheet .sig-box { text-align: right; font-size: 9.5px; height: 38px; vertical-align: middle; padding: 4px 6px; }
   </style>
   <div class="rush-print-sheet">
-    <div class="hdr">
-      <div class="hdr-col"><strong>شركة رش المتقدمة للتجارة</strong><br/>سجل تجاري: ${crNo} | الرقم الضريبي: ${vatNo}</div>
-      <div class="hdr-col" dir="ltr" style="text-align:left;"><strong>Rush Advanced Trading Co.</strong><br/>CR: ${crNo} | VAT: ${vatNo}</div>
-    </div>
-    <div class="hdr-title">نموذج إثبات أضرار سيارة عميل – Vehicle Damage Report</div>
     <table>
-      <tr>
-        <td class="lbl">رقم النموذج<br/>Form No.</td><td class="val" dir="ltr"><strong>${esc(c.id)}</strong></td>
-        <td class="lbl">تاريخ البلاغ<br/>Claim Date</td><td class="val" dir="ltr">${esc(claimDate)}</td>
-        <td class="lbl">رقم القيد في وافق<br/>Wafeq Journal No.</td><td class="val"></td>
+      <colgroup>
+        <col style="width:4%" /><col style="width:9%" /><col style="width:9.5%" /><col style="width:8.5%" />
+        <col style="width:9%" /><col style="width:9%" /><col style="width:9%" /><col style="width:9%" />
+        <col style="width:9%" /><col style="width:9%" /><col style="width:7.5%" /><col style="width:8.5%" />
+      </colgroup>
+      <tr class="noborder">
+        <td colspan="4" style="text-align:right;font-size:12px;font-weight:700;">شركة رش المتقدمة للتجارة</td>
+        <td colspan="4" rowspan="2"></td>
+        <td colspan="4" dir="ltr" style="text-align:left;font-size:12px;font-weight:700;">Rush Advanced Trading Co.</td>
       </tr>
-    </table>
-    <table>
-      <tr><td colspan="6" class="sec">بيانات العميل والسيارة | Customer &amp; Vehicle Details</td></tr>
-      <tr>
-        <td class="lbl">اسم العميل<br/>Customer Name</td><td class="val">${esc(custName)}</td>
-        <td class="lbl">رقم الجوال<br/>Mobile</td><td class="val" dir="ltr">${esc(custPhone)}</td>
-        <td class="lbl">رقم الاشتراك / الطلب<br/>Subscription / Order No.</td><td class="val" dir="ltr">${esc(receiptNo)}</td>
-      </tr>
-      <tr>
-        <td class="lbl">نوع السيارة والموديل<br/>Make &amp; Model</td><td class="val">${esc(vehModel)}</td>
-        <td class="lbl">رقم اللوحة<br/>Plate No.</td><td class="val" dir="ltr"><strong>${esc(vehPlate)}</strong></td>
-        <td class="lbl">اللون / الفرع<br/>Color / Branch</td><td class="val">${esc(branchName)}</td>
-      </tr>
-    </table>
-    <table>
-      <tr><td colspan="2" class="sec">البلاغ ووصف الضرر | Claim &amp; Damage Description</td></tr>
-      <tr>
-        <td class="lbl">مكان الضرر في السيارة<br/>Damage Location</td>
-        <td><div class="chk-grid">${damageLocations.map(d => `<div class="chk-item"><span class="box">${d.checked ? "✓" : ""}</span><span>${d.ar} / ${d.en}</span></div>`).join("")}</div></td>
+      <tr class="noborder">
+        <td colspan="4" style="text-align:right;font-size:8.5px;">سجل تجاري: ${crNo}  |  الرقم الضريبي: ${vatNo}</td>
+        <td colspan="4" dir="ltr" style="text-align:left;font-size:8.5px;">CR: ${crNo}  |  VAT: ${vatNo}</td>
       </tr>
       <tr>
-        <td class="lbl">وصف الضرر كما ذكره العميل<br/>Damage as Described</td>
-        <td style="min-height:36px;">${esc(summaryText)}</td>
-      </tr>
-    </table>
-    <table>
-      <tr><td colspan="4" class="sec">الفحص الفني وتحديد المسؤولية (يعبئه فني المغسلة) | Technical Inspection &amp; Liability</td></tr>
-      <tr>
-        <td class="lbl">تقرير الفني (الأسباب والأدلة)<br/>Technician Report</td>
-        <td style="width:50%;">${esc(techNote)}</td>
-        <td class="lbl">التقدير المبدئي<br/>Initial Assessment</td>
-        <td dir="ltr">${quotedVal ? `${quotedVal.toFixed(2)} SAR` : ""}</td>
-      </tr>
-    </table>
-    <table>
-      <tr><td colspan="6" class="sec">فاتورة الإصلاح والمبلغ المعتمد (بعد إحضار العميل للفاتورة) | Repair Invoice &amp; Approved Amount</td></tr>
-      <tr>
-        <td class="lbl">اسم الورشة / الوكالة<br/>Workshop / Dealer</td><td class="val"></td>
-        <td class="lbl">رقم الفاتورة<br/>Invoice No.</td><td class="val"></td>
-        <td class="lbl">التاريخ<br/>Date</td><td class="val"></td>
+        <td colspan="12" class="title-cell">نموذج إثبات أضرار سيارة عميل  –  Vehicle Damage Report</td>
       </tr>
       <tr>
-        <td class="lbl">الفاتورة باسم<br/>Invoice Issued To</td><td class="val"></td>
-        <td class="lbl">إجمالي الفاتورة<br/>Invoice Total (incl. VAT)</td><td class="val" dir="ltr">${amtVal > 0 ? amtDisplay : ""}</td>
-        <td class="lbl">الضريبة<br/>VAT</td><td class="val" dir="ltr">${vatCalc}</td>
+        <td colspan="2" class="lbl">رقم النموذج<br/>Form No.</td>
+        <td colspan="2" class="val" dir="ltr"><strong>${esc(c.id)}</strong></td>
+        <td colspan="2" class="lbl">تاريخ البلاغ<br/>Claim Date</td>
+        <td colspan="2" class="val" dir="ltr">${esc(claimDate)}</td>
+        <td colspan="2" class="lbl">رقم القيد في وافق<br/>Wafeq Journal No.</td>
+        <td colspan="2" class="val"></td>
+      </tr>
+      <tr><td colspan="12" class="sec">بيانات العميل والسيارة  |  Customer &amp; Vehicle Details</td></tr>
+      <tr>
+        <td colspan="2" class="lbl">اسم العميل<br/>Customer Name</td>
+        <td colspan="2" class="val">${esc(custName)}</td>
+        <td class="lbl">رقم الجوال<br/>Mobile</td>
+        <td colspan="2" class="val" dir="ltr">${esc(custPhone)}</td>
+        <td colspan="2" class="lbl">رقم الاشتراك / الطلب<br/>Subscription / Order No.</td>
+        <td colspan="3" class="val" dir="ltr">${esc(receiptNo)}</td>
       </tr>
       <tr>
-        <td class="lbl">البنود: قطع غيار / شغل يد<br/>Items: Parts / Labor</td><td colspan="5"></td>
+        <td colspan="2" class="lbl">نوع السيارة والموديل<br/>Make &amp; Model</td>
+        <td colspan="2" class="val">${esc(vehModel)}</td>
+        <td class="lbl">رقم اللوحة<br/>Plate No.</td>
+        <td colspan="2" class="val" dir="ltr"><strong>${esc(vehPlate)}</strong></td>
+        <td colspan="2" class="lbl">اللون<br/>Color</td>
+        <td colspan="3" class="val"></td>
       </tr>
-    </table>
-    <table>
-      <tr><td colspan="6" class="sec">الصرف | Payment</td></tr>
+      <tr><td colspan="12" class="sec">البلاغ ووصف الضرر  |  Claim &amp; Damage Description</td></tr>
       <tr>
-        <td class="lbl">طريقة الصرف<br/>Payment Method</td><td class="val">${esc(payMethod)}</td>
-        <td class="lbl">اسم صاحب الحساب<br/>Account Holder</td><td class="val">${esc(accountHolder)}</td>
-        <td class="lbl">البنك<br/>Bank</td><td class="val">${esc(bankName)}</td>
+        <td colspan="2" rowspan="2" class="lbl">مكان الضرر في السيارة<br/>Damage Location</td>
+        ${damageLocations.map(d => `<td class="dmg-lbl">${d.ar}<br/>${d.en}</td>`).join("")}
       </tr>
       <tr>
-        <td class="lbl">الآيبان<br/>IBAN</td><td colspan="3" dir="ltr">${esc(iban)}</td>
-        <td class="lbl">رقم المرجع<br/>Transfer Ref</td><td dir="ltr">${esc(transferRef)}</td>
+        ${damageLocations.map(d => `<td class="dmg-chk">${d.checked ? "✓" : ""}</td>`).join("")}
       </tr>
-    </table>
-    <table>
-      <tr><td colspan="6" class="sec">إقرار ومخالصة العميل | Customer Acknowledgment &amp; Release</td></tr>
-      <tr><td colspan="6" style="padding:6px;">أقر أنا الموقع أدناه باستلام مبلغ وقدره ( ${esc(amtDisplay)} ) ريال من شركة رش المتقدمة تعويضاً نهائياً وكاملاً عن الأضرار الموضحة في النموذج وأبرئ ذمة الشركة من أي مطالبات لاحقة تخص الواقعة.</td></tr>
       <tr>
-        <td class="lbl">اسم العميل<br/>Customer Name</td><td class="val">${esc(custName)}</td>
-        <td class="lbl">التوقيع<br/>Signature</td><td class="val" style="text-align:center;">${waiverSigCell}</td>
-        <td class="lbl">التاريخ<br/>Date</td><td class="val"></td>
+        <td colspan="2" class="lbl" style="height:44px;">وصف الضرر كما ذكره العميل<br/>Damage as Described by Customer</td>
+        <td colspan="10" class="val">${esc(summaryText)}</td>
       </tr>
-    </table>
-    <table>
-      <tr><td colspan="3" class="sec">التوقيعات والاعتماد | Signatures &amp; Approval</td></tr>
-      <tr class="sig-row">
-        <td><strong>فني المغسلة – فحص وتحديد المسؤولية</strong><br/>Car Wash Technician – Inspection &amp; Liability${renderStaffSig(techSigUrl, techBy)}</td>
-        <td><strong>مدير التشغيل – تأكيد الإثبات</strong><br/>Operations Manager – Confirmation${renderStaffSig(opsSigUrl, opsBy)}</td>
-        <td><strong>الإدارة المالية – مطابقة الفاتورة والاعتماد والصرف</strong><br/>Finance – Invoice Match, Approval &amp; Payment${renderStaffSig(finSigUrl, finBy)}</td>
+      <tr><td colspan="12" class="sec">الفحص الفني وتحديد المسؤولية (يعبئه فني المغسلة)  |  Technical Inspection &amp; Liability (by Car Wash Technician)</td></tr>
+      <tr>
+        <td colspan="2" rowspan="2" class="lbl">تقرير الفني (الأسباب والأدلة)<br/>Technician Report (Cause &amp; Evidence)</td>
+        <td colspan="8" rowspan="2" class="val" style="text-align:center;">${esc(techNote)}</td>
+        <td colspan="2" class="lbl" style="text-align:center;">التقدير المبدئي<br/>Initial Assessment</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="val" dir="ltr" style="text-align:center;height:28px;">${quotedVal ? `${quotedVal.toFixed(2)} SAR` : ""}</td>
+      </tr>
+      <tr><td colspan="12" class="sec">فاتورة الإصلاح والمبلغ المعتمد (بعد إحضار العميل للفاتورة)  |  Repair Invoice &amp; Approved Amount (after customer submits invoice)</td></tr>
+      <tr>
+        <td colspan="2" class="lbl">اسم الورشة / الوكالة<br/>Workshop / Dealer</td>
+        <td colspan="3" class="val"></td>
+        <td colspan="2" class="lbl">رقم الفاتورة<br/>Invoice No.</td>
+        <td colspan="2" class="val"></td>
+        <td class="lbl">التاريخ<br/>Date</td>
+        <td colspan="2" class="val"></td>
+      </tr>
+      <tr>
+        <td colspan="2" class="lbl">الفاتورة باسم<br/>Invoice Issued To</td>
+        <td colspan="3" class="val"></td>
+        <td colspan="2" class="lbl">إجمالي الفاتورة<br/>Invoice Total (incl. VAT)</td>
+        <td colspan="2" class="val" dir="ltr">${amtVal > 0 ? amtDisplay : ""}</td>
+        <td class="lbl">الضريبة<br/>VAT</td>
+        <td colspan="2" class="val" dir="ltr" style="text-align:center;">${vatCalc}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="lbl">البنود: قطع غيار / شغل يد<br/>Items: Parts / Labor</td>
+        <td colspan="10" class="val"></td>
+      </tr>
+      <tr><td colspan="12" class="sec">الصرف  |  Payment</td></tr>
+      <tr>
+        <td colspan="2" class="lbl">طريقة الصرف<br/>Payment Method</td>
+        <td colspan="2" class="val">${esc(payMethod)}</td>
+        <td colspan="2" class="lbl">اسم صاحب الحساب<br/>Account Holder</td>
+        <td colspan="3" class="val">${esc(accountHolder)}</td>
+        <td class="lbl">البنك<br/>Bank</td>
+        <td colspan="2" class="val">${esc(bankName)}</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="lbl">الآيبان<br/>IBAN</td>
+        <td colspan="10" class="val" dir="ltr" style="text-align:center;">${esc(iban)}</td>
+      </tr>
+      <tr><td colspan="12" class="sec">إقرار ومخالصة العميل  |  Customer Acknowledgment &amp; Release</td></tr>
+      <tr>
+        <td colspan="12" style="padding:6px;font-weight:700;text-align:right;">اقر انا الموقع ادناه باستلام مبلغ وقدره ( ${esc(amtDisplay)} ) ريال من شركة رش المتقدمة تعويضا نهائيا وكاملا عن الاضرار الموضحه في النموذج وابرئ ذمة الشركة من أي مطالبات لاحقة تخص الواقعه</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="lbl">اسم العميل<br/>Customer Name</td>
+        <td colspan="3" class="val"><strong>${esc(custName)}</strong></td>
+        <td class="lbl">التوقيع<br/>Signature</td>
+        <td colspan="3" class="val" style="text-align:center;">${waiverSigCell}</td>
+        <td class="lbl">التاريخ<br/>Date</td>
+        <td colspan="2" class="val"></td>
+      </tr>
+      <tr><td colspan="12" style="border:none;height:8px;"></td></tr>
+      <tr><td colspan="12" class="sec">التوقيعات والاعتماد  |  Signatures &amp; Approval</td></tr>
+      <tr>
+        <td colspan="4" class="sig-hdr">فني المغسلة – فحص وتحديد المسؤولية<br/>Car Wash Technician – Inspection &amp; Liability</td>
+        <td colspan="4" class="sig-hdr">مدير التشغيل – تأكيد الإثبات<br/>Operations Manager – Confirmation</td>
+        <td colspan="4" class="sig-hdr">الإدارة المالية – مطابقة الفاتورة والاعتماد والصرف<br/>Finance – Invoice Match, Approval &amp; Payment</td>
+      </tr>
+      <tr>
+        <td colspan="4" class="sig-box">التوقيع / Signature: ${renderStaffSigExcel(techSigUrl, techBy)}</td>
+        <td colspan="4" class="sig-box">التوقيع / Signature: ${renderStaffSigExcel(opsSigUrl, opsBy)}</td>
+        <td colspan="4" class="sig-box">التوقيع / Signature: ${renderStaffSigExcel(finSigUrl, finBy)}</td>
       </tr>
     </table>
   </div>`;
