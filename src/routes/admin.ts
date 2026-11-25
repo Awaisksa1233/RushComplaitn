@@ -6,7 +6,7 @@ import { z } from "zod";
 import { STAFF_JWT_SECRET } from "../config/env";
 import { buildDirectTicketUrl } from "../middleware/auth";
 import { staffLoginLimiter, ibanRevealLimiter } from "../middleware/security";
-import { deleteFiles } from "../services/storage";
+import { deleteFiles, uploadFile, sniffMatches } from "../services/storage";
 import { findPaidOrderCeilingInMongo } from "../services/mongo";
 import { sendStaffWhatsAppViaChatwoot } from "../services/chatwoot";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -252,7 +252,30 @@ export function createAdminRouter(prisma: PrismaClient): Router {
       STAFF_JWT_SECRET,
       { expiresIn: "8h", audience: STAFF_AUDIENCE, issuer: STAFF_ISSUER }
     );
-    return res.json({ token, user: payload });
+    return res.json({ token, user: { ...payload, signatureUrl: signFileUrl(user.signatureUrl) } });
+  }));
+
+  async function uploadSignatureDataUrl(dataUrl: string): Promise<string | null> {
+    const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    if (!m) return null;
+    const mime = m[1];
+    const buf = Buffer.from(m[2], "base64");
+    if (buf.length === 0 || buf.length > 2 * 1024 * 1024 || !sniffMatches(buf, mime)) return null;
+    return uploadFile(buf, mime, "signatures");
+  }
+
+  router.get("/me/signature", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
+    const user = await prisma.staffUser.findUnique({ where: { id: req.staff!.staffId }, select: { signatureUrl: true } });
+    return res.json({ signatureUrl: signFileUrl(user?.signatureUrl) });
+  }));
+
+  router.post("/me/signature", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
+    const parsed = z.object({ signatureDataUrl: z.string().max(300000) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Valid signature image is required" });
+    const key = await uploadSignatureDataUrl(parsed.data.signatureDataUrl);
+    if (!key) return res.status(400).json({ error: "Invalid signature image format" });
+    await prisma.staffUser.update({ where: { id: req.staff!.staffId }, data: { signatureUrl: key } });
+    return res.json({ signatureUrl: signFileUrl(key) });
   }));
 
   router.post("/auth/change-password", staffLoginLimiter, requireStaff, asyncHandler(async (req: StaffRequest, res) => {
@@ -513,6 +536,12 @@ export function createAdminRouter(prisma: PrismaClient): Router {
         bankName: c.bankName,
         accountHolder: c.accountHolder ? "•••• " + String(decryptField(c.accountHolder) || "").slice(-3) : null,
         iban: c.iban ? maskIban(c.iban) : null,
+        techSignatureUrl: signFileUrl(c.techSignatureUrl),
+        techSignedBy: c.techSignedBy || null,
+        opsSignatureUrl: signFileUrl(c.opsSignatureUrl),
+        opsSignedBy: c.opsSignedBy || null,
+        financeSignatureUrl: signFileUrl(c.financeSignatureUrl),
+        financeSignedBy: c.financeSignedBy || null,
         payoutStatus: c.payoutStatus,
         rewashCode: c.rewashCode,
         rrn: c.rrn,
@@ -580,6 +609,9 @@ export function createAdminRouter(prisma: PrismaClient): Router {
           : null,
       invoiceUrl: signFileUrl(rest.invoiceUrl),
       bankSmsUrl: signFileUrl(rest.bankSmsUrl),
+      techSignatureUrl: signFileUrl(rest.techSignatureUrl),
+      opsSignatureUrl: signFileUrl(rest.opsSignatureUrl),
+      financeSignatureUrl: signFileUrl(rest.financeSignatureUrl),
       mediaUrls: (rest.mediaUrls || []).map((u) => signFileUrl(u) || u),
       iban: iban ? maskIban(iban) : null,
       accountHolder: holderPlain ? "•••• " + holderPlain.slice(-3) : null,
@@ -897,6 +929,86 @@ export function createAdminRouter(prisma: PrismaClient): Router {
 
     void notifyCustomerWhatsApp(complaint.id, complaint.customerId, waText);
     return res.json({ success: true, complaint: updated });
+  }));
+
+  // Sign Damage Compensation Form (Technician / Operations Manager / Finance) with R2 storage & reuse
+  router.post("/claims/:id/damage/sign", requireStaff, asyncHandler(async (req: StaffRequest, res) => {
+    const parsed = z.object({
+      slot: z.enum(["tech", "ops", "finance"]),
+      useSaved: z.boolean().optional(),
+      signatureDataUrl: z.string().max(300000).optional(),
+      saveAsDefault: z.boolean().optional(),
+    }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Invalid signature payload" });
+
+    const { slot, useSaved, signatureDataUrl, saveAsDefault } = parsed.data;
+    const allowedBySlot: Record<"tech" | "ops" | "finance", StaffRole[]> = {
+      tech: [StaffRole.OPS_MANAGER, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER],
+      ops: [StaffRole.OPS_MANAGER, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER],
+      finance: [StaffRole.FINANCE, StaffRole.ADMIN, StaffRole.BUSINESS_OWNER],
+    };
+    if (!allowedBySlot[slot].includes(req.staff!.role)) {
+      return res.status(403).json({ error: "Your role is not permitted to sign this section" });
+    }
+
+    const complaint = await loadClaim(req, res);
+    if (!complaint) return;
+    if (complaint.type !== "DAMAGE") {
+      return res.status(409).json({ error: "Staff signatures apply only to Damage claims" });
+    }
+
+    let key: string | null = null;
+    if (useSaved) {
+      const me = await prisma.staffUser.findUnique({ where: { id: req.staff!.staffId }, select: { signatureUrl: true } });
+      if (!me?.signatureUrl) {
+        return res.status(400).json({ error: "No saved signature found. Please draw your signature first." });
+      }
+      key = me.signatureUrl;
+    } else {
+      if (!signatureDataUrl) return res.status(400).json({ error: "Signature image is required" });
+      key = await uploadSignatureDataUrl(signatureDataUrl);
+      if (!key) return res.status(400).json({ error: "Invalid signature image format" });
+      if (saveAsDefault) {
+        await prisma.staffUser.update({ where: { id: req.staff!.staffId }, data: { signatureUrl: key } });
+      }
+    }
+
+    const updateData =
+      slot === "tech"
+        ? { techSignatureUrl: key, techSignedBy: req.staff!.name }
+        : slot === "ops"
+          ? { opsSignatureUrl: key, opsSignedBy: req.staff!.name }
+          : { financeSignatureUrl: key, financeSignedBy: req.staff!.name };
+
+    const actionMap = {
+      tech: "SIGN_DAMAGE_TECH",
+      ops: "SIGN_DAMAGE_OPS",
+      finance: "SIGN_DAMAGE_FINANCE",
+    };
+
+    await prisma.complaint.update({
+      where: { id: complaint.id },
+      data: {
+        ...updateData,
+        auditLogs: {
+          create: {
+            staffId: req.staff!.staffId,
+            actorName: req.staff!.name,
+            action: actionMap[slot],
+            details: `${slot.toUpperCase()} signature ${useSaved ? "reused" : "captured"} by ${req.staff!.name} (${req.staff!.role}).`,
+          },
+        },
+      },
+    });
+    invalidateClaimsCache();
+
+    return res.json({
+      success: true,
+      slot,
+      signatureUrl: signFileUrl(key),
+      signedBy: req.staff!.name,
+      savedSignatureUrl: saveAsDefault || useSaved ? signFileUrl(key) : undefined,
+    });
   }));
 
   // Refuse Complaint

@@ -76,6 +76,7 @@ model StaffUser {
   role         StaffRole
   branch       String      @default("All Branches")
   active       Boolean     @default(true)
+  signatureUrl String?
   auditLogs    AuditLog[]
   createdAt    DateTime    @default(now())
 }
@@ -183,11 +184,17 @@ model Complaint {
   quotationUrl      String?
   waiverSigned      Boolean         @default(false)
   waiverSignature   String?
-  quotationApproved Boolean         @default(false)
-  invoiceUrl        String?
-  bankName          String?
-  accountHolder     String?
-  iban              String?
+  quotationApproved   Boolean         @default(false)
+  invoiceUrl          String?
+  bankName            String?
+  accountHolder       String?
+  iban                String?
+  techSignatureUrl    String?
+  techSignedBy        String?
+  opsSignatureUrl     String?
+  opsSignedBy         String?
+  financeSignatureUrl String?
+  financeSignedBy     String?
 
   // Payout & SLA tracking
   payoutStatus        PayoutStatus  @default(PENDING_REVIEW)

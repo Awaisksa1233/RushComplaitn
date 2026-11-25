@@ -588,6 +588,44 @@
     </div>
   </div>
 
+  <!-- Staff Digital Signature Modal -->
+  <div id="modal-staff-sign" role="dialog" aria-modal="true" aria-labelledby="modal-staff-sign-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-neutral-200 max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="modal-staff-sign-title" class="text-base font-extrabold text-black">Staff Digital Signature</h3>
+        <button type="button" onclick="closeModal('modal-staff-sign')" aria-label="Close modal" class="p-1 rounded-lg text-neutral-500 hover:text-black hover:bg-neutral-100">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <input id="staff-sign-ticket-id" type="hidden" />
+      <input id="staff-sign-slot" type="hidden" />
+      <div id="staff-saved-sig-box" class="hidden bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-2">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-bold text-emerald-900">Your Saved Signature (R2)</span>
+          <button type="button" onclick="submitStaffSignature(true)" class="px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold">Use Saved Signature</button>
+        </div>
+        <div class="bg-white border border-emerald-200 rounded-lg p-2 flex justify-center">
+          <img id="staff-saved-sig-img" src="" alt="Saved staff signature" class="max-h-14 object-contain" />
+        </div>
+      </div>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-neutral-700">Or Draw New Signature</span>
+          <button type="button" onclick="clearStaffSig()" class="text-[#C91E2F] font-bold hover:underline">Clear</button>
+        </div>
+        <canvas id="staff-sig-canvas" width="400" height="110" class="w-full h-28 bg-neutral-50 border border-neutral-300 rounded-xl cursor-crosshair touch-none"></canvas>
+        <label class="flex items-center gap-2 text-neutral-700 font-semibold cursor-pointer">
+          <input id="staff-sig-save-default" type="checkbox" checked class="rounded border-neutral-300 text-[#C91E2F]" />
+          <span>Save as my reusable signature for future tickets</span>
+        </label>
+      </div>
+      <div class="flex justify-end gap-2 pt-1 text-xs">
+        <button type="button" onclick="closeModal('modal-staff-sign')" class="px-3.5 py-2 rounded-lg border border-neutral-300 text-neutral-700 font-bold hover:bg-neutral-50">Cancel</button>
+        <button id="btn-submit-staff-sign" type="button" onclick="submitStaffSignature(false)" class="px-4 py-2 rounded-lg bg-black hover:bg-[#C91E2F] text-white font-bold">Sign &amp; Save to Ticket</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Pause / Resume Staff Confirmation Modal -->
   <div id="modal-staff-toggle" role="dialog" aria-modal="true" aria-labelledby="modal-staff-toggle-title" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl border border-neutral-200 max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4">
@@ -1446,6 +1484,29 @@
                       </div>
                     ` : c.transferRef ? `<div class="text-emerald-800 font-bold">✓ Paid · Transfer Ref: <span class="font-mono notranslate" translate="no" dir="ltr">${esc(c.transferRef)}</span></div>` : ""}
                   </div>
+
+                  <!-- Staff Signatures & Approvals (R2 Stored) -->
+                  <div class="bg-white border border-neutral-200 rounded-xl p-3.5 space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-black">Staff Digital Signatures (R2 Stored · Reusable)</span>
+                      <span class="text-neutral-500">Printed on compensation form</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      ${[
+                        { slot: "tech", title: "Car Wash Technician", img: c.damageFlow.techSignatureUrl, by: c.damageFlow.techSignedBy, canSign: uiState.role === "Ops Manager" || uiState.role === "Admin" || uiState.role === "Business Owner" },
+                        { slot: "ops", title: "Operations Manager", img: c.damageFlow.opsSignatureUrl, by: c.damageFlow.opsSignedBy, canSign: uiState.role === "Ops Manager" || uiState.role === "Admin" || uiState.role === "Business Owner" },
+                        { slot: "finance", title: "Finance / Accountant", img: c.damageFlow.financeSignatureUrl, by: c.damageFlow.financeSignedBy, canSign: uiState.role === "Accountant" || uiState.role === "Admin" || uiState.role === "Business Owner" }
+                      ].map(s => `
+                        <div class="rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 flex flex-col justify-between gap-2">
+                          <div class="font-bold text-neutral-800">${esc(s.title)}</div>
+                          ${s.img
+                            ? `<div class="bg-white border border-neutral-200 rounded p-1.5 flex flex-col items-center gap-1"><img src="${esc(s.img)}" alt="${esc(s.title)} signature" class="max-h-10 object-contain" /><span class="text-[11px] font-semibold text-emerald-800" dir="auto">✓ ${esc(s.by || "Signed")}</span></div>`
+                            : `<div class="text-neutral-500 italic">Pending signature</div>`}
+                          ${s.canSign ? `<button type="button" onclick="openStaffSignModal('${esc(c.id)}', '${s.slot}', '${esc(s.title)}')" class="w-full py-1.5 rounded-md border border-neutral-300 bg-white hover:bg-neutral-100 text-black font-bold">${s.img ? "Update Signature" : "Sign / Reuse"}</button>` : ""}
+                        </div>
+                      `).join("")}
+                    </div>
+                  </div>
                 </div>
               </div>
             ` : ""}
@@ -1717,12 +1778,18 @@
         renderAllActive();
 
         const headers = { "Authorization": `Bearer ${token}` };
-        const [meRes, cfgRes, staffRes, claimsRes] = await Promise.all([
+        const [meRes, sigRes, cfgRes, staffRes, claimsRes] = await Promise.all([
           fetch("/api/admin/auth/me", { headers }),
+          fetch("/api/admin/me/signature", { headers }),
           fetch("/api/admin/config", { headers }),
           isOwnerRole() || isFinanceRole() ? fetch("/api/admin/staff", { headers }) : Promise.resolve({ ok: false }),
           fetch("/api/admin/claims", { headers })
         ]);
+
+        if (sigRes.ok) {
+          const sigData = await sigRes.json();
+          uiState.savedSignatureUrl = sigData.signatureUrl || "";
+        }
 
         if (meRes.ok) {
           const meData = await meRes.json();
@@ -1813,6 +1880,12 @@
                 quotationFile: c.quotationUrl || "",
                 waiverSigned: Boolean(c.waiverSigned),
                 waiverSignatureUrl: c.waiverSignatureUrl || "",
+                techSignatureUrl: c.techSignatureUrl || "",
+                techSignedBy: c.techSignedBy || "",
+                opsSignatureUrl: c.opsSignatureUrl || "",
+                opsSignedBy: c.opsSignedBy || "",
+                financeSignatureUrl: c.financeSignatureUrl || "",
+                financeSignedBy: c.financeSignedBy || "",
                 quotationApproved: Boolean(c.quotationApproved),
                 invoiceFile: c.invoiceUrl || "",
                 bankName: c.bankName || "",
@@ -2446,6 +2519,103 @@
       showToast("Exported CSV");
     }
 
+    let staffSigHasStrokes = false;
+    function initStaffSigCanvas() {
+      const canvas = document.getElementById("staff-sig-canvas");
+      if (!canvas) return;
+      staffSigHasStrokes = false;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const cssW = rect.width || 400;
+      const cssH = rect.height || 110;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      let drawing = false;
+      const pos = (e) => {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+      };
+      canvas.onmousedown = canvas.ontouchstart = (e) => {
+        if (e.cancelable) e.preventDefault();
+        drawing = true;
+        staffSigHasStrokes = true;
+        const p = pos(e);
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      };
+      canvas.onmousemove = canvas.ontouchmove = (e) => {
+        if (!drawing) return;
+        if (e.cancelable) e.preventDefault();
+        const p = pos(e);
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+      };
+      window.addEventListener("mouseup", () => { drawing = false; });
+      window.addEventListener("touchend", () => { drawing = false; });
+    }
+
+    function clearStaffSig() {
+      staffSigHasStrokes = false;
+      const c = document.getElementById("staff-sig-canvas");
+      if (c) c.getContext("2d").clearRect(0, 0, c.width, c.height);
+    }
+
+    function openStaffSignModal(ticketId, slot, title) {
+      if (!adminToken) return showToast("Please sign in to digitally sign and save to R2");
+      document.getElementById("staff-sign-ticket-id").value = ticketId;
+      document.getElementById("staff-sign-slot").value = slot;
+      document.getElementById("modal-staff-sign-title").textContent = `Sign as ${title}`;
+      const savedBox = document.getElementById("staff-saved-sig-box");
+      const savedImg = document.getElementById("staff-saved-sig-img");
+      if (uiState.savedSignatureUrl) {
+        savedImg.src = uiState.savedSignatureUrl;
+        savedBox.classList.remove("hidden");
+      } else {
+        savedBox.classList.add("hidden");
+      }
+      openModal("modal-staff-sign");
+      setTimeout(initStaffSigCanvas, 30);
+    }
+
+    async function submitStaffSignature(useSaved) {
+      const ticketId = document.getElementById("staff-sign-ticket-id").value;
+      const slot = document.getElementById("staff-sign-slot").value;
+      const saveAsDefault = document.getElementById("staff-sig-save-default").checked;
+      if (!useSaved && !staffSigHasStrokes) {
+        return showToast("Please draw your signature or use your saved signature");
+      }
+      const payload = useSaved
+        ? { slot, useSaved: true }
+        : { slot, signatureDataUrl: document.getElementById("staff-sig-canvas").toDataURL("image/png"), saveAsDefault };
+      try {
+        const res = await fetch(`/api/admin/claims/${encodeURIComponent(ticketId)}/damage/sign`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${adminToken}` },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) return showToast(data.error || "Could not save signature");
+        if (data.savedSignatureUrl) uiState.savedSignatureUrl = data.savedSignatureUrl;
+        const c = claimsData.find(x => x.id === ticketId);
+        if (c) {
+          if (slot === "tech") { c.damageFlow.techSignatureUrl = data.signatureUrl; c.damageFlow.techSignedBy = data.signedBy; }
+          if (slot === "ops") { c.damageFlow.opsSignatureUrl = data.signatureUrl; c.damageFlow.opsSignedBy = data.signedBy; }
+          if (slot === "finance") { c.damageFlow.financeSignatureUrl = data.signatureUrl; c.damageFlow.financeSignedBy = data.signedBy; }
+        }
+        closeModal("modal-staff-sign");
+        renderDetail();
+        showToast(useSaved ? "Signed using saved R2 signature" : "Signature saved to R2 & applied to ticket");
+      } catch {
+        showToast("Could not reach server to save signature");
+      }
+    }
+
     async function printDamageCompensationForm(id) {
       let c = claims.find(x => x.id === id);
       if (!c) return showToast("Ticket not found");
@@ -2527,6 +2697,16 @@
       const techNote = rawTicket?.resolutionNote || c.resolutionNote || c.evidence?.note || "";
       const quotedVal = Number(rawTicket?.quotedAmount || c.quotedSar || 0);
       const transferRef = rawTicket?.transferRef || c.transferRef || "";
+
+      const techSigUrl = rawTicket?.techSignatureUrl || c.damageFlow?.techSignatureUrl || "";
+      const techBy = rawTicket?.techSignedBy || c.damageFlow?.techSignedBy || "";
+      const opsSigUrl = rawTicket?.opsSignatureUrl || c.damageFlow?.opsSignatureUrl || "";
+      const opsBy = rawTicket?.opsSignedBy || c.damageFlow?.opsSignedBy || "";
+      const finSigUrl = rawTicket?.financeSignatureUrl || c.damageFlow?.financeSignatureUrl || "";
+      const finBy = rawTicket?.financeSignedBy || c.damageFlow?.financeSignedBy || "";
+      const renderStaffSig = (url, by) => url
+        ? `<div style="margin-top:4px;"><img src="${esc(url)}" alt="Staff Signature" style="max-height:36px;max-width:140px;object-fit:contain;display:inline-block;" /><div style="font-size:9px;margin-top:2px;">${esc(by)}</div></div>`
+        : `<br/><br/>التوقيع / Signature: _________________`;
 
       const sheetHtml = `
   <style>
@@ -2630,9 +2810,9 @@
     <table>
       <tr><td colspan="3" class="sec">التوقيعات والاعتماد | Signatures &amp; Approval</td></tr>
       <tr class="sig-row">
-        <td><strong>فني المغسلة – فحص وتحديد المسؤولية</strong><br/>Car Wash Technician – Inspection &amp; Liability<br/><br/>التوقيع / Signature: _________________</td>
-        <td><strong>مدير التشغيل – تأكيد الإثبات</strong><br/>Operations Manager – Confirmation<br/><br/>التوقيع / Signature: _________________</td>
-        <td><strong>الإدارة المالية – مطابقة الفاتورة والاعتماد والصرف</strong><br/>Finance – Invoice Match, Approval &amp; Payment<br/><br/>التوقيع / Signature: _________________</td>
+        <td><strong>فني المغسلة – فحص وتحديد المسؤولية</strong><br/>Car Wash Technician – Inspection &amp; Liability${renderStaffSig(techSigUrl, techBy)}</td>
+        <td><strong>مدير التشغيل – تأكيد الإثبات</strong><br/>Operations Manager – Confirmation${renderStaffSig(opsSigUrl, opsBy)}</td>
+        <td><strong>الإدارة المالية – مطابقة الفاتورة والاعتماد والصرف</strong><br/>Finance – Invoice Match, Approval &amp; Payment${renderStaffSig(finSigUrl, finBy)}</td>
       </tr>
     </table>
   </div>`;

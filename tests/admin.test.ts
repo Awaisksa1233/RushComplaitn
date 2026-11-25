@@ -329,4 +329,35 @@ describe.skipIf(!process.env.TEST_OWNER_EMAIL || !process.env.TEST_OWNER_PASSWOR
       .set("Authorization", `Bearer ${financeToken}`);
     expect(staffRes.status).toBe(403);
   });
+
+  // Test 11: Staff Reusable Signature (R2) & Damage Slot Signing
+  it("11. should save reusable staff signature and enforce role gates on damage/sign", async () => {
+    const validPng = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+    const saveRes = await request(app)
+      .post("/api/admin/me/signature")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ signatureDataUrl: validPng });
+    expect(saveRes.status).toBe(200);
+    expect(saveRes.body.signatureUrl).toContain("/api/files/signatures/");
+
+    const getRes = await request(app)
+      .get("/api/admin/me/signature")
+      .set("Authorization", `Bearer ${ownerToken}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.signatureUrl).toContain("/api/files/signatures/");
+
+    // CSM cannot sign finance or tech slots
+    const csmSignRes = await request(app)
+      .post("/api/admin/claims/C-DOES-NOT-EXIST/damage/sign")
+      .set("Authorization", `Bearer ${csmToken}`)
+      .send({ slot: "finance", useSaved: true });
+    expect([401, 403]).toContain(csmSignRes.status);
+
+    // Owner passes role check and gets 404 on non-existent ticket
+    const ownerSignRes = await request(app)
+      .post("/api/admin/claims/C-DOES-NOT-EXIST/damage/sign")
+      .set("Authorization", `Bearer ${ownerToken}`)
+      .send({ slot: "finance", useSaved: true });
+    expect(ownerSignRes.status).toBe(404);
+  });
 });
