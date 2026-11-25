@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED — see [`REAUDIT_2026-11-25.md`](REAUDIT_2026-11-25.md).** An independent re-audit executed against real PostgreSQL found items below that were marked PASS but fail when run (exposed SMS credential in a public repo, silent local-disk uploads in production when R2 is unset, `migrate deploy` failing on an existing database). **Current decision: NO-GO (convertible to CONDITIONAL GO after the 3 P1 fixes and the BLOCKED infrastructure gates).** The original text is preserved below for history.
+
 # Final Production Release Decision — Customer Care Portal
 
 **Audit Timestamp (Post-Phase 16 Verification):** `2026-11-25 16:48:32 AST (Asia/Riyadh)`  

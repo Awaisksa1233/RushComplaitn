@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED — see [`REAUDIT_2026-11-25.md`](REAUDIT_2026-11-25.md).** An independent re-audit executed against real PostgreSQL found items below that were marked PASS but fail when run: *No exposed secrets*, *Production configuration reviewed*, *Migration strategy tested* and *Webhooks verified* are now **FAIL** (AUD-R8, R4, R5, R1); DB-constraint and isolation items are upgraded to PASS on real PostgreSQL. Full table in §3 of the re-audit. **Current decision: NO-GO (convertible to CONDITIONAL GO after the 3 P1 fixes and the BLOCKED infrastructure gates).** The original text is preserved below for history.
+
 # 14 — Production Go-Live Master Checklist
 
 **Audit Timestamp (Post-Phase 16 Verification):** `2026-11-25 16:48:32 AST (Asia/Riyadh)`  

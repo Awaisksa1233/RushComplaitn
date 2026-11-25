@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED — see [`REAUDIT_2026-11-25.md`](REAUDIT_2026-11-25.md).** An independent re-audit executed against real PostgreSQL found items below that were marked PASS but fail when run. New findings AUD-R1…R20 (3 P1, 9 P2, 7 P3) are tracked in §2 of the re-audit, all OPEN pending approval of the remediation plan in §6. **Current decision: NO-GO (convertible to CONDITIONAL GO after the 3 P1 fixes and the BLOCKED infrastructure gates).** The original text is preserved below for history.
+
 # 15 — Risk Classification & Remediation Tracker
 
 **Audit Timestamp (Post-Phase 16 Verification):** `2026-11-25 16:48:32 AST (Asia/Riyadh)`  
